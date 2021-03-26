@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: "CanCoGen Virus Seq Data"
+    version: @project.version@
+    description: "CanCoGen Virus Seq Data API and Processor"
+
+server:
+  port: 8080
+---
+spring.profiles: secure
+auth:
+  jwtPublicKeyUrl: "http://localhost:8081/oauth/token/public_key"
+  jwtPublicKeyStr: "-----BEGIN PUBLIC KEY-----\nSET ME IF YOU DONT HAVE A URL, BUT URL TAKES PRIORITY\n-----END PUBLIC KEY-----"
+  graphqlScopes:
+    read:
+      - CANCOGEN-DATA.READ
+    write:
+      - CANCOGEN-DATA.WRITE
