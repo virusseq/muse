@@ -1,0 +1,35 @@
+package org.cancogenvirusseq.seqdata.components;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import reactor.core.publisher.Flux;
+
+@Slf4j
+public class TsvParser {
+  public static Flux<Map<String, String>> parseTsvStrToFlatRecords(String s) {
+    val lines = s.split("\n");
+    val headers = lines[0].trim().split("\t");
+
+    Stream<Map<String, String>> rows =
+        Arrays.stream(lines)
+            .skip(1)
+            .filter(line -> line != null && !line.trim().equals(""))
+            .map(
+                line -> {
+                  val data = line.split("\t");
+                  val dataJson = new HashMap<String, String>();
+
+                  for (int i = 0; i < headers.length; ++i) {
+                    dataJson.put(headers[i], i > data.length ? "" : data[i]);
+                  }
+                  return dataJson;
+                });
+
+    return Flux.fromStream(rows);
+  }
+}
