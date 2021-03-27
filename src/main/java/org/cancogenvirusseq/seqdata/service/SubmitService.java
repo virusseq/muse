@@ -18,14 +18,15 @@
 
 package org.cancogenvirusseq.seqdata.service;
 
-import org.cancogenvirusseq.seqdata.api.model.SubmitRequest;
 import org.cancogenvirusseq.seqdata.api.model.SubmitResponse;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
 public class SubmitService {
-  public Mono<SubmitResponse> submit(SubmitRequest submitRequest) {
-    return Mono.just(new SubmitResponse());
+  public Mono<SubmitResponse> submit(Flux<FilePart> submitRequest) {
+    return Mono.just(new SubmitResponse("temp-id-to-replace"));
   }
 }

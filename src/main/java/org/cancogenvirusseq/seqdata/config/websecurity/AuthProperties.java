@@ -19,7 +19,6 @@
 package org.cancogenvirusseq.seqdata.config.websecurity;
 
 import com.google.common.collect.ImmutableList;
-
 import lombok.Data;
 import lombok.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;

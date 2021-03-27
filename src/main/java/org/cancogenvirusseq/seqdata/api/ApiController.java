@@ -22,22 +22,24 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.cancogenvirusseq.seqdata.api.model.*;
+import org.cancogenvirusseq.seqdata.api.model.DownloadRequest;
+import org.cancogenvirusseq.seqdata.api.model.SubmitResponse;
+import org.cancogenvirusseq.seqdata.api.model.UploadListResponse;
 import org.cancogenvirusseq.seqdata.service.DownloadService;
 import org.cancogenvirusseq.seqdata.service.SubmitService;
 import org.cancogenvirusseq.seqdata.service.UploadService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
+import java.nio.ByteBuffer;
 
 @Slf4j
 @Controller
@@ -50,8 +52,8 @@ public class ApiController implements ApiDefinition {
 
   @PostMapping("/submit")
   public Mono<ResponseEntity<SubmitResponse>> submit(
-      @NonNull @Valid @RequestBody SubmitRequest submitRequest) {
-    return submitService.submit(submitRequest).map(this::respondOk);
+      @RequestPart("files") Flux<FilePart> filePartFlux) {
+    return submitService.submit(filePartFlux).map(this::respondOk);
   }
 
   @GetMapping("/uploads")
@@ -72,7 +74,7 @@ public class ApiController implements ApiDefinition {
   }
 
   @PostMapping("/download")
-  public Mono<ResponseEntity<DownloadResponse>> download(
+  public Mono<ResponseEntity<Flux<ByteBuffer>>> download(
       @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
     return downloadService.download(downloadRequest).map(this::respondOk);
   }

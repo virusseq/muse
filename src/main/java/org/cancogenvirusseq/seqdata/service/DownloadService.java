@@ -19,13 +19,15 @@
 package org.cancogenvirusseq.seqdata.service;
 
 import org.cancogenvirusseq.seqdata.api.model.DownloadRequest;
-import org.cancogenvirusseq.seqdata.api.model.DownloadResponse;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.nio.ByteBuffer;
 
 @Service
 public class DownloadService {
-  public Mono<DownloadResponse> download(DownloadRequest downloadRequest) {
-    return Mono.just(new DownloadResponse());
+  public Mono<Flux<ByteBuffer>> download(DownloadRequest downloadRequest) {
+    return Mono.just(Flux.empty());
   }
 }

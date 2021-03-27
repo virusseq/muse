@@ -19,12 +19,20 @@
 package org.cancogenvirusseq.seqdata.api;
 
 import io.swagger.annotations.*;
-import org.cancogenvirusseq.seqdata.api.model.*;
+import org.cancogenvirusseq.seqdata.api.model.DownloadRequest;
+import org.cancogenvirusseq.seqdata.api.model.ErrorResponse;
+import org.cancogenvirusseq.seqdata.api.model.SubmitResponse;
+import org.cancogenvirusseq.seqdata.api.model.UploadListResponse;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
+import java.nio.ByteBuffer;
 
 @Api(value = "CanCoGenVirusSeq Data API", tags = "CanCoGen Virus Seq Data API")
 public interface ApiDefinition {
@@ -47,10 +55,10 @@ public interface ApiDefinition {
       })
   @RequestMapping(
       value = "/submit",
-      produces = {"application/json"},
-      consumes = {"application/json"},
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.POST)
-  Mono<ResponseEntity<SubmitResponse>> submit(@Valid @RequestBody SubmitRequest submitRequest);
+  Mono<ResponseEntity<SubmitResponse>> submit(@RequestPart("files") Flux<FilePart> filePartFlux);
 
   @ApiOperation(
       value = "Get All Uploads",
@@ -67,8 +75,8 @@ public interface ApiDefinition {
       })
   @RequestMapping(
       value = "/uploads",
-      produces = {"application/json"},
-      consumes = {"application/json"},
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
   Mono<ResponseEntity<UploadListResponse>> getUploads(
       @ApiParam(
@@ -101,8 +109,8 @@ public interface ApiDefinition {
       })
   @RequestMapping(
       value = "/uploads/{submitSetId}",
-      produces = {"application/json"},
-      consumes = {"application/json"},
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
   Mono<ResponseEntity<UploadListResponse>> getUploadsForSubmitSetId(
       @ApiParam(value = "", required = true) @PathVariable("submitSetId") String submitSetId,
@@ -124,20 +132,20 @@ public interface ApiDefinition {
   @ApiOperation(
       value = "Download Virus Seq Data as a single .fasta file",
       nickname = "Download",
-      response = DownloadResponse.class,
+      response = MultipartFile.class,
       tags = "CanCoGen Virus Seq Data API")
   @ApiResponses(
       value = {
-        @ApiResponse(code = 200, message = "", response = DownloadResponse.class),
+        @ApiResponse(code = 200, message = "", response = MultipartFile.class),
         @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
         @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
         @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
       })
   @RequestMapping(
       value = "/download",
-      produces = {"application/json"},
-      consumes = {"application/json"},
-      method = RequestMethod.GET) // todo: set correct contentType
-  Mono<ResponseEntity<DownloadResponse>> download(
+      produces = MediaType.APPLICATION_OCTET_STREAM_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      method = RequestMethod.GET)
+  Mono<ResponseEntity<Flux<ByteBuffer>>> download(
       @Valid @RequestBody DownloadRequest downloadRequest);
 }

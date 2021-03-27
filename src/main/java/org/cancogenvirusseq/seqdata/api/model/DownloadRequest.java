@@ -18,5 +18,16 @@
 
 package org.cancogenvirusseq.seqdata.api.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class DownloadRequest {
+  @NonNull private List<String> analysisIds;
 }
