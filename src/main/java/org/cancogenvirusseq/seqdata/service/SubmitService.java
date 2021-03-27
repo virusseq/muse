@@ -18,15 +18,47 @@
 
 package org.cancogenvirusseq.seqdata.service;
 
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.cancogenvirusseq.seqdata.api.model.SubmitResponse;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
+
 @Service
+@Slf4j
 public class SubmitService {
-  public Mono<SubmitResponse> submit(Flux<FilePart> submitRequest) {
-    return Mono.just(new SubmitResponse("temp-id-to-replace"));
+
+  public Mono<SubmitResponse> submit(Flux<FilePart> fileParts) {
+    return fileParts
+        .filter(
+            filePart ->
+                filePart.filename().endsWith(".fasta") || filePart.filename().endsWith(".tsv"))
+        .doOnDiscard(
+            FilePart.class,
+            discarded ->
+                log.info("The file: {}, must be of type '.tsv' or '.fasta'", discarded.filename()))
+        .flatMap(
+            filePart ->
+                filePart
+                    .content()
+                    .map(
+                        dataBuffer -> {
+                          val bytes = new byte[dataBuffer.readableByteCount()];
+                          dataBuffer.read(bytes);
+                          DataBufferUtils.release(dataBuffer);
+
+                          return new String(bytes, StandardCharsets.UTF_8);
+                        }))
+        .collect(Collectors.toList())
+        .map(
+            fileContents ->
+                new SubmitResponse(
+                    fileContents.isEmpty() ? "no file processed" : fileContents.get(0)));
   }
 }

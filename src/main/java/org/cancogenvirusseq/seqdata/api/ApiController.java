@@ -52,8 +52,8 @@ public class ApiController implements ApiDefinition {
 
   @PostMapping("/submit")
   public Mono<ResponseEntity<SubmitResponse>> submit(
-      @RequestPart("files") Flux<FilePart> filePartFlux) {
-    return submitService.submit(filePartFlux).map(this::respondOk);
+      @RequestPart("files") Flux<FilePart> fileParts) {
+    return submitService.submit(fileParts).map(this::respondOk);
   }
 
   @GetMapping("/uploads")

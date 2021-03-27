@@ -19,7 +19,10 @@
 package org.cancogenvirusseq.seqdata.api.model;
 
 import io.swagger.annotations.ApiModel;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
 
 @Data
 @Builder

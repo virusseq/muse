@@ -58,7 +58,7 @@ public interface ApiDefinition {
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.POST)
-  Mono<ResponseEntity<SubmitResponse>> submit(@RequestPart("files") Flux<FilePart> filePartFlux);
+  Mono<ResponseEntity<SubmitResponse>> submit(@RequestPart("files") Flux<FilePart> fileParts);
 
   @ApiOperation(
       value = "Get All Uploads",
