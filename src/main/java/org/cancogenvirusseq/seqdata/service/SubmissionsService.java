@@ -20,7 +20,8 @@ package org.cancogenvirusseq.seqdata.service;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.cancogenvirusseq.seqdata.api.model.SubmitResponse;
+import org.cancogenvirusseq.seqdata.api.model.SubmissionCreateResponse;
+import org.cancogenvirusseq.seqdata.api.model.SubmissionListResponse;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
@@ -28,13 +29,18 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class SubmitService {
+public class SubmissionsService {
+  public Mono<SubmissionListResponse> getSubmissions(
+      String userId, Integer pageSize, Integer pageToken) {
+    return Mono.just(new SubmissionListResponse(Collections.emptyList()));
+  }
 
-  public Mono<SubmitResponse> submit(Flux<FilePart> fileParts) {
+  public Mono<SubmissionCreateResponse> submit(Flux<FilePart> fileParts) {
     return fileParts
         .filter(
             filePart ->
@@ -58,7 +64,7 @@ public class SubmitService {
         .collect(Collectors.toList())
         .map(
             fileContents ->
-                new SubmitResponse(
+                new SubmissionCreateResponse(
                     fileContents.isEmpty() ? "no file processed" : fileContents.get(0)));
   }
 }

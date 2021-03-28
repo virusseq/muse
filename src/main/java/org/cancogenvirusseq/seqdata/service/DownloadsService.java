@@ -26,7 +26,7 @@ import reactor.core.publisher.Mono;
 import java.nio.ByteBuffer;
 
 @Service
-public class DownloadService {
+public class DownloadsService {
   public Mono<Flux<ByteBuffer>> download(DownloadRequest downloadRequest) {
     return Mono.just(Flux.empty());
   }

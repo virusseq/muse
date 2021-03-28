@@ -19,10 +19,7 @@
 package org.cancogenvirusseq.seqdata.api;
 
 import io.swagger.annotations.*;
-import org.cancogenvirusseq.seqdata.api.model.DownloadRequest;
-import org.cancogenvirusseq.seqdata.api.model.ErrorResponse;
-import org.cancogenvirusseq.seqdata.api.model.SubmitResponse;
-import org.cancogenvirusseq.seqdata.api.model.UploadListResponse;
+import org.cancogenvirusseq.seqdata.api.model.*;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
@@ -33,6 +30,7 @@ import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 
 @Api(value = "CanCoGenVirusSeq Data API", tags = "CanCoGen Virus Seq Data API")
 public interface ApiDefinition {
@@ -42,23 +40,64 @@ public interface ApiDefinition {
   String UNKNOWN_MSG = "An unexpected error occurred.";
 
   @ApiOperation(
-      value = "Submit a file pair of .tsv and .fasta to process",
-      nickname = "Submit",
-      response = SubmitResponse.class,
+      value = "Get All Submissions",
+      nickname = "Get Submissions",
+      response = SubmissionListResponse.class,
       tags = "CanCoGen Virus Seq Data API")
   @ApiResponses(
       value = {
-        @ApiResponse(code = 200, message = "", response = SubmitResponse.class),
+        @ApiResponse(code = 200, message = "", response = SubmissionListResponse.class),
+        @ApiResponse(code = 400, message = BAD_REQUEST, response = ErrorResponse.class),
         @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
         @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
         @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
       })
   @RequestMapping(
-      value = "/submit",
+      value = "/submissions",
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      method = RequestMethod.GET)
+  Mono<ResponseEntity<SubmissionListResponse>> getSubmissions(
+      @ApiParam(
+              example = "10",
+              value =
+                  "OPTIONAL: The preferred number of entities to return for a page. If not provided, the implementation should use a default page size. The implementation must not return more items than `pageSize`, but it may return fewer.  Clients should not assume that if fewer than `pageSize` items are returned that all items have been returned.  The availability of additional pages is indicated by the value of `next_pageToken` in the response.")
+          @Valid
+          @RequestParam(value = "pageSize", defaultValue = "10", required = false)
+          Integer pageSize,
+      @ApiParam(
+              example = "0",
+              value =
+                  "OPTIONAL: Token to use to indicate where to start getting results. If unspecified, return the first page of results.")
+          @Valid
+          @RequestParam(value = "pageToken", defaultValue = "0", required = false)
+          Integer pageToken);
+
+  @ApiOperation(
+      value = "Submit a file pair of .tsv and .fasta to process",
+      nickname = "Submit",
+      response = SubmissionCreateResponse.class,
+      tags = "CanCoGen Virus Seq Data API")
+  @ApiResponses(
+      value = {
+        @ApiResponse(code = 200, message = "", response = SubmissionCreateResponse.class),
+        @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
+        @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
+        @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
+      })
+  @RequestMapping(
+      value = "/submissions",
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.POST)
-  Mono<ResponseEntity<SubmitResponse>> submit(@RequestPart("files") Flux<FilePart> fileParts);
+  Mono<ResponseEntity<SubmissionCreateResponse>> submit(
+      // this isn't working correctly, know issue:
+      // https://github.com/springfox/springfox/issues/3464
+      @ApiParam(
+              value =
+                  "REQUIRED: Files to upload, must contain matching pairs of .tsv and .fasta by filename, ex. exampleFileName-someDate.tsv and exampleFileName-someDate.fasta")
+          @RequestPart("files")
+          Flux<FilePart> fileParts);
 
   @ApiOperation(
       value = "Get All Uploads",
@@ -82,7 +121,7 @@ public interface ApiDefinition {
       @ApiParam(
               example = "10",
               value =
-                  "OPTIONAL: The preferred number of uploads to return for a page. If not provided, the implementation should use a default page size. The implementation must not return more items than `pageSize`, but it may return fewer.  Clients should not assume that if fewer than `pageSize` items are returned that all items have been returned.  The availability of additional pages is indicated by the value of `next_pageToken` in the response.")
+                  "OPTIONAL: The preferred number of entities to return for a page. If not provided, the implementation should use a default page size. The implementation must not return more items than `pageSize`, but it may return fewer.  Clients should not assume that if fewer than `pageSize` items are returned that all items have been returned.  The availability of additional pages is indicated by the value of `next_pageToken` in the response.")
           @Valid
           @RequestParam(value = "pageSize", defaultValue = "10", required = false)
           Integer pageSize,
@@ -92,42 +131,13 @@ public interface ApiDefinition {
                   "OPTIONAL: Token to use to indicate where to start getting results. If unspecified, return the first page of results.")
           @Valid
           @RequestParam(value = "pageToken", defaultValue = "0", required = false)
-          Integer pageToken);
-
-  @ApiOperation(
-      value = "Get Uploads with the provided submitSetId",
-      nickname = "Get Uploads for Submit Set",
-      response = UploadListResponse.class,
-      tags = "CanCoGen Virus Seq Data API")
-  @ApiResponses(
-      value = {
-        @ApiResponse(code = 200, message = "", response = UploadListResponse.class),
-        @ApiResponse(code = 400, message = BAD_REQUEST, response = ErrorResponse.class),
-        @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
-        @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
-        @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
-      })
-  @RequestMapping(
-      value = "/uploads/{submitSetId}",
-      produces = MediaType.APPLICATION_JSON_VALUE,
-      consumes = MediaType.APPLICATION_JSON_VALUE,
-      method = RequestMethod.GET)
-  Mono<ResponseEntity<UploadListResponse>> getUploadsForSubmitSetId(
-      @ApiParam(value = "", required = true) @PathVariable("submitSetId") String submitSetId,
+          Integer pageToken,
       @ApiParam(
-              example = "10",
-              value =
-                  "OPTIONAL: The preferred number of uploads to return for a page. If not provided, the implementation should use a default page size. The implementation must not return more items than `pageSize`, but it may return fewer.  Clients should not assume that if fewer than `pageSize` items are returned that all items have been returned.  The availability of additional pages is indicated by the value of `next_pageToken` in the response.")
+              example = "7fe7da94-bd30-4867-8a5e-042f6d9ccc48",
+              value = "OPTIONAL: Filter list response by submissionId")
           @Valid
-          @RequestParam(value = "pageSize", defaultValue = "10", required = false)
-          Integer pageSize,
-      @ApiParam(
-              example = "0",
-              value =
-                  "OPTIONAL: Token to use to indicate where to start getting results. If unspecified, return the first page of results.")
-          @Valid
-          @RequestParam(value = "pageToken", defaultValue = "0", required = false)
-          Integer pageToken);
+          @RequestParam(value = "submissionId", required = false)
+          UUID submissionId);
 
   @ApiOperation(
       value = "Download Virus Seq Data as a single .fasta file",

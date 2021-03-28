@@ -72,7 +72,7 @@ public class AuthEnabledConfig {
         .pathMatchers("/actuator/**")
         .permitAll()
         // WES-API endpoints
-        .pathMatchers("/submit", "/uploads/**", "/download")
+        .pathMatchers("/submissions", "/uploads/**", "/download")
         .permitAll()
         .pathMatchers(
             "/v2/api-docs",

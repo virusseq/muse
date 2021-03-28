@@ -23,11 +23,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.seqdata.api.model.DownloadRequest;
-import org.cancogenvirusseq.seqdata.api.model.SubmitResponse;
+import org.cancogenvirusseq.seqdata.api.model.SubmissionCreateResponse;
+import org.cancogenvirusseq.seqdata.api.model.SubmissionListResponse;
 import org.cancogenvirusseq.seqdata.api.model.UploadListResponse;
-import org.cancogenvirusseq.seqdata.service.DownloadService;
-import org.cancogenvirusseq.seqdata.service.SubmitService;
-import org.cancogenvirusseq.seqdata.service.UploadService;
+import org.cancogenvirusseq.seqdata.service.DownloadsService;
+import org.cancogenvirusseq.seqdata.service.SubmissionsService;
+import org.cancogenvirusseq.seqdata.service.UploadsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
@@ -40,43 +41,40 @@ import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 import java.nio.ByteBuffer;
+import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Controller
 @RequiredArgsConstructor
 public class ApiController implements ApiDefinition {
 
-  private final SubmitService submitService;
-  private final UploadService uploadService;
-  private final DownloadService downloadService;
+  private final SubmissionsService submissionsService;
+  private final UploadsService uploadsService;
+  private final DownloadsService downloadsService;
 
-  @PostMapping("/submit")
-  public Mono<ResponseEntity<SubmitResponse>> submit(
+  @GetMapping("/submissions")
+  public Mono<ResponseEntity<SubmissionListResponse>> getSubmissions(Integer pageSize, Integer pageToken) {
+    val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    return submissionsService.getSubmissions(user.getUsername(), pageSize, pageToken).map(this::respondOk);
+  }
+
+  @PostMapping("/submissions")
+  public Mono<ResponseEntity<SubmissionCreateResponse>> submit(
       @RequestPart("files") Flux<FilePart> fileParts) {
-    return submitService.submit(fileParts).map(this::respondOk);
+    return submissionsService.submit(fileParts).map(this::respondOk);
   }
 
   @GetMapping("/uploads")
-  public Mono<ResponseEntity<UploadListResponse>> getUploads(Integer pageSize, Integer pageToken) {
+  public Mono<ResponseEntity<UploadListResponse>> getUploads(Integer pageSize, Integer pageToken, UUID submissionId) {
     val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    return uploadService.getUploads(user.getUsername(), pageSize, pageToken).map(this::respondOk);
-  }
-
-  @GetMapping("/uploads/{submitSetId}")
-  public Mono<ResponseEntity<UploadListResponse>> getUploadsForSubmitSetId(
-      @NonNull @PathVariable("submitSetId") String submitSetId,
-      Integer pageSize,
-      Integer pageToken) {
-    val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    return uploadService
-        .getUploadsForSubmitSetId(submitSetId, user.getUsername(), pageSize, pageToken)
-        .map(this::respondOk);
+    return uploadsService.getUploads(user.getUsername(), pageSize, pageToken, Optional.ofNullable(submissionId)).map(this::respondOk);
   }
 
   @PostMapping("/download")
   public Mono<ResponseEntity<Flux<ByteBuffer>>> download(
       @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
-    return downloadService.download(downloadRequest).map(this::respondOk);
+    return downloadsService.download(downloadRequest).map(this::respondOk);
   }
 
   private <T> ResponseEntity<T> respondOk(T response) {
