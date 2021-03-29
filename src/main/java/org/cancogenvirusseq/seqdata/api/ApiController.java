@@ -18,6 +18,10 @@
 
 package org.cancogenvirusseq.seqdata.api;
 
+import java.nio.ByteBuffer;
+import java.util.Optional;
+import java.util.UUID;
+import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,11 +43,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.validation.Valid;
-import java.nio.ByteBuffer;
-import java.util.Optional;
-import java.util.UUID;
-
 @Slf4j
 @Controller
 @RequiredArgsConstructor
@@ -54,9 +53,12 @@ public class ApiController implements ApiDefinition {
   private final DownloadsService downloadsService;
 
   @GetMapping("/submissions")
-  public Mono<ResponseEntity<SubmissionListResponse>> getSubmissions(Integer pageSize, Integer pageToken) {
+  public Mono<ResponseEntity<SubmissionListResponse>> getSubmissions(
+      Integer pageSize, Integer pageToken) {
     val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    return submissionsService.getSubmissions(user.getUsername(), pageSize, pageToken).map(this::respondOk);
+    return submissionsService
+        .getSubmissions(user.getUsername(), pageSize, pageToken)
+        .map(this::respondOk);
   }
 
   @PostMapping("/submissions")
@@ -66,9 +68,12 @@ public class ApiController implements ApiDefinition {
   }
 
   @GetMapping("/uploads")
-  public Mono<ResponseEntity<UploadListResponse>> getUploads(Integer pageSize, Integer pageToken, UUID submissionId) {
+  public Mono<ResponseEntity<UploadListResponse>> getUploads(
+      Integer pageSize, Integer pageToken, UUID submissionId) {
     val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    return uploadsService.getUploads(user.getUsername(), pageSize, pageToken, Optional.ofNullable(submissionId)).map(this::respondOk);
+    return uploadsService
+        .getUploads(user.getUsername(), pageSize, pageToken, Optional.ofNullable(submissionId))
+        .map(this::respondOk);
   }
 
   @PostMapping("/download")

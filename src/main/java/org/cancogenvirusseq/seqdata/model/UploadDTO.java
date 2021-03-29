@@ -18,10 +18,9 @@
 
 package org.cancogenvirusseq.seqdata.model;
 
-import lombok.*;
-
 import java.util.List;
 import java.util.UUID;
+import lombok.*;
 
 @Data
 @Builder

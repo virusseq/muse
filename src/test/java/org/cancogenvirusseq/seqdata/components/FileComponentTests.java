@@ -46,7 +46,8 @@ public class FileComponentTests {
   void testWriteToFileAndMeta() {
     val fastaFile = ">ABCD/sam1/ddd/erd \n" + "CTGA \n" + ">EFG/sam2/ddd/erd \n" + "ATGC";
 
-    val fileMetaToSampleIdMap = processFileStrContent(UUID.randomUUID().toString(), fastaFile);
+    val fileMetaToSampleIdMap =
+        processFileStrContent("tmp-" + UUID.randomUUID().toString(), fastaFile);
 
     assertEquals(sampleIdToFileMeta, fileMetaToSampleIdMap);
   }

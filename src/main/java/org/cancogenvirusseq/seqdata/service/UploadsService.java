@@ -18,17 +18,17 @@
 
 package org.cancogenvirusseq.seqdata.service;
 
+import java.util.Collections;
+import java.util.Optional;
+import java.util.UUID;
 import org.cancogenvirusseq.seqdata.api.model.UploadListResponse;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.util.Collections;
-import java.util.Optional;
-import java.util.UUID;
-
 @Service
 public class UploadsService {
-  public Mono<UploadListResponse> getUploads(String userId, Integer pageSize, Integer pageToken, Optional<UUID> submissionId) {
+  public Mono<UploadListResponse> getUploads(
+      String userId, Integer pageSize, Integer pageToken, Optional<UUID> submissionId) {
     return Mono.just(new UploadListResponse(Collections.emptyList()));
   }
 }

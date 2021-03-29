@@ -18,12 +18,11 @@
 
 package org.cancogenvirusseq.seqdata.service;
 
+import java.nio.ByteBuffer;
 import org.cancogenvirusseq.seqdata.api.model.DownloadRequest;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.nio.ByteBuffer;
 
 @Service
 public class DownloadsService {

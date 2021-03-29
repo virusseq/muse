@@ -18,6 +18,9 @@
 
 package org.cancogenvirusseq.seqdata.service;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.seqdata.api.model.SubmissionCreateResponse;
@@ -27,10 +30,6 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
