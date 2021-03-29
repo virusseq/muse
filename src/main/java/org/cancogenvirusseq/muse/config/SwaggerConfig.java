@@ -62,7 +62,7 @@ public class SwaggerConfig {
         .securityContexts(securityContexts())
         .securitySchemes(securitySchemes())
         .select()
-        .apis(RequestHandlerSelectors.basePackage("org.cancogenvirusseq.seqdata.api"))
+        .apis(RequestHandlerSelectors.basePackage("org.cancogenvirusseq.muse.api"))
         .build()
         .host(properties.host)
         .pathProvider(

@@ -18,15 +18,12 @@
 
 package org.cancogenvirusseq.muse;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 
-@EnableSwagger2
-@SpringBootApplication
-public class SeqDataApplication {
+@SpringBootTest
+class MuseTests {
 
-  public static void main(String[] args) {
-    SpringApplication.run(SeqDataApplication.class, args);
-  }
+  @Test
+  void contextLoads() {}
 }

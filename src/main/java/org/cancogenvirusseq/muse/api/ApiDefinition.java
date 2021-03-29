@@ -31,7 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@Api(value = "CanCoGenVirusSeq Data API", tags = "CanCoGen Virus Seq Data API")
+@Api(value = "Molecular Upload Submission sErvice (Muse)", tags = "Muse")
 public interface ApiDefinition {
   String BAD_REQUEST = "The request is malformed.";
   String UNAUTHORIZED_MSG = "Request requires authorization.";
@@ -42,7 +42,7 @@ public interface ApiDefinition {
       value = "Get All Submissions",
       nickname = "Get Submissions",
       response = SubmissionListResponse.class,
-      tags = "CanCoGen Virus Seq Data API")
+      tags = "Muse")
   @ApiResponses(
       value = {
         @ApiResponse(code = 200, message = "", response = SubmissionListResponse.class),
@@ -76,7 +76,7 @@ public interface ApiDefinition {
       value = "Submit a file pair of .tsv and .fasta to process",
       nickname = "Submit",
       response = SubmissionCreateResponse.class,
-      tags = "CanCoGen Virus Seq Data API")
+      tags = "Muse")
   @ApiResponses(
       value = {
         @ApiResponse(code = 200, message = "", response = SubmissionCreateResponse.class),
@@ -102,7 +102,7 @@ public interface ApiDefinition {
       value = "Get All Uploads",
       nickname = "Get Uploads",
       response = UploadListResponse.class,
-      tags = "CanCoGen Virus Seq Data API")
+      tags = "Muse")
   @ApiResponses(
       value = {
         @ApiResponse(code = 200, message = "", response = UploadListResponse.class),
@@ -139,10 +139,10 @@ public interface ApiDefinition {
           UUID submissionId);
 
   @ApiOperation(
-      value = "Download Virus Seq Data as a single .fasta file",
+      value = "Download molecular data as a single .fasta file",
       nickname = "Download",
       response = MultipartFile.class,
-      tags = "CanCoGen Virus Seq Data API")
+      tags = "Muse")
   @ApiResponses(
       value = {
         @ApiResponse(code = 200, message = "", response = MultipartFile.class),
