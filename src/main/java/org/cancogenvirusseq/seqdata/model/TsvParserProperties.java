@@ -5,6 +5,6 @@ import lombok.Value;
 
 @Value
 public class TsvParserProperties {
-    ImmutableList<TsvFieldSchema> fieldSchemas;
-    String payloadJsonTemplate;
+  ImmutableList<TsvFieldSchema> fieldSchemas;
+  String payloadJsonTemplate;
 }

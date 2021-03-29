@@ -18,7 +18,7 @@
             "gender": "$gender"
         },
         "host": {
-            "host_age": 21
+            "host_age": $age
         }
     }]
 }

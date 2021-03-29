@@ -1,53 +1,27 @@
 [
-  { "name": "studyId", "valueType": "string", "analysisPath": "studyId" },
+  { "name": "studyId", "valueType": "string" },
   {
     "name": "name",
-    "valueType": "string",
-    "analysisPath": "analysisType.name"
+    "valueType": "string"
   },
   {
     "name": "submitterSampleId",
-    "valueType": "string",
-    "analysisPath": "samples.0.submitterSampleId"
-  },
-  {
-    "name": "matchedNormalSubmitterSampleId",
-    "valueType": "string",
-    "analysisPath": "samples.0.matchedNormalSubmitterSampleId"
-  },
-  {
-    "name": "sampleType",
-    "valueType": "string",
-    "analysisPath": "samples.0.sampleType"
+    "valueType": "string"
   },
   {
     "name": "submitterSpecimenId",
-    "valueType": "string",
-    "analysisPath": "samples.0.specimen.submitterSpecimenId"
-  },
-  {
-    "name": "tumourNormalDesignation",
-    "valueType": "string",
-    "analysisPath": "samples.0.specimen.tumourNormalDesignation"
-  },
-  {
-    "name": "specimenTissueSource",
-    "valueType": "string",
-    "analysisPath": "samples.0.specimen.specimenTissueSource"
-  },
-  {
-    "name": "specimenType",
-    "valueType": "string",
-    "analysisPath": "samples.0.specimen.specimenType"
+    "valueType": "string"
   },
   {
     "name": "gender",
-    "valueType": "string",
-    "analysisPath": "samples.0.donor.gender"
+    "valueType": "string"
   },
   {
     "name": "submitterDonorId",
-    "valueType": "string",
-    "analysisPath": "samples.0.donor.submitterDonorId"
+    "valueType": "string"
+  },
+  {
+    "name": "age",
+    "valueType": "number"
   }
 ]

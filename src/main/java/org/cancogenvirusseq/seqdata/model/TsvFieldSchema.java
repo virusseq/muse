@@ -9,5 +9,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TsvFieldSchema {
   String name;
-  String valueType;
+  ValueType valueType;
+
+  public enum ValueType {
+    string,
+    number
+  }
 }

@@ -3,26 +3,20 @@ package org.cancogenvirusseq.seqdata.components;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.hash.HashCode;
-import com.google.common.hash.Hashing;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.val;
 import org.cancogenvirusseq.seqdata.model.FileMeta;
+import reactor.core.publisher.Flux;
 
 @RequiredArgsConstructor
-public class FilePayloadMapper {
+public class FilePayloadMapper implements Function<Flux<ObjectNode>, Flux<ObjectNode>> {
   final ConcurrentHashMap<String, FileMeta> repo;
 
-
-  public List<ObjectNode> apply(List<ObjectNode> partialPayloadFlux) {
-    return partialPayloadFlux.stream()
+  public Flux<ObjectNode> apply(Flux<ObjectNode> partialPayloadFlux) {
+    return partialPayloadFlux
         .map(
             partialPayload -> {
               val sampleId = partialPayload.get("samples").get(0).get("submitterSampleId").asText();
@@ -36,14 +30,7 @@ public class FilePayloadMapper {
               partialPayload.set("files", filesNode);
               return partialPayload;
             })
-        .filter(Objects::nonNull)
-        .collect(Collectors.toUnmodifiableList());
-  }
-
-  @SneakyThrows
-  public static HashCode md5(String input) {
-    val hashFunction = Hashing.md5();
-    return hashFunction.hashString(input, StandardCharsets.UTF_8);
+        .filter(Objects::nonNull);
   }
 
   private static JsonNode createFilesObject(FileMeta fileMeta) {
