@@ -71,7 +71,7 @@ spec:
             }
             steps {
                 container('docker') {
-                    withCredentials([usernamePassword(credentialsId:'cancogenContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId: 'cancogenContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                         sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
                     }
 
@@ -107,10 +107,10 @@ spec:
                 container('docker') {
                     withCredentials([usernamePassword(credentialsId: 'cancogenGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh "git tag ${version}"
-                      sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${gitHubRepo} --tags"
+                        sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${gitHubRepo} --tags"
                     }
 
-                    withCredentials([usernamePassword(credentialsId:'cancogenContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId: 'cancogenContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                         sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
                     }
 
