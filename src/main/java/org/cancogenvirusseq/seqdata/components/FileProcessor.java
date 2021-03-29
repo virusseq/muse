@@ -27,6 +27,7 @@ public class FileProcessor {
 
               // TODO - strings are immutable and this will duplicating fc, not append!
               val fBadFix = ">" + fc;
+
               val fileName = sampleId + FASTA_FILE_EXTENSION;
 
               try {

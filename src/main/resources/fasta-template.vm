@@ -1,0 +1,24 @@
+{
+    "analysisType": {
+        "name": "$name"
+    },
+    "studyId": "$studyId",
+    "samples": [{
+        "submitterSampleId": "$submitterSampleId",
+        "matchedNormalSubmitterSampleId": null,
+        "sampleType": "Total DNA",
+        "specimen": {
+            "submitterSpecimenId": "$submitterSpecimenId",
+            "tumourNormalDesignation": "Normal",
+            "specimenTissueSource": "Other",
+            "specimenType": "Normal"
+        },
+        "donor": {
+            "submitterDonorId": "$submitterDonorId",
+            "gender": "$gender"
+        },
+        "host": {
+            "host_age": 21
+        }
+    }]
+}
