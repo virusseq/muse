@@ -16,17 +16,20 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.seqdata;
+package org.cancogenvirusseq.seqdata.model;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import lombok.*;
 
-@EnableSwagger2
-@SpringBootApplication
-public class SeqDataApplication {
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
-  public static void main(String[] args) {
-    SpringApplication.run(SeqDataApplication.class, args);
-  }
+@Data
+@Builder
+@AllArgsConstructor
+public class SubmissionDTO {
+    @NonNull UUID submissionId;
+    @NonNull UUID userId;
+    @NonNull LocalDateTime createdAt; // todo: do we want OffsetDateTime?
+    @NonNull List<String> originalFileNames;
 }
