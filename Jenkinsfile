@@ -1,5 +1,5 @@
-def dockerRepo = "ghcr.io/cancogen-virus-seq/seq-data"
-def gitHubRepo = "cancogen-virus-seq/seq-data"
+def dockerRepo = "ghcr.io/cancogen-virus-seq/muse"
+def gitHubRepo = "cancogen-virus-seq/muse"
 def chartVersion = "0.1.0"
 def commit = "UNKNOWN"
 def version = "UNKNOWN"
@@ -7,7 +7,7 @@ def version = "UNKNOWN"
 pipeline {
     agent {
         kubernetes {
-            label 'seq-data'
+            label 'muse'
             yaml """
 apiVersion: v1
 kind: Pod
@@ -91,8 +91,8 @@ spec:
 //            steps {
 //                build(job: "/provision/helm", parameters: [
 //                    [$class: 'StringParameterValue', name: 'AP_RDPC_ENV', value: 'dev' ],
-//                    [$class: 'StringParameterValue', name: 'AP_CHART_NAME', value: 'seq-data'],
-//                    [$class: 'StringParameterValue', name: 'AP_RELEASE_NAME', value: 'seq-data'],
+//                    [$class: 'StringParameterValue', name: 'AP_CHART_NAME', value: 'muse'],
+//                    [$class: 'StringParameterValue', name: 'AP_RELEASE_NAME', value: 'muse'],
 //                    [$class: 'StringParameterValue', name: 'AP_HELM_CHART_VERSION', value: "${chartVersion}"],
 //                    [$class: 'StringParameterValue', name: 'AP_ARGS_LINE', value: "--set-string image.tag=${version}-${commit}" ]
 //                ])
@@ -130,8 +130,8 @@ spec:
 //            steps {
 //                build(job: "/provision/helm", parameters: [
 //                    [$class: 'StringParameterValue', name: 'AP_RDPC_ENV', value: 'qa' ],
-//                    [$class: 'StringParameterValue', name: 'AP_CHART_NAME', value: 'seq-data'],
-//                    [$class: 'StringParameterValue', name: 'AP_RELEASE_NAME', value: 'seq-data'],
+//                    [$class: 'StringParameterValue', name: 'AP_CHART_NAME', value: 'muse'],
+//                    [$class: 'StringParameterValue', name: 'AP_RELEASE_NAME', value: 'muse'],
 //                    [$class: 'StringParameterValue', name: 'AP_HELM_CHART_VERSION', value: "${chartVersion}"],
 //                    [$class: 'StringParameterValue', name: 'AP_ARGS_LINE', value: "--set-string image.tag=${version}" ]
 //                ])

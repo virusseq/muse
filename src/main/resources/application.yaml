@@ -1,8 +1,8 @@
 spring:
   application:
-    name: "CanCoGen Virus Seq Data"
+    name: "Muse"
     version: @project.version@
-    description: "CanCoGen Virus Seq Data API and Processor"
+    description: "Molecular Upload Submission sErvice"
 
 server:
   port: 8080
