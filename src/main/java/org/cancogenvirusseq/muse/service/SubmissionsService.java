@@ -67,6 +67,7 @@ public class SubmissionsService {
   }
 
   private Flux<FilePart> validateSubmission(Flux<FilePart> fileParts) {
+      // Validate file bundles for exactly one .tsv and one or more .fasta files
 //    fileParts.collect(
 //        groupingBy(
 //            part ->
@@ -74,6 +75,16 @@ public class SubmissionsService {
 //                    .filter(f -> f.contains("."))
 //                    .map(f -> f.substring(part.filename().lastIndexOf(".") + 1))
 //                    .orElse("invalid")));
+
+    // generate a submissionId
+
+    // parse the .tsv into records, on error throw, write as jsonp to "tmp/${submissionId}/records.jsonp"
+
+    // process the fasta files, write sequence files to tmp dir and also write fastaFileMeta to "tmp/${submissionId}/fastaFileMeta.json"
+
+    // emit the SubmissionEvent to sink
+
+    // send response
 
     return fileParts
         .filter(
