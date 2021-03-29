@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>org.cancogen-virus-seq</groupId>
-    <artifactId>seq-data</artifactId>
+    <artifactId>muse</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>seq-data</name>
+    <name>muse</name>
     <description>Service to submit, validate, and download virus-seq data</description>
     <properties>
         <java.version>11</java.version>
