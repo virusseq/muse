@@ -94,7 +94,7 @@ public interface ApiDefinition {
       // https://github.com/springfox/springfox/issues/3464
       @ApiParam(
               value =
-                  "REQUIRED: Files to upload, must contain matching pairs of .tsv and .fasta by filename, ex. exampleFileName-someDate.tsv and exampleFileName-someDate.fasta")
+                  "REQUIRED: Files to upload, must contain exactly one .tsv and one or more .fasta files, ex. example.tsv, example-data-1.fasta, example-data-2.fasta")
           @RequestPart("files")
           Flux<FilePart> fileParts);
 

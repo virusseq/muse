@@ -25,15 +25,20 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.api.model.SubmissionListResponse;
+import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 @Service
 @Slf4j
 public class SubmissionsService {
+  public Sinks.Many<SubmissionEvent> submissionsSink =
+      Sinks.many().unicast().onBackpressureBuffer();
+
   public Mono<SubmissionListResponse> getSubmissions(
       String userId, Integer pageSize, Integer pageToken) {
     return Mono.just(new SubmissionListResponse(Collections.emptyList()));
@@ -41,13 +46,7 @@ public class SubmissionsService {
 
   public Mono<SubmissionCreateResponse> submit(Flux<FilePart> fileParts) {
     return fileParts
-        .filter(
-            filePart ->
-                filePart.filename().endsWith(".fasta") || filePart.filename().endsWith(".tsv"))
-        .doOnDiscard(
-            FilePart.class,
-            discarded ->
-                log.info("The file: {}, must be of type '.tsv' or '.fasta'", discarded.filename()))
+        .transform(this::validateSubmission)
         .flatMap(
             filePart ->
                 filePart
@@ -65,5 +64,24 @@ public class SubmissionsService {
             fileContents ->
                 new SubmissionCreateResponse(
                     fileContents.isEmpty() ? "no file processed" : fileContents.get(0)));
+  }
+
+  private Flux<FilePart> validateSubmission(Flux<FilePart> fileParts) {
+//    fileParts.collect(
+//        groupingBy(
+//            part ->
+//                Optional.ofNullable(part.filename())
+//                    .filter(f -> f.contains("."))
+//                    .map(f -> f.substring(part.filename().lastIndexOf(".") + 1))
+//                    .orElse("invalid")));
+
+    return fileParts
+        .filter(
+            filePart ->
+                filePart.filename().endsWith(".fasta") || filePart.filename().endsWith(".tsv"))
+        .doOnDiscard(
+            FilePart.class,
+            discarded ->
+                log.info("The file: {}, must be of type '.tsv' or '.fasta'", discarded.filename()));
   }
 }

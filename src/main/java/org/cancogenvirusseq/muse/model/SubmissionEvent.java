@@ -16,14 +16,20 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse;
+package org.cancogenvirusseq.muse.model;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import java.util.List;
+import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
 
-@SpringBootTest
-class MuseTests {
-
-  @Test
-  void contextLoads() {}
+@Data
+@Builder
+@AllArgsConstructor
+public class SubmissionEvent {
+  @NonNull private String submissionId;
+  @NonNull private List<Map<String, String>> records;
+  @NonNull private Map<String, FileMeta> fastaFileMeta;
 }
