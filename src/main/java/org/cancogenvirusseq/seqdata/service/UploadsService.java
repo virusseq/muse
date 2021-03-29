@@ -16,18 +16,19 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.seqdata;
+package org.cancogenvirusseq.seqdata.service;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import org.cancogenvirusseq.seqdata.api.model.UploadListResponse;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
-@EnableSwagger2
-@SpringBootApplication
-public class SeqDataApplication {
+import java.util.Collections;
+import java.util.Optional;
+import java.util.UUID;
 
-	public static void main(String[] args) {
-		SpringApplication.run(SeqDataApplication.class, args);
-	}
-
+@Service
+public class UploadsService {
+  public Mono<UploadListResponse> getUploads(String userId, Integer pageSize, Integer pageToken, Optional<UUID> submissionId) {
+    return Mono.just(new UploadListResponse(Collections.emptyList()));
+  }
 }

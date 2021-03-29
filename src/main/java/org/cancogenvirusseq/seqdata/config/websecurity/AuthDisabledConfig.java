@@ -16,18 +16,20 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.seqdata;
+package org.cancogenvirusseq.seqdata.config.websecurity;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.web.server.SecurityWebFilterChain;
 
-@EnableSwagger2
-@SpringBootApplication
-public class SeqDataApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(SeqDataApplication.class, args);
-	}
-
+@EnableWebFluxSecurity
+@Profile("!secure")
+public class AuthDisabledConfig {
+  @Bean
+  public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
+    http.csrf().disable().authorizeExchange().pathMatchers("/**").permitAll();
+    return http.build();
+  }
 }

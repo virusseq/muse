@@ -16,18 +16,21 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.seqdata;
+package org.cancogenvirusseq.seqdata.api.model;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import io.swagger.annotations.ApiModel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
+import org.cancogenvirusseq.seqdata.model.SubmissionDTO;
 
-@EnableSwagger2
-@SpringBootApplication
-public class SeqDataApplication {
+import java.util.List;
 
-	public static void main(String[] args) {
-		SpringApplication.run(SeqDataApplication.class, args);
-	}
-
+@Data
+@Builder
+@AllArgsConstructor
+@ApiModel(description = "A list of submissions")
+public class SubmissionListResponse {
+  @NonNull List<SubmissionDTO> submissions;
 }

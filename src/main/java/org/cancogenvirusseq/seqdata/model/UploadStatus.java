@@ -16,18 +16,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.seqdata;
+package org.cancogenvirusseq.seqdata.model;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import lombok.RequiredArgsConstructor;
 
-@EnableSwagger2
-@SpringBootApplication
-public class SeqDataApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(SeqDataApplication.class, args);
-	}
-
+@RequiredArgsConstructor
+public enum UploadStatus {
+  SUBMITTED,
+  PROCESSING,
+  ERROR,
+  COMPLETE;
 }
