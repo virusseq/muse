@@ -1,0 +1,27 @@
+[
+  { "name": "studyId", "valueType": "string" },
+  {
+    "name": "name",
+    "valueType": "string"
+  },
+  {
+    "name": "submitterSampleId",
+    "valueType": "string"
+  },
+  {
+    "name": "submitterSpecimenId",
+    "valueType": "string"
+  },
+  {
+    "name": "gender",
+    "valueType": "string"
+  },
+  {
+    "name": "submitterDonorId",
+    "valueType": "string"
+  },
+  {
+    "name": "age",
+    "valueType": "number"
+  }
+]
