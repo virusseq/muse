@@ -18,10 +18,14 @@
 
 package org.cancogenvirusseq.muse.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import lombok.*;
 
 @Data
 @Builder
@@ -31,4 +35,5 @@ public class SubmissionDTO {
   @NonNull UUID userId;
   @NonNull LocalDateTime createdAt; // todo: do we want OffsetDateTime?
   @NonNull List<String> originalFileNames;
+  @NonNull Integer totalRecords;
 }
