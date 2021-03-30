@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.api.model.SubmissionListResponse;
+import org.cancogenvirusseq.muse.components.TsvParser;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
@@ -31,10 +32,9 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static java.util.stream.Collectors.groupingByConcurrent;
 
@@ -50,9 +50,6 @@ public class SubmissionsService {
   }
 
   public Mono<SubmissionCreateResponse> submit(Flux<FilePart> fileParts) {
-    // generate a submissionId
-    val submissionId = UUID.randomUUID();
-
     // parse the .tsv into records, on error throw, write as jsonp to
     // "tmp/${submissionId}/records.jsonp"
 
@@ -63,25 +60,47 @@ public class SubmissionsService {
 
     // send response
 
-    return fileParts
-        .transform(this::validateSubmission)
+    return validateAndSplitSubmission(fileParts)
         .flatMap(
-            filePart ->
-                filePart
-                    .content()
-                    .map(
-                        dataBuffer -> {
-                          val bytes = new byte[dataBuffer.readableByteCount()];
-                          dataBuffer.read(bytes);
-                          DataBufferUtils.release(dataBuffer);
+            filePartsMap -> {
+              val submissionEvent =
+                  SubmissionEvent.builder()
+                      .submissionId(UUID.randomUUID())
+                      .submissionFileMap(new ConcurrentHashMap<>())
+                      .records(new ArrayList<>())
+                      .build();
 
-                          return new String(bytes, StandardCharsets.UTF_8);
-                        }))
-        .collect(Collectors.toList())
-        .map(fileContents -> new SubmissionCreateResponse(submissionId.toString()));
+              return filePartsMap
+                  .get("tsv")
+                  .get(0)
+                  .content()
+                  .map(
+                      dataBuffer -> {
+                        val bytes = new byte[dataBuffer.readableByteCount()];
+                        dataBuffer.read(bytes);
+                        DataBufferUtils.release(dataBuffer);
+
+                        return new String(bytes, StandardCharsets.UTF_8);
+                      })
+                  .reduce(String::concat)
+                  .flatMapMany(TsvParser::parseTsvStrToFlatRecords)
+                  .map(record -> submissionEvent.getRecords().add(record))
+                  .then(Mono.just(submissionEvent));
+            })
+        .map(
+            submissionEvent ->
+                new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()));
   }
 
-  private Flux<FilePart> validateSubmission(Flux<FilePart> fileParts) {
+  /**
+   * Splits the files into groups by filetype (extension in filename), verifies that there is
+   * exactly one .tsv and 'one or more' .fasta files. Returns a flux containing the file split map
+   *
+   * @param fileParts input flux of file parts
+   * @return a map containing files grouped by type that meet the validation requirements
+   */
+  private Mono<ConcurrentMap<String, List<FilePart>>> validateAndSplitSubmission(
+      Flux<FilePart> fileParts) {
     return fileParts
         .collect(
             groupingByConcurrent(
@@ -95,13 +114,12 @@ public class SubmissionsService {
               // validate that we have exactly one .tsv and one or more fasta files
               if (fileTypeMap.getOrDefault("tsv", Collections.emptyList()).size() == 1
                   && fileTypeMap.getOrDefault("fasta", Collections.emptyList()).size() >= 1) {
-                sink.next(true);
+                sink.next(fileTypeMap);
               } else {
                 sink.error(
                     new IllegalArgumentException(
                         "Submission must contain exactly one .tsv file and one or more .fasta files"));
               }
-            })
-        .thenMany(fileParts);
+            });
   }
 }

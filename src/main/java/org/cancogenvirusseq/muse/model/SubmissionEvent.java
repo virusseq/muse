@@ -18,18 +18,21 @@
 
 package org.cancogenvirusseq.muse.model;
 
-import java.util.List;
-import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 @Data
 @Builder
 @AllArgsConstructor
 public class SubmissionEvent {
-  @NonNull private String submissionId;
+  @NonNull private UUID submissionId;
   @NonNull private List<Map<String, String>> records;
-  @NonNull private Map<String, SubmissionFile> submissionFileMap;
+  @NonNull private ConcurrentHashMap<String, SubmissionFile> submissionFileMap;
 }

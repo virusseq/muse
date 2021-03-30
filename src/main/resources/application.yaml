@@ -4,6 +4,11 @@ spring:
     version: @project.version@
     description: "Molecular Upload Submission sErvice"
 
+logging:
+  level:
+    reactor.core: debug
+    org.springframework: debug
+
 server:
   port: 8080
 ---
