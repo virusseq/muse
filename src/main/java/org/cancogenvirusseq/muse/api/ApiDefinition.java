@@ -73,7 +73,7 @@ public interface ApiDefinition {
           Integer pageToken);
 
   @ApiOperation(
-      value = "Submit a file pair of .tsv and .fasta to process",
+      value = "Submit a bundle of .tsv and .fasta files to process (exactly one .tsv and one or more fasta files)",
       nickname = "Submit",
       response = SubmissionCreateResponse.class,
       tags = "Muse")
