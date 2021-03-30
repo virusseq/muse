@@ -8,12 +8,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
-import org.cancogenvirusseq.muse.model.FileMeta;
+import org.cancogenvirusseq.muse.model.SubmissionFile;
 import reactor.core.publisher.Flux;
 
 @RequiredArgsConstructor
 public class FilePayloadMapper implements Function<Flux<ObjectNode>, Flux<ObjectNode>> {
-  final ConcurrentHashMap<String, FileMeta> repo;
+  final ConcurrentHashMap<String, SubmissionFile> repo;
 
   public Flux<ObjectNode> apply(Flux<ObjectNode> partialPayloadFlux) {
     return partialPayloadFlux
@@ -33,17 +33,17 @@ public class FilePayloadMapper implements Function<Flux<ObjectNode>, Flux<Object
         .filter(Objects::nonNull);
   }
 
-  private static JsonNode createFilesObject(FileMeta fileMeta) {
+  private static JsonNode createFilesObject(SubmissionFile submissionFile) {
     val filesArray = JsonNodeFactory.instance.arrayNode(1);
     val fileObj = JsonNodeFactory.instance.objectNode();
 
-    fileObj.put("fileName", fileMeta.getFileName());
-    fileObj.put("fileSize", fileMeta.getFileSize());
-    fileObj.put("fileMd5sum", fileMeta.getFileMd5sum());
-    fileObj.put("fileAccess", fileMeta.getFileAccess());
-    fileObj.put("fileType", fileMeta.getFileType());
-    fileObj.put("dataType", fileMeta.getDataType());
-    fileObj.with("info").put("data_category", fileMeta.getDataCategory());
+    fileObj.put("fileName", submissionFile.getFileName());
+    fileObj.put("fileSize", submissionFile.getFileSize());
+    fileObj.put("fileMd5sum", submissionFile.getFileMd5sum());
+    fileObj.put("fileAccess", submissionFile.getFileAccess());
+    fileObj.put("fileType", submissionFile.getFileType());
+    fileObj.put("dataType", submissionFile.getDataType());
+    fileObj.with("info").put("data_category", submissionFile.getDataCategory());
 
     filesArray.insert(0, fileObj);
     return filesArray;

@@ -10,7 +10,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.SneakyThrows;
 import lombok.val;
-import org.cancogenvirusseq.muse.model.FileMeta;
+import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
@@ -19,8 +19,8 @@ public class FileComponentTests {
   String sampleId1 = "sam1";
   String sampleId2 = "sam2";
 
-  FileMeta file1Meta =
-      FileMeta.builder()
+  SubmissionFile file1Meta =
+      SubmissionFile.builder()
           .fileMd5sum("f433d470a7bacc3bdcdafeb1a4b4d758")
           .fileName(sampleId1 + FASTA_FILE_EXTENSION)
           .fileSize(26)
@@ -29,8 +29,8 @@ public class FileComponentTests {
           .dataType(FASTA_TYPE)
           .build();
 
-  FileMeta file2Meta =
-      FileMeta.builder()
+  SubmissionFile file2Meta =
+      SubmissionFile.builder()
           .fileMd5sum("eecf3de7e1136d99fffdd781d76bc81a")
           .fileName(sampleId2 + FASTA_FILE_EXTENSION)
           .fileSize(23)
@@ -39,7 +39,7 @@ public class FileComponentTests {
           .dataType(FASTA_TYPE)
           .build();
 
-  ConcurrentHashMap<String, FileMeta> sampleIdToFileMeta =
+  ConcurrentHashMap<String, SubmissionFile> sampleIdToFileMeta =
       new ConcurrentHashMap<>(Map.of(sampleId1, file1Meta, sampleId2, file2Meta));
 
   @Test

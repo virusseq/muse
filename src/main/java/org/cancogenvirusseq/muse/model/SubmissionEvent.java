@@ -31,5 +31,5 @@ import lombok.NonNull;
 public class SubmissionEvent {
   @NonNull private String submissionId;
   @NonNull private List<Map<String, String>> records;
-  @NonNull private Map<String, FileMeta> fastaFileMeta;
+  @NonNull private Map<String, SubmissionFile> submissionFileMap;
 }

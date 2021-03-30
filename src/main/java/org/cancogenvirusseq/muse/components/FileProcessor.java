@@ -10,13 +10,13 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.SneakyThrows;
 import lombok.val;
-import org.cancogenvirusseq.muse.model.FileMeta;
+import org.cancogenvirusseq.muse.model.SubmissionFile;
 
 public class FileProcessor {
   public static final String FASTA_TYPE = "FASTA";
   public static final String FASTA_FILE_EXTENSION = ".v0.fasta";
 
-  public static ConcurrentHashMap<String, FileMeta> processFileStrContent(
+  public static ConcurrentHashMap<String, SubmissionFile> processFileStrContent(
       String dir, String fileStrContent) {
     File file = new File(dir);
     boolean dirCreated = file.mkdir();
@@ -24,7 +24,7 @@ public class FileProcessor {
       throw new Error("Failed to create dir!");
     }
 
-    final ConcurrentHashMap<String, FileMeta> repo = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<String, SubmissionFile> repo = new ConcurrentHashMap<>();
 
     Arrays.stream(fileStrContent.split("(?=>)"))
         .parallel()
@@ -49,7 +49,7 @@ public class FileProcessor {
               }
 
               val fileMeta =
-                  FileMeta.builder()
+                  SubmissionFile.builder()
                       .fileMd5sum(md5(fc).toString())
                       .fileName(fileName)
                       .fileSize(fc.length())

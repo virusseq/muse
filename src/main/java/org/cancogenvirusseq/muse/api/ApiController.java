@@ -18,18 +18,11 @@
 
 package org.cancogenvirusseq.muse.api;
 
-import java.nio.ByteBuffer;
-import java.util.Optional;
-import java.util.UUID;
-import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.cancogenvirusseq.muse.api.model.DownloadRequest;
-import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
-import org.cancogenvirusseq.muse.api.model.SubmissionListResponse;
-import org.cancogenvirusseq.muse.api.model.UploadListResponse;
+import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionsService;
 import org.cancogenvirusseq.muse.service.UploadsService;
@@ -42,6 +35,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import javax.validation.Valid;
+import java.nio.ByteBuffer;
+import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Controller
@@ -80,6 +78,16 @@ public class ApiController implements ApiDefinition {
   public Mono<ResponseEntity<Flux<ByteBuffer>>> download(
       @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
     return downloadsService.download(downloadRequest).map(this::respondOk);
+  }
+
+  @ExceptionHandler
+  public ResponseEntity<ErrorResponse> handle(Throwable ex) {
+    if (ex instanceof IllegalArgumentException) {
+      return ErrorResponse.errorResponseEntity(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage());
+    } else {
+      return ErrorResponse.errorResponseEntity(
+          HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage());
+    }
   }
 
   private <T> ResponseEntity<T> respondOk(T response) {

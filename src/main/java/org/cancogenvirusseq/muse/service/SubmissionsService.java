@@ -18,9 +18,6 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
@@ -32,6 +29,14 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingByConcurrent;
 
 @Service
 @Slf4j
@@ -45,6 +50,19 @@ public class SubmissionsService {
   }
 
   public Mono<SubmissionCreateResponse> submit(Flux<FilePart> fileParts) {
+    // generate a submissionId
+    val submissionId = UUID.randomUUID();
+
+    // parse the .tsv into records, on error throw, write as jsonp to
+    // "tmp/${submissionId}/records.jsonp"
+
+    // process the fasta files, write sequence files to tmp dir and also write fastaFileMeta to
+    // "tmp/${submissionId}/fastaFileMeta.json"
+
+    // emit the SubmissionEvent to sink
+
+    // send response
+
     return fileParts
         .transform(this::validateSubmission)
         .flatMap(
@@ -60,39 +78,30 @@ public class SubmissionsService {
                           return new String(bytes, StandardCharsets.UTF_8);
                         }))
         .collect(Collectors.toList())
-        .map(
-            fileContents ->
-                new SubmissionCreateResponse(
-                    fileContents.isEmpty() ? "no file processed" : fileContents.get(0)));
+        .map(fileContents -> new SubmissionCreateResponse(submissionId.toString()));
   }
 
   private Flux<FilePart> validateSubmission(Flux<FilePart> fileParts) {
-      // Validate file bundles for exactly one .tsv and one or more .fasta files
-//    fileParts.collect(
-//        groupingBy(
-//            part ->
-//                Optional.ofNullable(part.filename())
-//                    .filter(f -> f.contains("."))
-//                    .map(f -> f.substring(part.filename().lastIndexOf(".") + 1))
-//                    .orElse("invalid")));
-
-    // generate a submissionId
-
-    // parse the .tsv into records, on error throw, write as jsonp to "tmp/${submissionId}/records.jsonp"
-
-    // process the fasta files, write sequence files to tmp dir and also write fastaFileMeta to "tmp/${submissionId}/fastaFileMeta.json"
-
-    // emit the SubmissionEvent to sink
-
-    // send response
-
     return fileParts
-        .filter(
-            filePart ->
-                filePart.filename().endsWith(".fasta") || filePart.filename().endsWith(".tsv"))
-        .doOnDiscard(
-            FilePart.class,
-            discarded ->
-                log.info("The file: {}, must be of type '.tsv' or '.fasta'", discarded.filename()));
+        .collect(
+            groupingByConcurrent(
+                part ->
+                    Optional.of(part.filename())
+                        .filter(f -> f.contains("."))
+                        .map(f -> f.substring(part.filename().lastIndexOf(".") + 1))
+                        .orElse("invalid")))
+        .handle(
+            (fileTypeMap, sink) -> {
+              // validate that we have exactly one .tsv and one or more fasta files
+              if (fileTypeMap.getOrDefault("tsv", Collections.emptyList()).size() == 1
+                  && fileTypeMap.getOrDefault("fasta", Collections.emptyList()).size() >= 1) {
+                sink.next(true);
+              } else {
+                sink.error(
+                    new IllegalArgumentException(
+                        "Submission must contain exactly one .tsv file and one or more .fasta files"));
+              }
+            })
+        .thenMany(fileParts);
   }
 }

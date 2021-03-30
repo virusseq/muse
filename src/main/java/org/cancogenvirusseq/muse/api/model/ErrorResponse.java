@@ -22,12 +22,19 @@ import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @ApiModel(description = "An object that can optionally include information about the error.")
 public class ErrorResponse {
-  private String msg;
-  private Integer statusCode;
+  private HttpStatus status;
+  private String message;
+
+  public static ResponseEntity<ErrorResponse> errorResponseEntity(
+      HttpStatus status, String message) {
+    return new ResponseEntity<>(new ErrorResponse(status, message), status);
+  }
 }
