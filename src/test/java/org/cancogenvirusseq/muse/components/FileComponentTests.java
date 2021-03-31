@@ -1,13 +1,7 @@
 package org.cancogenvirusseq.muse.components;
 
-import static org.cancogenvirusseq.muse.components.FileProcessor.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
@@ -15,15 +9,22 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class FileComponentTests {
   String sampleId1 = "sam1";
   String sampleId2 = "sam2";
 
   SubmissionFile file1Meta =
       SubmissionFile.builder()
-          .fileMd5sum("f433d470a7bacc3bdcdafeb1a4b4d758")
           .fileName(sampleId1 + FASTA_FILE_EXTENSION)
           .fileSize(26)
+          .fileMd5sum("f433d470a7bacc3bdcdafeb1a4b4d758")
+          .content(">ABCD/sam1/ddd/erd \nCTGA \n")
           .fileType(FASTA_TYPE)
           .dataCategory(FASTA_TYPE)
           .dataType(FASTA_TYPE)
@@ -31,9 +32,10 @@ public class FileComponentTests {
 
   SubmissionFile file2Meta =
       SubmissionFile.builder()
-          .fileMd5sum("eecf3de7e1136d99fffdd781d76bc81a")
           .fileName(sampleId2 + FASTA_FILE_EXTENSION)
           .fileSize(23)
+          .fileMd5sum("eecf3de7e1136d99fffdd781d76bc81a")
+          .content(">EFG/sam2/ddd/erd \nATGC")
           .fileType(FASTA_TYPE)
           .dataCategory(FASTA_TYPE)
           .dataType(FASTA_TYPE)
@@ -46,8 +48,7 @@ public class FileComponentTests {
   void testWriteToFileAndMeta() {
     val fastaFile = ">ABCD/sam1/ddd/erd \n" + "CTGA \n" + ">EFG/sam2/ddd/erd \n" + "ATGC";
 
-    val fileMetaToSampleIdMap =
-        processFileStrContent("tmp-" + UUID.randomUUID().toString(), fastaFile);
+    val fileMetaToSampleIdMap = processFileStrContent(fastaFile);
 
     assertEquals(sampleIdToFileMeta, fileMetaToSampleIdMap);
   }
@@ -55,6 +56,7 @@ public class FileComponentTests {
   @Test
   @SneakyThrows
   void testPartialPayloadsMappedToFiles() {
+    // todo: please fix with content and look at newlines
     val partialPayload1Str = "{ \"samples\": [ {\"submitterSampleId\": \"sam1\"}] }";
     val partialPayload2Str = "{ \"samples\": [ {\"submitterSampleId\": \"sam2\"}] }";
 

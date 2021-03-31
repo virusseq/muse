@@ -22,14 +22,15 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.api.model.SubmissionListResponse;
-import org.cancogenvirusseq.muse.components.TsvParser;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.util.function.Tuples;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -37,6 +38,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static java.util.stream.Collectors.groupingByConcurrent;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
+import static org.cancogenvirusseq.muse.components.TsvParser.parseTsvStrToFlatRecords;
 
 @Service
 @Slf4j
@@ -50,16 +53,6 @@ public class SubmissionsService {
   }
 
   public Mono<SubmissionCreateResponse> submit(Flux<FilePart> fileParts) {
-    // parse the .tsv into records, on error throw, write as jsonp to
-    // "tmp/${submissionId}/records.jsonp"
-
-    // process the fasta files, write sequence files to tmp dir and also write fastaFileMeta to
-    // "tmp/${submissionId}/fastaFileMeta.json"
-
-    // emit the SubmissionEvent to sink
-
-    // send response
-
     return validateAndSplitSubmission(fileParts)
         .flatMap(
             filePartsMap -> {
@@ -70,21 +63,33 @@ public class SubmissionsService {
                       .records(new ArrayList<>())
                       .build();
 
-              return filePartsMap
-                  .get("tsv")
-                  .get(0)
-                  .content()
+              return Flux.fromStream(
+                      filePartsMap.entrySet().parallelStream()
+                          .flatMap(
+                              filePartsMapEntries ->
+                                  filePartsMapEntries.getValue().parallelStream()
+                                      .map(
+                                          filePart ->
+                                              Tuples.of(filePartsMapEntries.getKey(), filePart))))
+                  .flatMap(
+                      fileTypeFilePart ->
+                          fileContentToString(fileTypeFilePart.getT2().content())
+                              .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)))
                   .map(
-                      dataBuffer -> {
-                        val bytes = new byte[dataBuffer.readableByteCount()];
-                        dataBuffer.read(bytes);
-                        DataBufferUtils.release(dataBuffer);
-
-                        return new String(bytes, StandardCharsets.UTF_8);
+                      fileTypeFileStr -> {
+                        switch (fileTypeFileStr.getT1()) {
+                          case "tsv":
+                            parseTsvStrToFlatRecords(fileTypeFileStr.getT2())
+                                .map(record -> submissionEvent.getRecords().add(record));
+                            break;
+                          case "fasta":
+                            submissionEvent
+                                .getSubmissionFileMap()
+                                .putAll(processFileStrContent(fileTypeFileStr.getT2()));
+                            break;
+                        }
+                        return true;
                       })
-                  .reduce(String::concat)
-                  .flatMapMany(TsvParser::parseTsvStrToFlatRecords)
-                  .map(record -> submissionEvent.getRecords().add(record))
                   .then(Mono.just(submissionEvent));
             })
         .map(
@@ -121,5 +126,18 @@ public class SubmissionsService {
                         "Submission must contain exactly one .tsv file and one or more .fasta files"));
               }
             });
+  }
+
+  private Mono<String> fileContentToString(Flux<DataBuffer> content) {
+    return content
+        .map(
+            dataBuffer -> {
+              val bytes = new byte[dataBuffer.readableByteCount()];
+              dataBuffer.read(bytes);
+              DataBufferUtils.release(dataBuffer);
+
+              return new String(bytes, StandardCharsets.UTF_8);
+            })
+        .reduce(String::concat);
   }
 }
