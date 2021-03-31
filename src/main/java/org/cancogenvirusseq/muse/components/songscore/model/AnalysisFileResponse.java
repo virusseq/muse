@@ -6,8 +6,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class AnalysisFileResponse {
-    String objectId;
-    String fileName;
-    String fileSize;
-    String fileMd5sum;
+  String objectId;
+  String fileName;
+  String fileSize;
+  String fileMd5sum;
 }

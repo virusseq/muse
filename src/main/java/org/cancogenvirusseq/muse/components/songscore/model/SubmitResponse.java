@@ -6,6 +6,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class SubmitResponse {
-    String analysisId;
-    String status;
+  String analysisId;
+  String status;
 }
