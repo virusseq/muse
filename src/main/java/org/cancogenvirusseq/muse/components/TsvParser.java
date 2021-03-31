@@ -3,13 +3,6 @@ package org.cancogenvirusseq.muse.components;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.app.Velocity;
-import org.cancogenvirusseq.muse.model.TsvParserProperties;
-
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,6 +10,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.Velocity;
+import org.cancogenvirusseq.muse.model.TsvParserProperties;
 
 @Slf4j
 @RequiredArgsConstructor

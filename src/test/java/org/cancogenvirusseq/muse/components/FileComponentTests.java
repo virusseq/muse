@@ -1,19 +1,18 @@
 package org.cancogenvirusseq.muse.components;
 
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FileComponentTests {
   String sampleId1 = "sam1";
