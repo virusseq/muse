@@ -26,10 +26,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.cancogenvirusseq.muse.api.model.DownloadRequest;
-import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
-import org.cancogenvirusseq.muse.api.model.SubmissionListResponse;
-import org.cancogenvirusseq.muse.api.model.UploadListResponse;
+import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionsService;
 import org.cancogenvirusseq.muse.service.UploadsService;
@@ -80,6 +77,16 @@ public class ApiController implements ApiDefinition {
   public Mono<ResponseEntity<Flux<ByteBuffer>>> download(
       @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
     return downloadsService.download(downloadRequest).map(this::respondOk);
+  }
+
+  @ExceptionHandler
+  public ResponseEntity<ErrorResponse> handle(Throwable ex) {
+    if (ex instanceof IllegalArgumentException) {
+      return ErrorResponse.errorResponseEntity(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage());
+    } else {
+      return ErrorResponse.errorResponseEntity(
+          HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage());
+    }
   }
 
   private <T> ResponseEntity<T> respondOk(T response) {

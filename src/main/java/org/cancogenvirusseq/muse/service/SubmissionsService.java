@@ -18,20 +18,27 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import static java.util.stream.Collectors.groupingByConcurrent;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
+import static org.cancogenvirusseq.muse.components.TsvParser.parseTsvStrToFlatRecords;
+
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.stream.Collectors;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.api.model.SubmissionListResponse;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.util.function.Tuples;
 
 @Service
 @Slf4j
@@ -45,43 +52,97 @@ public class SubmissionsService {
   }
 
   public Mono<SubmissionCreateResponse> submit(Flux<FilePart> fileParts) {
-    return fileParts
-        .transform(this::validateSubmission)
+    return validateAndSplitSubmission(fileParts)
+        // take validated map of fileType => filePartList and
+        // convert to Flux Tuples(fileType, fileString)
+        .flatMapMany(
+            filePartsMap ->
+                Flux.fromStream(
+                    filePartsMap
+                        .entrySet()
+                        .parallelStream()
+                        .flatMap(
+                            filePartsMapEntries ->
+                                filePartsMapEntries
+                                    .getValue()
+                                    .parallelStream()
+                                    .map(
+                                        filePart ->
+                                            Tuples.of(filePartsMapEntries.getKey(), filePart)))))
         .flatMap(
-            filePart ->
-                filePart
-                    .content()
-                    .map(
-                        dataBuffer -> {
-                          val bytes = new byte[dataBuffer.readableByteCount()];
-                          dataBuffer.read(bytes);
-                          DataBufferUtils.release(dataBuffer);
-
-                          return new String(bytes, StandardCharsets.UTF_8);
-                        }))
-        .collect(Collectors.toList())
+            fileTypeFilePart ->
+                fileContentToString(fileTypeFilePart.getT2().content())
+                    .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)))
+        // reduce flux of Tuples(fileType, fileString) into a single SubmissionEvent
+        .reduce(
+            SubmissionEvent.builder()
+                .submissionId(UUID.randomUUID())
+                .submissionFileMap(new ConcurrentHashMap<>())
+                .records(new ArrayList<>())
+                .build(),
+            (submissionEvent, fileTypeFileStr) -> {
+              switch (fileTypeFileStr.getT1()) {
+                case "tsv":
+                  parseTsvStrToFlatRecords(fileTypeFileStr.getT2())
+                      .forEach(record -> submissionEvent.getRecords().add(record));
+                  break;
+                case "fasta":
+                  submissionEvent
+                      .getSubmissionFileMap()
+                      .putAll(processFileStrContent(fileTypeFileStr.getT2()));
+                  break;
+              }
+              return submissionEvent;
+            })
+        // emit submission event to sink for further processing
+        .doOnNext(submissionsSink::tryEmitNext)
+        // return submissionId to user
         .map(
-            fileContents ->
-                new SubmissionCreateResponse(
-                    fileContents.isEmpty() ? "no file processed" : fileContents.get(0)));
+            submissionEvent ->
+                new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()));
   }
 
-  private Flux<FilePart> validateSubmission(Flux<FilePart> fileParts) {
-//    fileParts.collect(
-//        groupingBy(
-//            part ->
-//                Optional.ofNullable(part.filename())
-//                    .filter(f -> f.contains("."))
-//                    .map(f -> f.substring(part.filename().lastIndexOf(".") + 1))
-//                    .orElse("invalid")));
-
+  /**
+   * Splits the files into groups by filetype (extension in filename), verifies that there is
+   * exactly one .tsv and 'one or more' .fasta files. Returns a flux containing the file split map
+   *
+   * @param fileParts input flux of file parts
+   * @return a map containing files grouped by type that meet the validation requirements
+   */
+  private Mono<ConcurrentMap<String, List<FilePart>>> validateAndSplitSubmission(
+      Flux<FilePart> fileParts) {
     return fileParts
-        .filter(
-            filePart ->
-                filePart.filename().endsWith(".fasta") || filePart.filename().endsWith(".tsv"))
-        .doOnDiscard(
-            FilePart.class,
-            discarded ->
-                log.info("The file: {}, must be of type '.tsv' or '.fasta'", discarded.filename()));
+        .collect(
+            groupingByConcurrent(
+                part ->
+                    Optional.of(part.filename())
+                        .filter(f -> f.contains("."))
+                        .map(f -> f.substring(part.filename().lastIndexOf(".") + 1))
+                        .orElse("invalid")))
+        .handle(
+            (fileTypeMap, sink) -> {
+              // validate that we have exactly one .tsv and one or more fasta files
+              if (fileTypeMap.getOrDefault("tsv", Collections.emptyList()).size() == 1
+                  && fileTypeMap.getOrDefault("fasta", Collections.emptyList()).size() >= 1) {
+                sink.next(fileTypeMap);
+              } else {
+                sink.error(
+                    new IllegalArgumentException(
+                        "Submission must contain exactly one .tsv file and one or more .fasta files"));
+              }
+            });
+  }
+
+  private Mono<String> fileContentToString(Flux<DataBuffer> content) {
+    return content
+        .map(
+            dataBuffer -> {
+              val bytes = new byte[dataBuffer.readableByteCount()];
+              dataBuffer.read(bytes);
+              DataBufferUtils.release(dataBuffer);
+
+              return new String(bytes, StandardCharsets.UTF_8);
+            })
+        .reduce(String::concat);
   }
 }
