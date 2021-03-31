@@ -54,6 +54,8 @@ public class SubmissionsService {
 
   public Mono<SubmissionCreateResponse> submit(Flux<FilePart> fileParts) {
     return validateAndSplitSubmission(fileParts)
+        // take validated map of fileType => filePartList and
+        // convert to Flux Tuples(fileType, fileString)
         .flatMapMany(
             filePartsMap ->
                 Flux.fromStream(
@@ -68,6 +70,7 @@ public class SubmissionsService {
             fileTypeFilePart ->
                 fileContentToString(fileTypeFilePart.getT2().content())
                     .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)))
+        // reduce flux of Tuples(fileType, fileString) into a single SubmissionEvent
         .reduce(
             SubmissionEvent.builder()
                 .submissionId(UUID.randomUUID())
@@ -88,11 +91,12 @@ public class SubmissionsService {
               }
               return submissionEvent;
             })
+        // emit submission event to sink for further processing
         .doOnNext(submissionsSink::tryEmitNext)
+        // return submissionId to user
         .map(
             submissionEvent ->
-                new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()))
-        .log();
+                new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()));
   }
 
   /**
