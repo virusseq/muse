@@ -54,47 +54,45 @@ public class SubmissionsService {
 
   public Mono<SubmissionCreateResponse> submit(Flux<FilePart> fileParts) {
     return validateAndSplitSubmission(fileParts)
+        .flatMapMany(
+            filePartsMap ->
+                Flux.fromStream(
+                    filePartsMap.entrySet().parallelStream()
+                        .flatMap(
+                            filePartsMapEntries ->
+                                filePartsMapEntries.getValue().parallelStream()
+                                    .map(
+                                        filePart ->
+                                            Tuples.of(filePartsMapEntries.getKey(), filePart)))))
         .flatMap(
-            filePartsMap -> {
-              val submissionEvent =
-                  SubmissionEvent.builder()
-                      .submissionId(UUID.randomUUID())
-                      .submissionFileMap(new ConcurrentHashMap<>())
-                      .records(new ArrayList<>())
-                      .build();
-
-              return Flux.fromStream(
-                      filePartsMap.entrySet().parallelStream()
-                          .flatMap(
-                              filePartsMapEntries ->
-                                  filePartsMapEntries.getValue().parallelStream()
-                                      .map(
-                                          filePart ->
-                                              Tuples.of(filePartsMapEntries.getKey(), filePart))))
-                  .flatMap(
-                      fileTypeFilePart ->
-                          fileContentToString(fileTypeFilePart.getT2().content())
-                              .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)))
-                  .map(
-                      fileTypeFileStr -> {
-                        switch (fileTypeFileStr.getT1()) {
-                          case "tsv":
-                            parseTsvStrToFlatRecords(fileTypeFileStr.getT2())
-                                .map(record -> submissionEvent.getRecords().add(record));
-                            break;
-                          case "fasta":
-                            submissionEvent
-                                .getSubmissionFileMap()
-                                .putAll(processFileStrContent(fileTypeFileStr.getT2()));
-                            break;
-                        }
-                        return true;
-                      })
-                  .then(Mono.just(submissionEvent));
+            fileTypeFilePart ->
+                fileContentToString(fileTypeFilePart.getT2().content())
+                    .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)))
+        .reduce(
+            SubmissionEvent.builder()
+                .submissionId(UUID.randomUUID())
+                .submissionFileMap(new ConcurrentHashMap<>())
+                .records(new ArrayList<>())
+                .build(),
+            (submissionEvent, fileTypeFileStr) -> {
+              switch (fileTypeFileStr.getT1()) {
+                case "tsv":
+                  parseTsvStrToFlatRecords(fileTypeFileStr.getT2())
+                      .forEach(record -> submissionEvent.getRecords().add(record));
+                  break;
+                case "fasta":
+                  submissionEvent
+                      .getSubmissionFileMap()
+                      .putAll(processFileStrContent(fileTypeFileStr.getT2()));
+                  break;
+              }
+              return submissionEvent;
             })
+        .doOnNext(submissionsSink::tryEmitNext)
         .map(
             submissionEvent ->
-                new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()));
+                new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()))
+        .log();
   }
 
   /**

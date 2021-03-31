@@ -3,24 +3,27 @@ package org.cancogenvirusseq.muse.components;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.StringWriter;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.cancogenvirusseq.muse.model.TsvParserProperties;
-import reactor.core.publisher.Flux;
+
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
-public class TsvParser implements Function<String, Flux<ObjectNode>> {
+public class TsvParser implements Function<String, Stream<ObjectNode>> {
   final TsvParserProperties tsvParserProperties;
 
-  public Flux<ObjectNode> apply(String s) {
+  public Stream<ObjectNode> apply(String s) {
     return parseTsvStrToFlatRecords(s)
         .map(this::convertRecordToPayload)
         .map(
@@ -35,7 +38,7 @@ public class TsvParser implements Function<String, Flux<ObjectNode>> {
         .filter(Objects::nonNull);
   }
 
-  public static Flux<Map<String, String>> parseTsvStrToFlatRecords(String s) {
+  public static Stream<Map<String, String>> parseTsvStrToFlatRecords(String s) {
     val lines = s.split("\n");
     val headers = lines[0].trim().split("\t");
 
@@ -54,7 +57,7 @@ public class TsvParser implements Function<String, Flux<ObjectNode>> {
                   return dataJson;
                 });
 
-    return Flux.fromStream(rows);
+    return rows;
   }
 
   private String convertRecordToPayload(Map<String, String> valuesMap) {
