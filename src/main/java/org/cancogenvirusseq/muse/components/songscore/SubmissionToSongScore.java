@@ -25,25 +25,19 @@ public class SubmissionToSongScore {
 
   String songRootUrl = "https://song.rdpc-qa.cancercollaboratory.org/";
   String scoreRootUrl = "https://score.rdpc-qa.cancercollaboratory.org/";
-
   String token = "convertmetooauth";
 
   // main function executing the song and dance
   public Mono<String> submitAndUpload(String studyId, String payload, String fileContent) {
     return submitPayload(studyId, payload)
-        .flatMap(
-            submitResponse -> {
-              val analysisId = submitResponse.getAnalysisId();
-              val dto = createPipeDto(analysisId, studyId);
-              return getFileId(dto);
-            })
+        .flatMap(this::getFileSpecFromSong)
         .flatMap(this::initScoreUpload)
         .flatMap(dto -> uploadToS3(dto, fileContent))
         .flatMap(this::finalizeScoreUpload)
         .flatMap(this::publishAnalysis);
   }
 
-  private Mono<SubmitResponse> submitPayload(String studyId, String payload) {
+  private Mono<PipeDTO<Void>> submitPayload(String studyId, String payload) {
     return WebClient.create(songRootUrl + "/submit/" + studyId)
         .post()
         .contentType(MediaType.APPLICATION_JSON)
@@ -51,10 +45,11 @@ public class SubmissionToSongScore {
         .header("Authorization", "Bearer " + token)
         .retrieve()
         .bodyToMono(SubmitResponse.class)
+         .map(submitResponse -> createPipeDto(submitResponse.getAnalysisId(), studyId))
         .log();
   }
 
-  private Mono<PipeDTO<AnalysisFileResponse>> getFileId(PipeDTO<Void> dto) {
+  private Mono<PipeDTO<AnalysisFileResponse>> getFileSpecFromSong(PipeDTO<Void> dto) {
     val studyId = dto.getStudyId();
     val analysisId = dto.getAnalysisId();
     return WebClient.create(
