@@ -63,6 +63,7 @@ public class SongScoreClient {
         .log();
   }
 
+
   private Mono<ClientDTO<AnalysisFileResponse>> getFileSpecFromSong(ClientDTO<Void> dto) {
     val studyId = dto.getStudyId();
     val analysisId = dto.getAnalysisId();
@@ -104,9 +105,8 @@ public class SongScoreClient {
     val scoreFileSpec = dto.getData();
 
     // we expect only one file part
-    // also the url is decoded because Webclient encodes the url and we end up with double encode
-    val presignedUrl =
-        URLDecoder.decode(scoreFileSpec.getParts().get(0).getUrl(), StandardCharsets.UTF_8);
+    val presignedUrl =  decodeUrl(scoreFileSpec.getParts().get(0).getUrl());
+
     return WebClient.create(presignedUrl)
         .put()
         .contentType(MediaType.TEXT_PLAIN)
@@ -188,6 +188,32 @@ public class SongScoreClient {
         .log();
   }
 
+  public Mono<String> downloadObject(String objectId) {
+    return getFileLink(objectId).flatMap(this::downloadFromS3);
+
+  }
+
+  private Mono<String> getFileLink(String objectId) {
+    val url = scoreRootUrl + "/download/" + objectId + "?offset=0&length=-1&external=true";
+    return WebClient
+                   .create(url)
+                   .get()
+                   .header("Authorization", "Bearer " + systemApiToken)
+                   .retrieve()
+                   .bodyToMono(ScoreFileSpec.class)
+
+                   // we request length = -1 which returns one file part
+                   .map(spec -> spec.getParts().get(0).getUrl());
+  }
+
+  private Mono<String> downloadFromS3(String presignedUrl) {
+    return WebClient.create(decodeUrl(presignedUrl)).get().retrieve().bodyToMono(String.class).log();
+  }
+
+  private static String decodeUrl(String str) {
+    return URLDecoder.decode(str, StandardCharsets.UTF_8);
+  }
+  
   private static ClientDTO<Void> createPipeDto(String analysisId, String studyId, String md5) {
     return ClientDTO.<Void>builder()
         .analysisId(analysisId)
