@@ -18,6 +18,9 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+CREATE TYPE upload_status as enum ('SUBMITTED', 'PROCESSING', 'COMPLETE', 'ERROR');
+
+
 CREATE TABLE if not exists submission
 (
     submission_id       uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -25,4 +28,17 @@ CREATE TABLE if not exists submission
     created_at          timestamp not null,
     total_records       int       not null,
     original_file_names text[]    not null
+);
+
+CREATE TABLE if not exists upload
+(
+    user_id             uuid      not null,
+    submission_id       uuid      not null,
+    study_id            VARCHAR,
+    submitter_sample_id VARCHAR,
+    status              upload_status,
+    original_file_pair  text[]    not null,
+    analysis_Id         uuid,
+    error               text,
+    created_at          timestamp not null
 );

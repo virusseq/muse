@@ -18,23 +18,5 @@
 
 package org.cancogenvirusseq.muse.repository.model;
 
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
-
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@Table("submission")
-public class SubmissionDAO {
-  @Id UUID submissionId;
-  @NonNull UUID userId;
-  @NonNull OffsetDateTime createdAt;
-  @NonNull List<String> originalFileNames;
-  @NonNull Integer totalRecords;
+public class UploadDAO {
 }

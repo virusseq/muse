@@ -16,25 +16,16 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.repository.model;
+package org.cancogenvirusseq.muse.repository;
 
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
+import org.cancogenvirusseq.muse.repository.model.UploadDAO;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Flux;
 
-import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@Table("submission")
-public class SubmissionDAO {
-  @Id UUID submissionId;
-  @NonNull UUID userId;
-  @NonNull OffsetDateTime createdAt;
-  @NonNull List<String> originalFileNames;
-  @NonNull Integer totalRecords;
+public interface UploadRepository extends ReactiveCrudRepository<UploadDAO, UUID> {
+  @Query("select * from upload where userId = $1")
+  Flux<UploadDAO> findAllByUserId(UUID userId);
 }

@@ -38,7 +38,7 @@ import reactor.core.publisher.Sinks;
 import reactor.util.function.Tuples;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -117,7 +117,7 @@ public class SubmissionsService {
                                         .userId(
                                             UUID.fromString(
                                                 securityContext.getAuthentication().getName()))
-                                        .createdAt(LocalDateTime.now())
+                                        .createdAt(OffsetDateTime.now())
                                         .originalFileNames(fileList)
                                         .totalRecords(recordsSubmissionFiles.getT1().size())
                                         .build())

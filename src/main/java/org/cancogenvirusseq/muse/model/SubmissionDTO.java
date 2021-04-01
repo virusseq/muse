@@ -18,7 +18,7 @@
 
 package org.cancogenvirusseq.muse.model;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -29,10 +29,10 @@ import lombok.NonNull;
 @Data
 @Builder
 @AllArgsConstructor
-public class SubmissionDTO {
+public class SubmissionDTO { // todo: dp we even need DTO vs DAO?
   @NonNull UUID submissionId;
   @NonNull UUID userId;
-  @NonNull LocalDateTime createdAt; // todo: do we want OffsetDateTime?
+  @NonNull OffsetDateTime createdAt;
   @NonNull List<String> originalFileNames;
   @NonNull Integer totalRecords;
 }
