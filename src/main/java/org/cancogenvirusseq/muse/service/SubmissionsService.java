@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
@@ -42,9 +43,9 @@ import reactor.util.function.Tuples;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SubmissionsService {
-  public Sinks.Many<SubmissionEvent> submissionsSink =
-      Sinks.many().unicast().onBackpressureBuffer();
+  final Sinks.Many<SubmissionEvent> submissionsSink;
 
   public Mono<SubmissionListResponse> getSubmissions(
       String userId, Integer pageSize, Integer pageToken) {

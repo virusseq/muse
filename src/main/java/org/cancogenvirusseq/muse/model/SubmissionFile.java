@@ -12,6 +12,5 @@ public class SubmissionFile {
   String content;
   String dataType;
   String fileType;
-  String fileAccess = "OPEN";
-  String dataCategory;
+  String fileAccess = "open";
 }

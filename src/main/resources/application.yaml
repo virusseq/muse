@@ -5,7 +5,13 @@ spring:
     description: "Molecular Upload Submission sErvice"
 
 server:
-  port: 8080
+  port: 8090
+
+songScoreClient:
+  songRootUrl: "http://localhost:8080/"
+  scoreRootUrl: "http://localhost:8087/"
+  systemApiToken: f69b726d-d40f-4261-b105-1ec7e6bf04d5
+
 ---
 spring.profiles: secure
 auth:

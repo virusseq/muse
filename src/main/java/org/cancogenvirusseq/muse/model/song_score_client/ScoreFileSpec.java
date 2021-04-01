@@ -1,4 +1,4 @@
-package org.cancogenvirusseq.muse.components.songscore.model;
+package org.cancogenvirusseq.muse.model.song_score_client;
 
 import java.util.List;
 import lombok.Data;

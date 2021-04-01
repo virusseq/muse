@@ -35,7 +35,6 @@ public class FastaFileProcessor {
                       .content(fc)
                       .dataType(FASTA_TYPE)
                       .fileType(FASTA_TYPE)
-                      .dataCategory(FASTA_TYPE)
                       .build();
               repo.put(sampleId, submissionFile);
             });
