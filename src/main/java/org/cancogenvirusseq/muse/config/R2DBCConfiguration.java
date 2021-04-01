@@ -28,6 +28,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.r2dbc.config.AbstractR2dbcConfiguration;
+import org.springframework.data.r2dbc.connectionfactory.init.ConnectionFactoryInitializer;
+import org.springframework.data.r2dbc.connectionfactory.init.ResourceDatabasePopulator;
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 
 @Configuration
@@ -49,9 +51,20 @@ public class R2DBCConfiguration extends AbstractR2dbcConfiguration {
   @Value("${postgres.password}")
   private String password;
 
+  @Bean
+  ConnectionFactoryInitializer initializer(ConnectionFactory connectionFactory) {
+
+    ConnectionFactoryInitializer initializer = new ConnectionFactoryInitializer();
+    initializer.setConnectionFactory(connectionFactory);
+    initializer.setDatabasePopulator(
+        new ResourceDatabasePopulator(new ClassPathResource("schema.sql")));
+
+    return initializer;
+  }
+
   @Override
   @Bean
-  public PostgresqlConnectionFactory connectionFactory() {
+  public ConnectionFactory connectionFactory() {
     val postgresqlConnectionConfiguration = PostgresqlConnectionConfiguration.builder();
 
     postgresqlConnectionConfiguration.host(host).port(port).database(database);
@@ -63,8 +76,6 @@ public class R2DBCConfiguration extends AbstractR2dbcConfiguration {
     if (!Strings.isNullOrEmpty(password)) {
       postgresqlConnectionConfiguration.password(password);
     }
-
-    postgresqlConnectionConfiguration.schema(new ClassPathResource("schema.sql").getPath());
 
     return new PostgresqlConnectionFactory(postgresqlConnectionConfiguration.build());
   }

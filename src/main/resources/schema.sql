@@ -16,4 +16,4 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-CREATE TABLE submission (submissionId uuid PRIMARY KEY, userId uuid not null , createdAt timestamp not null, originalFileNames text[] not null);
+CREATE TABLE if not exists submission (submissionId uuid PRIMARY KEY, userId uuid not null , createdAt timestamp not null, originalFileNames text[] not null);
