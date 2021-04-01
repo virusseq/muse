@@ -76,12 +76,14 @@ public class SongScoreService {
               payload.set("files", filesNode);
 
               log.info(payload.toPrettyString());
+              // TODO - pass function for sink to db
               return songScoreClient.submitAndUpload(
                   tuple3.getT1(),
                   payload.toString(),
                   submissionFile.getContent(),
                   submissionFile.getFileMd5sum());
             })
+         // TODO - onErrorContinue and sink to
         .subscribe();
   }
 

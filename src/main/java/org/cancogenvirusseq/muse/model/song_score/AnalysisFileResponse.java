@@ -1,4 +1,4 @@
-package org.cancogenvirusseq.muse.model.song_score_client;
+package org.cancogenvirusseq.muse.model.song_score;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
