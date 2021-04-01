@@ -29,5 +29,4 @@ public interface SubmissionRepository extends ReactiveCrudRepository<SubmissionD
 
   @Query("select * from submission where userId = $1")
   Flux<SubmissionDAO> findAllByUserId(UUID userId);
-
 }

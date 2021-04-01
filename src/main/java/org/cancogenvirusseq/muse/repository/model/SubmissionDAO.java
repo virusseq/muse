@@ -18,10 +18,7 @@
 
 package org.cancogenvirusseq.muse.repository.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -30,11 +27,12 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Table("submission")
 public class SubmissionDAO {
-  @Id @NonNull UUID submissionId;
+  @Id UUID submissionId;
   @NonNull UUID userId;
   @NonNull LocalDateTime createdAt; // todo: do we want OffsetDateTime?
   @NonNull List<String> originalFileNames;

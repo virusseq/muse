@@ -16,4 +16,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-CREATE TABLE if not exists submission (submissionId uuid PRIMARY KEY, userId uuid not null , createdAt timestamp not null, originalFileNames text[] not null);
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE if not exists submission
+(
+    submission_id       uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id             uuid      not null,
+    created_at          timestamp not null,
+    total_records       int       not null,
+    original_file_names text[]    not null
+);

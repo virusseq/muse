@@ -18,19 +18,15 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import static java.util.stream.Collectors.groupingByConcurrent;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
-import static org.cancogenvirusseq.muse.components.TsvParser.parseTsvStrToFlatRecords;
-
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.api.model.SubmissionListResponse;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
+import org.cancogenvirusseq.muse.model.SubmissionFile;
+import org.cancogenvirusseq.muse.repository.SubmissionRepository;
+import org.cancogenvirusseq.muse.repository.model.SubmissionDAO;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
@@ -40,32 +36,44 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.function.Tuples;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import static java.util.stream.Collectors.groupingByConcurrent;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
+import static org.cancogenvirusseq.muse.components.TsvParser.parseTsvStrToFlatRecords;
+
 @Service
 @Slf4j
 public class SubmissionsService {
-  public Sinks.Many<SubmissionEvent> submissionsSink =
-      Sinks.many().unicast().onBackpressureBuffer();
+
+  public final SubmissionRepository submissionRepository;
+  public final Sinks.Many<SubmissionEvent> submissionsSink;
+
+  public SubmissionsService(@NonNull SubmissionRepository submissionRepository) {
+    this.submissionRepository = submissionRepository;
+    this.submissionsSink = Sinks.many().unicast().onBackpressureBuffer();
+  }
 
   public Mono<SubmissionListResponse> getSubmissions(
       String userId, Integer pageSize, Integer pageToken) {
     return Mono.just(new SubmissionListResponse(Collections.emptyList()));
   }
 
-  public Mono<SubmissionCreateResponse> submit(Flux<FilePart> fileParts) {
+  public Mono<SubmissionCreateResponse> submit(String userId, Flux<FilePart> fileParts) {
     return validateAndSplitSubmission(fileParts)
         // take validated map of fileType => filePartList and
         // convert to Flux Tuples(fileType, fileString)
         .flatMapMany(
             filePartsMap ->
                 Flux.fromStream(
-                    filePartsMap
-                        .entrySet()
-                        .parallelStream()
+                    filePartsMap.entrySet().parallelStream()
                         .flatMap(
                             filePartsMapEntries ->
-                                filePartsMapEntries
-                                    .getValue()
-                                    .parallelStream()
+                                filePartsMapEntries.getValue().parallelStream()
                                     .map(
                                         filePart ->
                                             Tuples.of(filePartsMapEntries.getKey(), filePart)))))
@@ -73,27 +81,48 @@ public class SubmissionsService {
             fileTypeFilePart ->
                 fileContentToString(fileTypeFilePart.getT2().content())
                     .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)))
-        // reduce flux of Tuples(fileType, fileString) into a single SubmissionEvent
+        // reduce flux of Tuples(fileType, fileString) into a tuple of records and submission files
         .reduce(
-            SubmissionEvent.builder()
-                .submissionId(UUID.randomUUID())
-                .submissionFileMap(new ConcurrentHashMap<>())
-                .records(new ArrayList<>())
-                .build(),
-            (submissionEvent, fileTypeFileStr) -> {
+            Tuples.of(
+                new ArrayList<Map<String, String>>(),
+                new ConcurrentHashMap<String, SubmissionFile>()),
+            (recordsSubmissionFiles, fileTypeFileStr) -> {
               switch (fileTypeFileStr.getT1()) {
                 case "tsv":
                   parseTsvStrToFlatRecords(fileTypeFileStr.getT2())
-                      .forEach(record -> submissionEvent.getRecords().add(record));
+                      .forEach(record -> recordsSubmissionFiles.getT1().add(record));
                   break;
                 case "fasta":
-                  submissionEvent
-                      .getSubmissionFileMap()
+                  recordsSubmissionFiles
+                      .getT2()
                       .putAll(processFileStrContent(fileTypeFileStr.getT2()));
                   break;
               }
-              return submissionEvent;
+              return recordsSubmissionFiles;
             })
+        // record submission to database
+        .flatMap(
+            recordsSubmissionFiles ->
+                fileParts
+                    .map(FilePart::filename)
+                    .collectList()
+                    .flatMap(
+                        fileList ->
+                            submissionRepository
+                                .save(
+                                    SubmissionDAO.builder()
+                                        .userId(UUID.fromString(userId))
+                                        .createdAt(LocalDateTime.now())
+                                        .originalFileNames(fileList)
+                                        .totalRecords(recordsSubmissionFiles.getT1().size())
+                                        .build())
+                                .map(
+                                    submission ->
+                                        SubmissionEvent.builder()
+                                            .submissionId(submission.getSubmissionId())
+                                            .records(recordsSubmissionFiles.getT1())
+                                            .submissionFileMap(recordsSubmissionFiles.getT2())
+                                            .build())))
         // emit submission event to sink for further processing
         .doOnNext(submissionsSink::tryEmitNext)
         // return submissionId to user
