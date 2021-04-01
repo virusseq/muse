@@ -30,6 +30,7 @@ import org.cancogenvirusseq.muse.repository.model.SubmissionDAO;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -63,7 +64,8 @@ public class SubmissionsService {
     return Mono.just(new SubmissionListResponse(Collections.emptyList()));
   }
 
-  public Mono<SubmissionCreateResponse> submit(String userId, Flux<FilePart> fileParts) {
+  public Mono<SubmissionCreateResponse> submit(
+      Flux<FilePart> fileParts, SecurityContext securityContext) {
     return validateAndSplitSubmission(fileParts)
         // take validated map of fileType => filePartList and
         // convert to Flux Tuples(fileType, fileString)
@@ -81,7 +83,8 @@ public class SubmissionsService {
             fileTypeFilePart ->
                 fileContentToString(fileTypeFilePart.getT2().content())
                     .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)))
-        // reduce flux of Tuples(fileType, fileString) into a single tuple of (records, submissionFilesMap)
+        // reduce flux of Tuples(fileType, fileString) into a single tuple of (records,
+        // submissionFilesMap)
         .reduce(
             Tuples.of(
                 new ArrayList<Map<String, String>>(),
@@ -111,7 +114,9 @@ public class SubmissionsService {
                             submissionRepository
                                 .save(
                                     SubmissionDAO.builder()
-                                        .userId(UUID.fromString(userId))
+                                        .userId(
+                                            UUID.fromString(
+                                                securityContext.getAuthentication().getName()))
                                         .createdAt(LocalDateTime.now())
                                         .originalFileNames(fileList)
                                         .totalRecords(recordsSubmissionFiles.getT1().size())
@@ -121,6 +126,7 @@ public class SubmissionsService {
                                     submission ->
                                         SubmissionEvent.builder()
                                             .submissionId(submission.getSubmissionId())
+                                            .userId(UUID.fromString(securityContext.getAuthentication().getName())) // todo: auto UUID::fromString somehow?
                                             .records(recordsSubmissionFiles.getT1())
                                             .submissionFilesMap(recordsSubmissionFiles.getT2())
                                             .build())))

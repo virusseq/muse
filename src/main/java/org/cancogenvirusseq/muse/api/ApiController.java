@@ -29,6 +29,8 @@ import org.cancogenvirusseq.muse.service.UploadsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -40,6 +42,8 @@ import javax.validation.Valid;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 @Slf4j
 @Controller
@@ -62,9 +66,9 @@ public class ApiController implements ApiDefinition {
   @PostMapping("/submissions")
   public Mono<ResponseEntity<SubmissionCreateResponse>> submit(
       @RequestPart("files") Flux<FilePart> fileParts) {
-    // TODO: Need a solution here for !secure
-    // val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    return submissionsService.submit(UUID.randomUUID().toString(), fileParts).map(this::respondOk);
+    return wrapWithSecurityContext(submissionsService::submit)
+        .apply(fileParts)
+        .map(this::respondOk);
   }
 
   @GetMapping("/uploads")
@@ -94,5 +98,13 @@ public class ApiController implements ApiDefinition {
 
   private <T> ResponseEntity<T> respondOk(T response) {
     return new ResponseEntity<T>(response, HttpStatus.OK);
+  }
+
+  // TODO: move to its own class and extend to n args
+  private <T, R> Function<T, Mono<R>> wrapWithSecurityContext(
+      BiFunction<T, SecurityContext, Mono<R>> biFunctionToWrap) {
+    return (T arg) ->
+        ReactiveSecurityContextHolder.getContext()
+            .flatMap(securityContext -> biFunctionToWrap.apply(arg, securityContext));
   }
 }

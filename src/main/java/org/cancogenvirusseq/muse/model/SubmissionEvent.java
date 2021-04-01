@@ -32,6 +32,7 @@ import lombok.NonNull;
 @AllArgsConstructor
 public class SubmissionEvent {
   @NonNull private UUID submissionId;
+  @NonNull private UUID userId;
   @NonNull private List<Map<String, String>> records;
   @NonNull private ConcurrentHashMap<String, SubmissionFile> submissionFilesMap;
 }
