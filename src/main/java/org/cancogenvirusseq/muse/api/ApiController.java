@@ -62,7 +62,8 @@ public class ApiController implements ApiDefinition {
   @PostMapping("/submissions")
   public Mono<ResponseEntity<SubmissionCreateResponse>> submit(
       @RequestPart("files") Flux<FilePart> fileParts) {
-//    val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    // TODO: Need a solution here for !secure
+    // val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     return submissionsService.submit(UUID.randomUUID().toString(), fileParts).map(this::respondOk);
   }
 

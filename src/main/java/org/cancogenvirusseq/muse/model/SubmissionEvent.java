@@ -33,5 +33,5 @@ import lombok.NonNull;
 public class SubmissionEvent {
   @NonNull private UUID submissionId;
   @NonNull private List<Map<String, String>> records;
-  @NonNull private ConcurrentHashMap<String, SubmissionFile> submissionFileMap;
+  @NonNull private ConcurrentHashMap<String, SubmissionFile> submissionFilesMap;
 }

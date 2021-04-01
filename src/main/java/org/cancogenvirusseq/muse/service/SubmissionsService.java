@@ -81,7 +81,7 @@ public class SubmissionsService {
             fileTypeFilePart ->
                 fileContentToString(fileTypeFilePart.getT2().content())
                     .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)))
-        // reduce flux of Tuples(fileType, fileString) into a tuple of records and submission files
+        // reduce flux of Tuples(fileType, fileString) into a single tuple of (records, submissionFilesMap)
         .reduce(
             Tuples.of(
                 new ArrayList<Map<String, String>>(),
@@ -100,7 +100,7 @@ public class SubmissionsService {
               }
               return recordsSubmissionFiles;
             })
-        // record submission to database
+        // record submission to database, create submissionEvent
         .flatMap(
             recordsSubmissionFiles ->
                 fileParts
@@ -116,12 +116,13 @@ public class SubmissionsService {
                                         .originalFileNames(fileList)
                                         .totalRecords(recordsSubmissionFiles.getT1().size())
                                         .build())
+                                // from recorded submission, create submissionEvent
                                 .map(
                                     submission ->
                                         SubmissionEvent.builder()
                                             .submissionId(submission.getSubmissionId())
                                             .records(recordsSubmissionFiles.getT1())
-                                            .submissionFileMap(recordsSubmissionFiles.getT2())
+                                            .submissionFilesMap(recordsSubmissionFiles.getT2())
                                             .build())))
         // emit submission event to sink for further processing
         .doOnNext(submissionsSink::tryEmitNext)
