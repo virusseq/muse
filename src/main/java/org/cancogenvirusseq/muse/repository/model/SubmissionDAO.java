@@ -16,19 +16,27 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.config.datasource;
+package org.cancogenvirusseq.muse.repository.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Data
-@Configuration
-@ConfigurationProperties(prefix = "r2dbc")
-public class R2DBCProperties {
-    private String host;
-    private Integer port;
-    private String database;
-    private String user;
-    private String pass;
+@NoArgsConstructor
+@AllArgsConstructor
+@Table("submission")
+public class SubmissionDAO {
+  @Id @NonNull UUID submissionId;
+  @NonNull UUID userId;
+  @NonNull LocalDateTime createdAt; // todo: do we want OffsetDateTime?
+  @NonNull List<String> originalFileNames;
+  @NonNull Integer totalRecords;
 }

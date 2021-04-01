@@ -7,12 +7,12 @@ spring:
 server:
   port: 8080
 
-r2dbc:
+postgres:
   host: localhost
   port: 5432
   database: postgres
-  user: postgres
-  pass: postgres
+  username: postgres
+  password: postgres
 ---
 spring.profiles: secure
 auth:

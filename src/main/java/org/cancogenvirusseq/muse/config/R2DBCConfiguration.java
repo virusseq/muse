@@ -16,35 +16,55 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.config.datasource;
+package org.cancogenvirusseq.muse.config;
 
 import com.google.common.base.Strings;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.spi.ConnectionFactory;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.r2dbc.config.AbstractR2dbcConfiguration;
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 
 @Configuration
-@EnableR2dbcRepositories
-public class R2DBCConfiguration {
+@EnableR2dbcRepositories(basePackages = "org.cancogenvirusseq.muse.repository")
+public class R2DBCConfiguration extends AbstractR2dbcConfiguration {
+
+  @Value("${postgres.host}")
+  private String host;
+
+  @Value("${postgres.port}")
+  private int port;
+
+  @Value("${postgres.database}")
+  private String database;
+
+  @Value("${postgres.username}")
+  private String username;
+
+  @Value("${postgres.password}")
+  private String password;
+
+  @Override
   @Bean
-  public PostgresqlConnectionFactory connectionFactory(R2DBCProperties config) {
+  public PostgresqlConnectionFactory connectionFactory() {
     val postgresqlConnectionConfiguration = PostgresqlConnectionConfiguration.builder();
 
-    postgresqlConnectionConfiguration
-        .host(config.getHost())
-        .port(config.getPort())
-        .database(config.getDatabase());
+    postgresqlConnectionConfiguration.host(host).port(port).database(database);
 
-    if (!Strings.isNullOrEmpty(config.getUser())) {
-      postgresqlConnectionConfiguration.username(config.getUser());
+    if (!Strings.isNullOrEmpty(username)) {
+      postgresqlConnectionConfiguration.username(username);
     }
 
-    if (!Strings.isNullOrEmpty(config.getPass())) {
-      postgresqlConnectionConfiguration.password(config.getPass());
+    if (!Strings.isNullOrEmpty(password)) {
+      postgresqlConnectionConfiguration.password(password);
     }
+
+    postgresqlConnectionConfiguration.schema(new ClassPathResource("schema.sql").getPath());
 
     return new PostgresqlConnectionFactory(postgresqlConnectionConfiguration.build());
   }
