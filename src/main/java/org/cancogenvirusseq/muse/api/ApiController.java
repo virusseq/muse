@@ -26,6 +26,8 @@ import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionsService;
 import org.cancogenvirusseq.muse.service.UploadsService;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
@@ -57,16 +59,18 @@ public class ApiController implements ApiDefinition {
   @GetMapping("/submissions")
   public Mono<ResponseEntity<SubmissionListResponse>> getSubmissions(
       Integer pageSize, Integer pageToken) {
-    val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    return submissionsService
-        .getSubmissions(user.getUsername(), pageSize, pageToken)
+    return wrapFluxWithSecurityContext(submissionsService::getSubmissions)
+        .apply(PageRequest.of(pageToken, pageSize, Sort.DEFAULT_DIRECTION))
+        .map(SubmissionDTO::fromDAO)
+        .collectList()
+        .map(submissions -> SubmissionListResponse.builder().submissions(submissions).build())
         .map(this::respondOk);
   }
 
   @PostMapping("/submissions")
   public Mono<ResponseEntity<SubmissionCreateResponse>> submit(
       @RequestPart("files") Flux<FilePart> fileParts) {
-    return wrapWithSecurityContext(submissionsService::submit)
+    return wrapMonoWithSecurityContext(submissionsService::submit)
         .apply(fileParts)
         .map(this::respondOk);
   }
@@ -101,10 +105,17 @@ public class ApiController implements ApiDefinition {
   }
 
   // TODO: move to its own class and extend to n args
-  private <T, R> Function<T, Mono<R>> wrapWithSecurityContext(
+  private <T, R> Function<T, Mono<R>> wrapMonoWithSecurityContext(
       BiFunction<T, SecurityContext, Mono<R>> biFunctionToWrap) {
     return (T arg) ->
         ReactiveSecurityContextHolder.getContext()
             .flatMap(securityContext -> biFunctionToWrap.apply(arg, securityContext));
+  }
+
+  private <T, R> Function<T, Flux<R>> wrapFluxWithSecurityContext(
+      BiFunction<T, SecurityContext, Flux<R>> biFunctionToWrap) {
+    return (T arg) ->
+        ReactiveSecurityContextHolder.getContext()
+            .flatMapMany(securityContext -> biFunctionToWrap.apply(arg, securityContext));
   }
 }

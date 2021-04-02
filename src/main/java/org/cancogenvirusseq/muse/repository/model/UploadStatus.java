@@ -18,5 +18,9 @@
 
 package org.cancogenvirusseq.muse.repository.model;
 
-public class UploadDAO {
+public enum UploadStatus {
+  SUBMITTED,
+  PROCESSING,
+  COMPLETE,
+  ERROR;
 }

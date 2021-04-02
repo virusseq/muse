@@ -28,13 +28,12 @@ import java.util.UUID;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
 @Table("submission")
-public class SubmissionDAO {
-  @Id UUID submissionId;
-  @NonNull UUID userId;
-  @NonNull OffsetDateTime createdAt;
-  @NonNull List<String> originalFileNames;
-  @NonNull Integer totalRecords;
+public class Submission {
+  @Id private UUID submissionId;
+  @NonNull private UUID userId;
+  private OffsetDateTime createdAt;
+  @NonNull private List<String> originalFileNames;
+  @NonNull private Integer totalRecords;
 }

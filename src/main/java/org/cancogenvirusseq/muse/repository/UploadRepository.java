@@ -18,14 +18,15 @@
 
 package org.cancogenvirusseq.muse.repository;
 
-import org.cancogenvirusseq.muse.repository.model.UploadDAO;
+import org.cancogenvirusseq.muse.repository.model.Upload;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Query;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.data.repository.reactive.ReactiveSortingRepository;
 import reactor.core.publisher.Flux;
 
 import java.util.UUID;
 
-public interface UploadRepository extends ReactiveCrudRepository<UploadDAO, UUID> {
-  @Query("select * from upload where userId = $1")
-  Flux<UploadDAO> findAllByUserId(UUID userId);
+public interface UploadRepository extends ReactiveSortingRepository<Upload, UUID> {
+  @Query("select * from upload where user_id = $1")
+  Flux<Upload> findAllByUserId(String userId, Pageable pageable);
 }

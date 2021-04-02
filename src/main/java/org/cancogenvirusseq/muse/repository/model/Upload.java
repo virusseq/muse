@@ -16,23 +16,32 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.repository.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import lombok.*;
 
 @Data
 @Builder
-@RequiredArgsConstructor
 @AllArgsConstructor
-public class UploadDTO {
-  @NonNull UUID userId;
-  @NonNull private UUID submissionId;
+@Table("upload")
+public class Upload {
+  @Id private UUID uploadId;
   @NonNull private String studyId;
   @NonNull private String submitterSampleId;
+  @NonNull private UUID submissionId;
+  @NonNull private UUID userId;
+  private OffsetDateTime createdAt;
   @NonNull private UploadStatus status;
-  @NonNull List<String> originalFilePair;
   private UUID analysisId;
   private String error;
+  private List<String> originalFilePair;
 }

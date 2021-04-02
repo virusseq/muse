@@ -18,17 +18,28 @@
 
 package org.cancogenvirusseq.muse.api.model;
 
-import io.swagger.annotations.ApiModel;
-import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
 import lombok.NonNull;
+import lombok.Value;
+import org.cancogenvirusseq.muse.repository.model.Submission;
 
-@Data
-@Builder
-@AllArgsConstructor
-@ApiModel(description = "A list of submissions")
-public class SubmissionListResponse {
-  @NonNull List<SubmissionDTO> submissions;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+
+@Value
+public class SubmissionDTO {
+  @NonNull UUID submissionId;
+  @NonNull UUID userId;
+  @NonNull OffsetDateTime createdAt;
+  @NonNull List<String> originalFileNames;
+  @NonNull Integer totalRecords;
+
+  public static SubmissionDTO fromDAO(Submission submission) {
+    return new SubmissionDTO(
+        submission.getSubmissionId(),
+        submission.getUserId(),
+        submission.getCreatedAt(),
+        submission.getOriginalFileNames(),
+        submission.getTotalRecords());
+  }
 }

@@ -16,23 +16,24 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.api.model;
 
-import java.time.OffsetDateTime;
+import lombok.NonNull;
+import lombok.Value;
+import org.cancogenvirusseq.muse.model.UploadStatus;
+
 import java.util.List;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
 
-@Data
-@Builder
-@AllArgsConstructor
-public class SubmissionDTO { // todo: dp we even need DTO vs DAO?
-  @NonNull UUID submissionId;
+@Value
+public class UploadDTO {
+  @NonNull UUID uploadId;
   @NonNull UUID userId;
-  @NonNull OffsetDateTime createdAt;
-  @NonNull List<String> originalFileNames;
-  @NonNull Integer totalRecords;
+  @NonNull UUID submissionId;
+  @NonNull String studyId;
+  @NonNull String submitterSampleId;
+  @NonNull UploadStatus status;
+  @NonNull List<String> originalFilePair;
+  UUID analysisId;
+  String error;
 }

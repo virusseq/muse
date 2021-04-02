@@ -19,12 +19,12 @@
 package org.cancogenvirusseq.muse.api.model;
 
 import io.swagger.annotations.ApiModel;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
-import org.cancogenvirusseq.muse.model.UploadDTO;
+
+import java.util.List;
 
 @Data
 @Builder

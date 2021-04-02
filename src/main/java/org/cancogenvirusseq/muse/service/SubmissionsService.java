@@ -22,13 +22,15 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
-import org.cancogenvirusseq.muse.api.model.SubmissionListResponse;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.cancogenvirusseq.muse.repository.SubmissionRepository;
-import org.cancogenvirusseq.muse.repository.model.SubmissionDAO;
+import org.cancogenvirusseq.muse.repository.model.Submission;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
@@ -59,9 +61,8 @@ public class SubmissionsService {
     this.submissionsSink = Sinks.many().unicast().onBackpressureBuffer();
   }
 
-  public Mono<SubmissionListResponse> getSubmissions(
-      String userId, Integer pageSize, Integer pageToken) {
-    return Mono.just(new SubmissionListResponse(Collections.emptyList()));
+  public Flux<Submission> getSubmissions(Pageable page, SecurityContext securityContext) {
+    return submissionRepository.findAllByUserId(securityContext.getAuthentication().getName(), page);
   }
 
   public Mono<SubmissionCreateResponse> submit(
@@ -113,7 +114,7 @@ public class SubmissionsService {
                         fileList ->
                             submissionRepository
                                 .save(
-                                    SubmissionDAO.builder()
+                                    Submission.builder()
                                         .userId(
                                             UUID.fromString(
                                                 securityContext.getAuthentication().getName()))
@@ -126,7 +127,12 @@ public class SubmissionsService {
                                     submission ->
                                         SubmissionEvent.builder()
                                             .submissionId(submission.getSubmissionId())
-                                            .userId(UUID.fromString(securityContext.getAuthentication().getName())) // todo: auto UUID::fromString somehow?
+                                            .userId(
+                                                UUID.fromString(
+                                                    securityContext
+                                                        .getAuthentication()
+                                                        .getName())) // todo: auto UUID::fromString
+                                                                     // somehow?
                                             .records(recordsSubmissionFiles.getT1())
                                             .submissionFilesMap(recordsSubmissionFiles.getT2())
                                             .build())))
