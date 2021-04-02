@@ -18,27 +18,32 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TYPE upload_status as enum ('SUBMITTED', 'PROCESSING', 'COMPLETE', 'ERROR');
-
+-- CREATE TYPE upload_status as enum ('SUBMITTED', 'PROCESSING', 'COMPLETE', 'ERROR'); todo: only do this if not exists (flyway?)
 
 CREATE TABLE if not exists submission
 (
-    submission_id       uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id             uuid      not null,
-    created_at          timestamp not null,
-    total_records       int       not null,
-    original_file_names text[]    not null
+    submission_id       uuid        DEFAULT uuid_generate_v4(),
+    user_id             uuid   not null,
+    created_at          timestamptz DEFAULT current_timestamp,
+    total_records       int    not null,
+    original_file_names text[] not null,
+    PRIMARY KEY (submission_id)
 );
 
 CREATE TABLE if not exists upload
 (
-    user_id             uuid      not null,
-    submission_id       uuid      not null,
-    study_id            VARCHAR,
-    submitter_sample_id VARCHAR,
-    status              upload_status,
-    original_file_pair  text[]    not null,
+    upload_id           uuid        DEFAULT uuid_generate_v4(),
+    study_id            VARCHAR(32)   not null,
+    submitter_sample_id VARCHAR(32)   not null,
+    submission_id       uuid          not null,
+    user_id             uuid          not null,
+    created_at          timestamptz DEFAULT current_timestamp,
+    status              upload_status not null,
     analysis_Id         uuid,
     error               text,
-    created_at          timestamp not null
+    original_file_pair  text[]        not null,
+    PRIMARY KEY (upload_id),
+    CONSTRAINT fk_submission
+        FOREIGN KEY (submission_id)
+            REFERENCES submission (submission_id)
 );
