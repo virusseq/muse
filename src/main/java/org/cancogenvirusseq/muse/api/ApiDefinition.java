@@ -19,6 +19,9 @@
 package org.cancogenvirusseq.muse.api;
 
 import io.swagger.annotations.*;
+import java.nio.ByteBuffer;
+import java.util.UUID;
+import javax.validation.Valid;
 import org.cancogenvirusseq.muse.api.model.*;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
@@ -28,10 +31,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import javax.validation.Valid;
-import java.nio.ByteBuffer;
-import java.util.UUID;
 
 @Api(value = "Molecular Upload Submission sErvice (Muse)", tags = "Muse")
 public interface ApiDefinition {

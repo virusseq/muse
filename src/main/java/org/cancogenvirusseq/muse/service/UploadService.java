@@ -18,6 +18,8 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import java.util.Optional;
+import java.util.UUID;
 import lombok.NonNull;
 import lombok.val;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
@@ -26,9 +28,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-
-import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class UploadService {

@@ -18,33 +18,32 @@
 
 package org.cancogenvirusseq.muse.utils;
 
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 public class SecurityContextWrapper {
   public static <T, R> Function<T, Mono<R>> forMono(
       BiFunction<T, SecurityContext, Mono<R>> biFunctionToWrap) {
-    return (T arg) ->
+    return (T t) ->
         ReactiveSecurityContextHolder.getContext()
-            .flatMap(securityContext -> biFunctionToWrap.apply(arg, securityContext));
+            .flatMap(securityContext -> biFunctionToWrap.apply(t, securityContext));
   }
 
   public static <T, R> Function<T, Flux<R>> forFlux(
       BiFunction<T, SecurityContext, Flux<R>> biFunctionToWrap) {
-    return (T arg) ->
+    return (T t) ->
         ReactiveSecurityContextHolder.getContext()
-            .flatMapMany(securityContext -> biFunctionToWrap.apply(arg, securityContext));
+            .flatMapMany(securityContext -> biFunctionToWrap.apply(t, securityContext));
   }
 
   public static <T, U, R> BiFunction<T, U, Flux<R>> forFlux(
       TriFunction<T, U, SecurityContext, Flux<R>> triFunctionToWrap) {
-    return (T arg1, U arg2) ->
+    return (T t, U u) ->
         ReactiveSecurityContextHolder.getContext()
-            .flatMapMany(securityContext -> triFunctionToWrap.apply(arg1, arg2, securityContext));
+            .flatMapMany(securityContext -> triFunctionToWrap.apply(t, u, securityContext));
   }
 }

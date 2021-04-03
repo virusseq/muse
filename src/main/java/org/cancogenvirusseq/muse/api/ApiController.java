@@ -18,6 +18,11 @@
 
 package org.cancogenvirusseq.muse.api;
 
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,12 +40,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import javax.validation.Valid;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @Controller

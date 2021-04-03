@@ -18,12 +18,11 @@
 
 package org.cancogenvirusseq.muse.repository;
 
+import java.util.UUID;
 import org.cancogenvirusseq.muse.repository.model.Submission;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
-
-import java.util.UUID;
 
 public interface SubmissionRepository extends ReactiveCrudRepository<Submission, UUID> {
   Flux<Submission> findAllByUserId(UUID userId, Pageable page);

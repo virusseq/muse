@@ -18,13 +18,12 @@
 
 package org.cancogenvirusseq.muse.repository.model;
 
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Data
 @Builder

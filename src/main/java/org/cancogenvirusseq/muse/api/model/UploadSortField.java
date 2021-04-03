@@ -19,10 +19,10 @@
 package org.cancogenvirusseq.muse.api.model;
 
 public enum UploadSortField {
-    createdAt,
-    submissionId,
-    studyId,
-    submitterSampleId,
-    status,
-    analysisId
+  createdAt,
+  submissionId,
+  studyId,
+  submitterSampleId,
+  status,
+  analysisId
 }
