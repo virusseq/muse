@@ -19,13 +19,12 @@
 package org.cancogenvirusseq.muse.repository;
 
 import org.cancogenvirusseq.muse.repository.model.Submission;
-import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.reactive.ReactiveSortingRepository;
 import reactor.core.publisher.Flux;
 
 import java.util.UUID;
 
 public interface SubmissionRepository extends ReactiveSortingRepository<Submission, UUID> {
-  @Query("select * from submission where user_id = $1")
-  Flux<Submission> findAllByUserId(UUID userId);
+  Flux<Submission> findAllByUserId(UUID userId, Pageable page);
 }

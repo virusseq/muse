@@ -41,11 +41,11 @@ public interface ApiDefinition {
   @ApiOperation(
       value = "Get All Submissions",
       nickname = "Get Submissions",
-      response = SubmissionListResponse.class,
+      response = EntityListResponse.class,
       tags = "Muse")
   @ApiResponses(
       value = {
-        @ApiResponse(code = 200, message = "", response = SubmissionListResponse.class),
+        @ApiResponse(code = 200, message = "", response = EntityListResponse.class),
         @ApiResponse(code = 400, message = BAD_REQUEST, response = ErrorResponse.class),
         @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
         @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
@@ -56,7 +56,7 @@ public interface ApiDefinition {
       produces = MediaType.APPLICATION_JSON_VALUE,
       consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  Mono<ResponseEntity<SubmissionListResponse>> getSubmissions(
+  Mono<ResponseEntity<EntityListResponse<SubmissionDTO>>> getSubmissions(
       @ApiParam(
               example = "10",
               value =
@@ -91,7 +91,7 @@ public interface ApiDefinition {
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.POST)
   Mono<ResponseEntity<SubmissionCreateResponse>> submit(
-      // this isn't working correctly, know issue:
+      // this isn't working correctly in the swagger-ui, know issue:
       // https://github.com/springfox/springfox/issues/3464
       @ApiParam(
               value =
@@ -102,11 +102,11 @@ public interface ApiDefinition {
   @ApiOperation(
       value = "Get All Uploads",
       nickname = "Get Uploads",
-      response = UploadListResponse.class,
+      response = EntityListResponse.class,
       tags = "Muse")
   @ApiResponses(
       value = {
-        @ApiResponse(code = 200, message = "", response = UploadListResponse.class),
+        @ApiResponse(code = 200, message = "", response = EntityListResponse.class),
         @ApiResponse(code = 400, message = BAD_REQUEST, response = ErrorResponse.class),
         @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
         @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
@@ -117,7 +117,7 @@ public interface ApiDefinition {
       produces = MediaType.APPLICATION_JSON_VALUE,
       consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  Mono<ResponseEntity<UploadListResponse>> getUploads(
+  Mono<ResponseEntity<EntityListResponse<UploadDTO>>> getUploads(
       @ApiParam(
               example = "10",
               value =

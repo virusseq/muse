@@ -18,17 +18,19 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import java.util.Collections;
-import java.util.Optional;
-import java.util.UUID;
-import org.cancogenvirusseq.muse.api.model.UploadListResponse;
+import org.cancogenvirusseq.muse.api.model.EntityListResponse;
+import org.cancogenvirusseq.muse.api.model.UploadDTO;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.Collections;
+import java.util.Optional;
+import java.util.UUID;
+
 @Service
 public class UploadsService {
-  public Mono<UploadListResponse> getUploads(
+  public Mono<EntityListResponse<UploadDTO>> getUploads(
       String userId, Integer pageSize, Integer pageToken, Optional<UUID> submissionId) {
-    return Mono.just(new UploadListResponse(Collections.emptyList()));
+    return Mono.just(new EntityListResponse<>(Collections.emptyList()));
   }
 }
