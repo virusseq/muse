@@ -60,7 +60,7 @@ public class ApiController implements ApiDefinition {
   public Mono<ResponseEntity<SubmissionListResponse>> getSubmissions(
       Integer pageSize, Integer pageToken) {
     return wrapFluxWithSecurityContext(submissionsService::getSubmissions)
-        .apply(PageRequest.of(pageToken, pageSize, Sort.DEFAULT_DIRECTION))
+        .apply(PageRequest.of(pageToken, pageSize))
         .map(SubmissionDTO::fromDAO)
         .collectList()
         .map(submissions -> SubmissionListResponse.builder().submissions(submissions).build())
@@ -115,7 +115,7 @@ public class ApiController implements ApiDefinition {
   private <T, R> Function<T, Flux<R>> wrapFluxWithSecurityContext(
       BiFunction<T, SecurityContext, Flux<R>> biFunctionToWrap) {
     return (T arg) ->
-        ReactiveSecurityContextHolder.getContext()
+        ReactiveSecurityContextHolder.getContext() // todo: this doesnt work
             .flatMapMany(securityContext -> biFunctionToWrap.apply(arg, securityContext));
   }
 }

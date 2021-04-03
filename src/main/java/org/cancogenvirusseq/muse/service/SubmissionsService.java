@@ -62,7 +62,7 @@ public class SubmissionsService {
   }
 
   public Flux<Submission> getSubmissions(Pageable page, SecurityContext securityContext) {
-    return submissionRepository.findAllByUserId(securityContext.getAuthentication().getName(), page);
+    return submissionRepository.findAllByUserId(UUID.fromString(securityContext.getAuthentication().getName()));
   }
 
   public Mono<SubmissionCreateResponse> submit(
