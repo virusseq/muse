@@ -49,12 +49,12 @@ import static org.cancogenvirusseq.muse.components.TsvParser.parseTsvStrToFlatRe
 
 @Service
 @Slf4j
-public class SubmissionsService {
+public class SubmissionService {
 
-  public final SubmissionRepository submissionRepository;
+  private final SubmissionRepository submissionRepository;
   public final Sinks.Many<SubmissionEvent> submissionsSink;
 
-  public SubmissionsService(@NonNull SubmissionRepository submissionRepository) {
+  public SubmissionService(@NonNull SubmissionRepository submissionRepository) {
     this.submissionRepository = submissionRepository;
     this.submissionsSink = Sinks.many().unicast().onBackpressureBuffer();
   }

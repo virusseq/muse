@@ -16,15 +16,33 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.repository;
+package org.cancogenvirusseq.muse.service;
 
-import org.cancogenvirusseq.muse.repository.model.Submission;
+import lombok.NonNull;
+import lombok.val;
+import org.cancogenvirusseq.muse.repository.UploadRepository;
+import org.cancogenvirusseq.muse.repository.model.Upload;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.util.Optional;
 import java.util.UUID;
 
-public interface SubmissionRepository extends ReactiveCrudRepository<Submission, UUID> {
-  Flux<Submission> findAllByUserId(UUID userId, Pageable page);
+@Service
+public class UploadService {
+  private final UploadRepository uploadRepository;
+
+  public UploadService(@NonNull UploadRepository uploadRepository) {
+    this.uploadRepository = uploadRepository;
+  }
+
+  public Flux<Upload> getUploads(
+      Pageable page, Optional<UUID> submissionId, SecurityContext securityContext) {
+    val userId = UUID.fromString(securityContext.getAuthentication().getName());
+    return submissionId
+        .map(id -> uploadRepository.findAllByUserIdAndSubmissionId(userId, id, page))
+        .orElse(uploadRepository.findAllByUserId(userId, page));
+  }
 }
