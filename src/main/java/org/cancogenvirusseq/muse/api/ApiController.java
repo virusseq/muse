@@ -27,6 +27,7 @@ import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionsService;
 import org.cancogenvirusseq.muse.service.UploadsService;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
@@ -57,9 +58,9 @@ public class ApiController implements ApiDefinition {
 
   @GetMapping("/submissions")
   public Mono<ResponseEntity<EntityListResponse<SubmissionDTO>>> getSubmissions(
-      Integer pageSize, Integer pageToken) {
+      Integer page, Integer size, Sort.Direction sortDirection, SubmissionSortField sortField) {
     return wrapFluxWithSecurityContext(submissionsService::getSubmissions)
-        .apply(PageRequest.of(pageToken, pageSize))
+        .apply(PageRequest.of(page, size, Sort.by(sortDirection, sortField.toString())))
         .map(SubmissionDTO::fromDAO)
         .collectList()
         .map(submissions -> EntityListResponse.<SubmissionDTO>builder().data(submissions).build())
@@ -76,10 +77,14 @@ public class ApiController implements ApiDefinition {
 
   @GetMapping("/uploads")
   public Mono<ResponseEntity<EntityListResponse<UploadDTO>>> getUploads(
-      Integer pageSize, Integer pageToken, UUID submissionId) {
+      Integer page,
+      Integer size,
+      Sort.Direction sortDirection,
+      UploadSortField sortField,
+      UUID submissionId) {
     val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     return uploadsService
-        .getUploads(user.getUsername(), pageSize, pageToken, Optional.ofNullable(submissionId))
+        .getUploads(user.getUsername(), page, size, Optional.ofNullable(submissionId))
         .map(this::respondOk);
   }
 

@@ -16,14 +16,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.api.model;
 
-import lombok.RequiredArgsConstructor;
-
-@RequiredArgsConstructor
-public enum UploadStatus {
-  SUBMITTED,
-  PROCESSING,
-  ERROR,
-  COMPLETE;
+public enum UploadSortField {
+    createdAt,
+    submissionId,
+    studyId,
+    submitterSampleId,
+    status,
+    analysisId
 }

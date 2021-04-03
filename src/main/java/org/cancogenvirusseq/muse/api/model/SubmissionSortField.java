@@ -18,26 +18,10 @@
 
 package org.cancogenvirusseq.muse.api.model;
 
-import lombok.NonNull;
-import lombok.Value;
-import org.cancogenvirusseq.muse.repository.model.Submission;
+import lombok.RequiredArgsConstructor;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-
-@Value
-public class SubmissionDTO {
-  @NonNull UUID submissionId;
-  @NonNull OffsetDateTime createdAt;
-  @NonNull List<String> originalFileNames;
-  @NonNull Integer totalRecords;
-
-  public static SubmissionDTO fromDAO(Submission submission) {
-    return new SubmissionDTO(
-        submission.getSubmissionId(),
-        submission.getCreatedAt(),
-        submission.getOriginalFileNames(),
-        submission.getTotalRecords());
-  }
+@RequiredArgsConstructor
+public enum SubmissionSortField {
+  createdAt,
+  submissionId
 }

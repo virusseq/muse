@@ -20,15 +20,14 @@ package org.cancogenvirusseq.muse.api.model;
 
 import lombok.NonNull;
 import lombok.Value;
-import org.cancogenvirusseq.muse.model.UploadStatus;
+import org.cancogenvirusseq.muse.repository.model.Upload;
+import org.cancogenvirusseq.muse.repository.model.UploadStatus;
 
 import java.util.List;
 import java.util.UUID;
 
 @Value
 public class UploadDTO {
-  @NonNull UUID uploadId;
-  @NonNull UUID userId;
   @NonNull UUID submissionId;
   @NonNull String studyId;
   @NonNull String submitterSampleId;
@@ -36,4 +35,15 @@ public class UploadDTO {
   @NonNull List<String> originalFilePair;
   UUID analysisId;
   String error;
+
+  public static UploadDTO fromDAO(Upload upload) {
+    return new UploadDTO(
+        upload.getSubmissionId(),
+        upload.getStudyId(),
+        upload.getSubmitterSampleId(),
+        upload.getStatus(),
+        upload.getOriginalFilePair(),
+        upload.getAnalysisId(),
+        upload.getError());
+  }
 }

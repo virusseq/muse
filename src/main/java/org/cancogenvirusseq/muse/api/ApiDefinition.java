@@ -19,10 +19,8 @@
 package org.cancogenvirusseq.muse.api;
 
 import io.swagger.annotations.*;
-import java.nio.ByteBuffer;
-import java.util.UUID;
-import javax.validation.Valid;
 import org.cancogenvirusseq.muse.api.model.*;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
@@ -30,6 +28,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import javax.validation.Valid;
+import java.nio.ByteBuffer;
+import java.util.UUID;
 
 @Api(value = "Molecular Upload Submission sErvice (Muse)", tags = "Muse")
 public interface ApiDefinition {
@@ -58,19 +60,27 @@ public interface ApiDefinition {
       method = RequestMethod.GET)
   Mono<ResponseEntity<EntityListResponse<SubmissionDTO>>> getSubmissions(
       @ApiParam(
-              example = "10",
-              value =
-                  "OPTIONAL: The preferred number of entities to return for a page. If not provided, the implementation should use a default page size. The implementation must not return more items than `pageSize`, but it may return fewer.  Clients should not assume that if fewer than `pageSize` items are returned that all items have been returned.  The availability of additional pages is indicated by the value of `next_pageToken` in the response.")
-          @Valid
-          @RequestParam(value = "pageSize", defaultValue = "10", required = false)
-          Integer pageSize,
-      @ApiParam(
               example = "0",
               value =
-                  "OPTIONAL: Token to use to indicate where to start getting results. If unspecified, return the first page of results.")
+                  "OPTIONAL: Given page size, what page of entities to return. Example: A page value of 10 with size 5 results in entities 50 - 54 being returned.")
           @Valid
-          @RequestParam(value = "pageToken", defaultValue = "0", required = false)
-          Integer pageToken);
+          @RequestParam(value = "page", defaultValue = "0", required = false)
+          Integer page,
+      @ApiParam(
+              example = "10",
+              value =
+                  "OPTIONAL: The preferred number of entities to return for a page, may result in fewer entities than requested but never more.")
+          @Valid
+          @RequestParam(value = "size", defaultValue = "10", required = false)
+          Integer size,
+      @ApiParam(example = "DESC", value = "OPTIONAL: Direction on which to apply sort.")
+          @Valid
+          @RequestParam(value = "sortDirection", defaultValue = "DESC", required = false)
+          Sort.Direction sortDirection,
+      @ApiParam(example = "createdAt", value = "OPTIONAL: Field on which to sort.")
+          @Valid
+          @RequestParam(value = "sortField", defaultValue = "createdAt", required = false)
+          SubmissionSortField sortField);
 
   @ApiOperation(
       value =
@@ -119,19 +129,27 @@ public interface ApiDefinition {
       method = RequestMethod.GET)
   Mono<ResponseEntity<EntityListResponse<UploadDTO>>> getUploads(
       @ApiParam(
-              example = "10",
-              value =
-                  "OPTIONAL: The preferred number of entities to return for a page. If not provided, the implementation should use a default page size. The implementation must not return more items than `pageSize`, but it may return fewer.  Clients should not assume that if fewer than `pageSize` items are returned that all items have been returned.  The availability of additional pages is indicated by the value of `next_pageToken` in the response.")
-          @Valid
-          @RequestParam(value = "pageSize", defaultValue = "10", required = false)
-          Integer pageSize,
-      @ApiParam(
               example = "0",
               value =
-                  "OPTIONAL: Token to use to indicate where to start getting results. If unspecified, return the first page of results.")
+                  "OPTIONAL: Given page size, what page of entities to return. Example: A page value of 10 with size 5 results in entities 50 - 54 being returned.")
           @Valid
-          @RequestParam(value = "pageToken", defaultValue = "0", required = false)
-          Integer pageToken,
+          @RequestParam(value = "page", defaultValue = "0", required = false)
+          Integer page,
+      @ApiParam(
+              example = "10",
+              value =
+                  "OPTIONAL: The preferred number of entities to return for a page, may result in fewer entities than requested but never more.")
+          @Valid
+          @RequestParam(value = "size", defaultValue = "10", required = false)
+          Integer size,
+      @ApiParam(example = "DESC", value = "OPTIONAL: Direction on which to apply sort.")
+          @Valid
+          @RequestParam(value = "sortDirection", defaultValue = "DESC", required = false)
+          Sort.Direction sortDirection,
+      @ApiParam(example = "createdAt", value = "OPTIONAL: Field on which to sort.")
+          @Valid
+          @RequestParam(value = "sortField", defaultValue = "createdAt", required = false)
+          UploadSortField sortField,
       @ApiParam(
               example = "7fe7da94-bd30-4867-8a5e-042f6d9ccc48",
               value = "OPTIONAL: Filter list response by submissionId")
