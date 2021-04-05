@@ -5,16 +5,18 @@ spring:
     description: "Molecular Upload Submission sErvice"
   profiles:
     active: secure
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/muse
+    username: postgres
+    password: password
+  flyway:
+    url: jdbc:postgresql://localhost:5432/muse
+    username: postgres
+    password: password
 
 server:
   port: 8080
 
-postgres:
-  host: localhost
-  port: 5432
-  database: postgres
-  username: postgres
-  password: postgres
 ---
 spring.profiles: secure
 auth:
