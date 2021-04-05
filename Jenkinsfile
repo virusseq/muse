@@ -21,9 +21,12 @@ spec:
   - name: dind-daemon
     image: docker:18.06-dind
     securityContext:
-        privileged: true
+      privileged: true
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ''
     volumeMounts:
-      - name: docker-graph-storage
+      - name: dind-storage
         mountPath: /var/lib/docker
   - name: helm
     image: alpine/helm:2.12.3
@@ -32,17 +35,16 @@ spec:
     tty: true
   - name: docker
     image: docker:18-git
+    command:
+    - cat
     tty: true
-    volumeMounts:
-    - mountPath: /var/run/docker.sock
-      name: docker-sock
+    env:
+    - name: DOCKER_HOST
+      value: tcp://localhost:2375
   volumes:
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
-      type: File
-  - name: docker-graph-storage
+  - name: dind-storage
     emptyDir: {}
+
 """
         }
     }
