@@ -7,7 +7,6 @@ def version = "UNKNOWN"
 pipeline {
     agent {
         kubernetes {
-            label 'muse'
             yaml """
 apiVersion: v1
 kind: Pod
@@ -19,12 +18,19 @@ spec:
     env:
       - name: DOCKER_HOST
         value: tcp://localhost:2375
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
   - name: dind-daemon
     image: docker:18.06-dind
     securityContext:
-        privileged: true
+      privileged: true
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ''
     volumeMounts:
-      - name: docker-graph-storage
+      - name: dind-storage
         mountPath: /var/lib/docker
   - name: helm
     image: alpine/helm:2.12.3
@@ -33,17 +39,20 @@ spec:
     tty: true
   - name: docker
     image: docker:18-git
+    command:
+    - cat
     tty: true
-    volumeMounts:
-    - mountPath: /var/run/docker.sock
-      name: docker-sock
+    env:
+    - name: DOCKER_HOST
+      value: tcp://localhost:2375
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
   volumes:
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
-      type: File
-  - name: docker-graph-storage
+  - name: dind-storage
     emptyDir: {}
+
 """
         }
     }
@@ -71,8 +80,10 @@ spec:
             }
             steps {
                 container('docker') {
-                    withCredentials([usernamePassword(credentialsId: 'cancogenContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
+                    withCredentials([usernamePassword(credentialsId: 'cancogen-github',
+                            usernameVariable: 'GITHUB_APP',
+                            passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
+                        sh 'docker login ghcr.io -u $GITHUB_APP -p $GITHUB_ACCESS_TOKEN'
                     }
 
                     // DNS error if --network is default
@@ -105,13 +116,12 @@ spec:
             }
             steps {
                 container('docker') {
-                    withCredentials([usernamePassword(credentialsId: 'cancogenGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                    withCredentials([usernamePassword(credentialsId: 'cancogen-github',
+                            usernameVariable: 'GITHUB_APP',
+                            passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
                         sh "git tag ${version}"
-                        sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${gitHubRepo} --tags"
-                    }
-
-                    withCredentials([usernamePassword(credentialsId: 'cancogenContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
+                        sh "git push https://${GITHUB_APP}:${GITHUB_ACCESS_TOKEN}@github.com/${gitHubRepo} --tags"
+                        sh 'docker login ghcr.io -u $GITHUB_APP -p $GITHUB_ACCESS_TOKEN'
                     }
 
                     // DNS error if --network is default
