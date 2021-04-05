@@ -83,7 +83,7 @@ spec:
                     withCredentials([usernamePassword(credentialsId: 'cancogen-github',
                             usernameVariable: 'GITHUB_APP',
                             passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
-                        sh 'docker login ghcr.io -u GITHUB_APP -p GITHUB_ACCESS_TOKEN'
+                        sh 'docker login ghcr.io -u $GITHUB_APP -p $GITHUB_ACCESS_TOKEN'
                     }
 
                     // DNS error if --network is default
@@ -121,7 +121,7 @@ spec:
                             passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
                         sh "git tag ${version}"
                         sh "git push https://${GITHUB_APP}:${GITHUB_ACCESS_TOKEN}@github.com/${gitHubRepo} --tags"
-                        sh 'docker login ghcr.io -u GITHUB_APP -p GITHUB_ACCESS_TOKEN'
+                        sh 'docker login ghcr.io -u $GITHUB_APP -p $GITHUB_ACCESS_TOKEN'
                     }
 
                     // DNS error if --network is default
