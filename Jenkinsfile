@@ -7,7 +7,6 @@ def version = "UNKNOWN"
 pipeline {
     agent {
         kubernetes {
-            label 'muse'
             yaml """
 apiVersion: v1
 kind: Pod
