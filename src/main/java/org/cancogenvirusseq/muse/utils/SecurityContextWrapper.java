@@ -18,18 +18,25 @@
 
 package org.cancogenvirusseq.muse.utils;
 
+import java.util.Collection;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextImpl;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class SecurityContextWrapper {
+
   public static <T, R> Function<T, Mono<R>> forMono(
       BiFunction<T, SecurityContext, Mono<R>> biFunctionToWrap) {
+
     return (T t) ->
         ReactiveSecurityContextHolder.getContext()
+            .defaultIfEmpty(new SecurityContextImpl())
             .flatMap(securityContext -> biFunctionToWrap.apply(t, securityContext));
   }
 
@@ -37,6 +44,7 @@ public class SecurityContextWrapper {
       BiFunction<T, SecurityContext, Flux<R>> biFunctionToWrap) {
     return (T t) ->
         ReactiveSecurityContextHolder.getContext()
+            .defaultIfEmpty(new SecurityContextImpl())
             .flatMapMany(securityContext -> biFunctionToWrap.apply(t, securityContext));
   }
 
@@ -44,6 +52,54 @@ public class SecurityContextWrapper {
       TriFunction<T, U, SecurityContext, Flux<R>> triFunctionToWrap) {
     return (T t, U u) ->
         ReactiveSecurityContextHolder.getContext()
+            .defaultIfEmpty(new SecurityContextImpl())
             .flatMapMany(securityContext -> triFunctionToWrap.apply(t, u, securityContext));
+  }
+
+  static class DummySecurityContext implements SecurityContext {
+
+    @Override
+    public Authentication getAuthentication() {
+      return null;
+    }
+
+    @Override
+    public void setAuthentication(Authentication authentication) {}
+  }
+
+  static class DummyAuthentication implements Authentication {
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+      return null;
+    }
+
+    @Override
+    public Object getCredentials() {
+      return null;
+    }
+
+    @Override
+    public Object getDetails() {
+      return null;
+    }
+
+    @Override
+    public Object getPrincipal() {
+      return null;
+    }
+
+    @Override
+    public boolean isAuthenticated() {
+      return false;
+    }
+
+    @Override
+    public void setAuthenticated(boolean isAuthenticated) throws IllegalArgumentException {}
+
+    @Override
+    public String getName() {
+      return null;
+    }
   }
 }

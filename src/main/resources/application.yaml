@@ -3,11 +3,11 @@ spring:
     name: "Muse"
     version: @project.version@
     description: "Molecular Upload Submission sErvice"
-  profiles:
-    active: secure
+#  profiles:
+#    active: secure
 
 server:
-  port: 8080
+  port: 8089
 
 postgres:
   host: localhost

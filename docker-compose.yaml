@@ -95,7 +95,6 @@ services:
       - "8432:5432"
     volumes:
       - "./docker/song-db-init:/docker-entrypoint-initdb.d"
-
   song-server:
     network_mode: "host"
     image: overture/song-server:4.5.0
@@ -129,6 +128,15 @@ services:
       - ego-api
       - score-server
       - ego-postgres
+
+  muse-db:
+    image: postgres:11.1
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
 
 volumes:
   object-storage-data: {}
