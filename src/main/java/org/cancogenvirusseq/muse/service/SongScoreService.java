@@ -75,7 +75,8 @@ public class SongScoreService {
                   val studyId = r.get(STUDY_ID_HEADER);
                   val submissionFile = map.get(sampleId);
 
-                  val upload = Upload.builder()
+                  val upload =
+                      Upload.builder()
                           .studyId(studyId)
                           .submitterSampleId(sampleId)
                           .submissionId(submissionEvent.getSubmissionId())
@@ -117,7 +118,8 @@ public class SongScoreService {
             scoreFileSpec ->
                 songScoreClient.upload(
                     scoreFileSpec, submissionFile.getContent(), submissionFile.getFileMd5sum()))
-        .flatMap(res -> songScoreClient.publishAnalysis(upload.getStudyId(), upload.getAnalysisId()))
+        .flatMap(
+            res -> songScoreClient.publishAnalysis(upload.getStudyId(), upload.getAnalysisId()))
         .flatMap(
             r -> {
               upload.setStatus(UploadStatus.COMPLETE);
