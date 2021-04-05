@@ -16,23 +16,33 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.api.model;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
 import lombok.NonNull;
+import lombok.Value;
+import org.cancogenvirusseq.muse.repository.model.Upload;
+import org.cancogenvirusseq.muse.repository.model.UploadStatus;
 
-@Data
-@Builder
-@AllArgsConstructor
-public class SubmissionEvent {
-  @NonNull private UUID submissionId;
-  @NonNull private UUID userId;
-  @NonNull private List<Map<String, String>> records;
-  @NonNull private ConcurrentHashMap<String, SubmissionFile> submissionFilesMap;
+@Value
+public class UploadDTO {
+  @NonNull UUID submissionId;
+  @NonNull String studyId;
+  @NonNull String submitterSampleId;
+  @NonNull UploadStatus status;
+  @NonNull List<String> originalFilePair;
+  UUID analysisId;
+  String error;
+
+  public static UploadDTO fromDAO(Upload upload) {
+    return new UploadDTO(
+        upload.getSubmissionId(),
+        upload.getStudyId(),
+        upload.getSubmitterSampleId(),
+        upload.getStatus(),
+        upload.getOriginalFilePair(),
+        upload.getAnalysisId(),
+        upload.getError());
+  }
 }

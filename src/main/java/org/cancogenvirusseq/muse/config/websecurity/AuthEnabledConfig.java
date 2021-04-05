@@ -70,8 +70,7 @@ public class AuthEnabledConfig {
         .authorizeExchange()
         .pathMatchers("/actuator/**")
         .permitAll()
-        // WES-API endpoints
-        .pathMatchers("/submissions", "/uploads/**", "/download")
+        .pathMatchers("/submissions/**", "/uploads/**", "/download")
         .permitAll()
         .pathMatchers(
             "/v2/api-docs",

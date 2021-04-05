@@ -16,14 +16,16 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.repository;
 
-import lombok.RequiredArgsConstructor;
+import java.util.UUID;
+import org.cancogenvirusseq.muse.repository.model.Upload;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Flux;
 
-@RequiredArgsConstructor
-public enum UploadStatus {
-  SUBMITTED,
-  PROCESSING,
-  ERROR,
-  COMPLETE;
+public interface UploadRepository extends ReactiveCrudRepository<Upload, UUID> {
+  Flux<Upload> findAllByUserId(UUID userId, Pageable pageable);
+
+  Flux<Upload> findAllByUserIdAndSubmissionId(UUID userId, UUID submissionId, Pageable pageable);
 }

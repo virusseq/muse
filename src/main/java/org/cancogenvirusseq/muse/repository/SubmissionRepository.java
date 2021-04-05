@@ -16,23 +16,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
+import org.cancogenvirusseq.muse.repository.model.Submission;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Flux;
 
-@Data
-@Builder
-@AllArgsConstructor
-public class SubmissionDTO {
-  @NonNull UUID submissionId;
-  @NonNull UUID userId;
-  @NonNull LocalDateTime createdAt; // todo: do we want OffsetDateTime?
-  @NonNull List<String> originalFileNames;
-  @NonNull Integer totalRecords;
+public interface SubmissionRepository extends ReactiveCrudRepository<Submission, UUID> {
+  Flux<Submission> findAllByUserId(UUID userId, Pageable page);
 }

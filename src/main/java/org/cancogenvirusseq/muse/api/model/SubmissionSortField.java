@@ -18,18 +18,10 @@
 
 package org.cancogenvirusseq.muse.api.model;
 
-import io.swagger.annotations.ApiModel;
-import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import org.cancogenvirusseq.muse.model.SubmissionDTO;
+import lombok.RequiredArgsConstructor;
 
-@Data
-@Builder
-@AllArgsConstructor
-@ApiModel(description = "A list of submissions")
-public class SubmissionListResponse {
-  @NonNull List<SubmissionDTO> submissions;
+@RequiredArgsConstructor
+public enum SubmissionSortField {
+  createdAt,
+  submissionId
 }

@@ -16,21 +16,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.api.model;
+package org.cancogenvirusseq.muse.repository.model;
 
-import io.swagger.annotations.ApiModel;
-import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import org.cancogenvirusseq.muse.model.UploadDTO;
-
-@Data
-@Builder
-@AllArgsConstructor
-@ApiModel(
-    description = "A list of uploads initiated as a result of submitting .tsv/.fasta file pairs")
-public class UploadListResponse {
-  @NonNull List<UploadDTO> uploads;
+public enum UploadStatus {
+  QUEUED,
+  PROCESSING,
+  COMPLETE,
+  ERROR;
 }

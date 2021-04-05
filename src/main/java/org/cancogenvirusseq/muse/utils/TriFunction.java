@@ -16,23 +16,17 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.utils;
 
-import java.util.List;
-import java.util.UUID;
-import lombok.*;
-
-@Data
-@Builder
-@RequiredArgsConstructor
-@AllArgsConstructor
-public class UploadDTO {
-  @NonNull UUID userId;
-  @NonNull private UUID submissionId;
-  @NonNull private String studyId;
-  @NonNull private String submitterSampleId;
-  @NonNull private UploadStatus status;
-  @NonNull List<String> originalFilePair;
-  private UUID analysisId;
-  private String error;
+@FunctionalInterface
+public interface TriFunction<T, U, S, R> {
+  /**
+   * Applies this function to the given arguments.
+   *
+   * @param t the first function argument
+   * @param u the second function argument
+   * @param s the third function argument
+   * @return the function result
+   */
+  R apply(T t, U u, S s);
 }

@@ -19,22 +19,23 @@
 package org.cancogenvirusseq.muse.api;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.service.DownloadsService;
-import org.cancogenvirusseq.muse.service.SubmissionsService;
-import org.cancogenvirusseq.muse.service.UploadsService;
+import org.cancogenvirusseq.muse.service.SubmissionService;
+import org.cancogenvirusseq.muse.service.UploadService;
+import org.cancogenvirusseq.muse.utils.SecurityContextWrapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -45,32 +46,42 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ApiController implements ApiDefinition {
 
-  private final SubmissionsService submissionsService;
-  private final UploadsService uploadsService;
+  private final SubmissionService submissionService;
+  private final UploadService uploadService;
   private final DownloadsService downloadsService;
 
   @GetMapping("/submissions")
-  public Mono<ResponseEntity<SubmissionListResponse>> getSubmissions(
-      Integer pageSize, Integer pageToken) {
-    val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    return submissionsService
-        .getSubmissions(user.getUsername(), pageSize, pageToken)
-        .map(this::respondOk);
+  public Mono<ResponseEntity<EntityListResponse<SubmissionDTO>>> getSubmissions(
+      Integer page, Integer size, Sort.Direction sortDirection, SubmissionSortField sortField) {
+    return SecurityContextWrapper.forFlux(submissionService::getSubmissions)
+        .apply(PageRequest.of(page, size, Sort.by(sortDirection, sortField.toString())))
+        .map(SubmissionDTO::fromDAO)
+        .collectList()
+        .transform(this::listResponseTransform);
   }
 
   @PostMapping("/submissions")
   public Mono<ResponseEntity<SubmissionCreateResponse>> submit(
       @RequestPart("files") Flux<FilePart> fileParts) {
-    return submissionsService.submit(fileParts).map(this::respondOk);
+    return SecurityContextWrapper.forMono(submissionService::submit)
+        .apply(fileParts)
+        .map(this::respondOk);
   }
 
   @GetMapping("/uploads")
-  public Mono<ResponseEntity<UploadListResponse>> getUploads(
-      Integer pageSize, Integer pageToken, UUID submissionId) {
-    val user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    return uploadsService
-        .getUploads(user.getUsername(), pageSize, pageToken, Optional.ofNullable(submissionId))
-        .map(this::respondOk);
+  public Mono<ResponseEntity<EntityListResponse<UploadDTO>>> getUploads(
+      Integer page,
+      Integer size,
+      Sort.Direction sortDirection,
+      UploadSortField sortField,
+      UUID submissionId) {
+    return SecurityContextWrapper.forFlux(uploadService::getUploads)
+        .apply(
+            PageRequest.of(page, size, Sort.by(sortDirection, sortField.toString())),
+            Optional.ofNullable(submissionId))
+        .map(UploadDTO::fromDAO)
+        .collectList()
+        .transform(this::listResponseTransform);
   }
 
   @PostMapping("/download")
@@ -91,5 +102,12 @@ public class ApiController implements ApiDefinition {
 
   private <T> ResponseEntity<T> respondOk(T response) {
     return new ResponseEntity<T>(response, HttpStatus.OK);
+  }
+
+  private <T> Mono<ResponseEntity<EntityListResponse<T>>> listResponseTransform(
+      Mono<List<T>> entities) {
+    return entities
+        .map(entityList -> EntityListResponse.<T>builder().data(entityList).build())
+        .map(this::respondOk);
   }
 }
