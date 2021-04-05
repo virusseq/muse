@@ -45,6 +45,7 @@ public class SongScoreClient {
         .header("Authorization", "Bearer " + systemApiToken)
         .retrieve()
         .bodyToMono(SubmitResponse.class)
+        .onErrorMap(t -> new Error("Failed to submit payload"))
         .log();
   }
 
@@ -77,11 +78,12 @@ public class SongScoreClient {
         .header("Authorization", "Bearer " + systemApiToken)
         .retrieve()
         .bodyToMono(ScoreFileSpec.class)
+        .onErrorMap(t -> new Error("Failed to initialize upload"))
         .log();
   }
 
   // Mono<String> is etag
-  public Mono<String> upload(ScoreFileSpec scoreFileSpec, String fileContent, String md5) {
+  public Mono<String> uploadAndFinalize(ScoreFileSpec scoreFileSpec, String fileContent, String md5) {
     // we expect only one file part
     val presignedUrl = decodeUrl(scoreFileSpec.getParts().get(0).getUrl());
 
@@ -94,6 +96,7 @@ public class SongScoreClient {
         .toBodilessEntity()
         .map(res -> res.getHeaders().getETag().replace("\"", ""))
         .flatMap(eTag -> finalizeScoreUpload(scoreFileSpec, md5, eTag))
+        .onErrorMap(t -> new Error("Failed to upload and finalize"))
         .log();
   }
 
@@ -154,6 +157,7 @@ public class SongScoreClient {
         .retrieve()
         .toBodilessEntity()
         .map(Objects::toString)
+        .onErrorMap(t -> new Error("Failed to publish analysis"))
         .log();
   }
 
@@ -183,30 +187,4 @@ public class SongScoreClient {
   public static String decodeUrl(String str) {
     return URLDecoder.decode(str, StandardCharsets.UTF_8);
   }
-
-  //  public static ClientDTO<Void> createPipeDto(String analysisId, String studyId, String md5) {
-  //    return ClientDTO.<Void>builder()
-  //        .analysisId(analysisId)
-  //        .studyId(studyId)
-  //        .fileMd5sum(md5)
-  //        .build();
-  //  }
-
-  //  public static <E> ClientDTO<E> updateData(ClientDTO<?> dto, E data) {
-  //    return ClientDTO.<E>builder()
-  //        .analysisId(dto.getAnalysisId())
-  //        .studyId(dto.getStudyId())
-  //        .fileMd5sum(dto.getFileMd5sum())
-  //        .data(data)
-  //        .build();
-  //  }
-
-  //  @Builder
-  //  @lombok.Value
-  //  static class ClientDTO<T> {
-  //    @NonNull String analysisId;
-  //    @NonNull String studyId;
-  //    @NonNull String fileMd5sum;
-  //    T data;
-  //  }
 }

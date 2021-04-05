@@ -103,6 +103,7 @@ public class SongScoreService {
 
     return repo.save(upload)
         .flatMap(u -> songScoreClient.submitPayload(u.getStudyId(), payload))
+        .onErrorMap(t -> new Exception("Failed to submit payload"))
         .flatMap(
             submitResponse -> {
               upload.setAnalysisId(UUID.fromString(submitResponse.getAnalysisId()));
@@ -116,7 +117,7 @@ public class SongScoreService {
                     analysisFileResponse, submissionFile.getFileMd5sum()))
         .flatMap(
             scoreFileSpec ->
-                songScoreClient.upload(
+                songScoreClient.uploadAndFinalize(
                     scoreFileSpec, submissionFile.getContent(), submissionFile.getFileMd5sum()))
         .flatMap(
             res -> songScoreClient.publishAnalysis(upload.getStudyId(), upload.getAnalysisId()))
@@ -129,6 +130,7 @@ public class SongScoreService {
             (t) -> {
               t.printStackTrace();
               upload.setStatus(UploadStatus.ERROR);
+              upload.setError(t.getMessage());
               return repo.save(upload);
             });
   }
