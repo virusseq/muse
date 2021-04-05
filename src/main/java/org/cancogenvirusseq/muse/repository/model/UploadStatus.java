@@ -19,7 +19,7 @@
 package org.cancogenvirusseq.muse.repository.model;
 
 public enum UploadStatus {
-  SUBMITTED,
+  QUEUED,
   PROCESSING,
   COMPLETE,
   ERROR;
