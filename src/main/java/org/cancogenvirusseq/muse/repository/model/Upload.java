@@ -16,23 +16,31 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.repository.model;
 
+import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Data
 @Builder
 @AllArgsConstructor
-public class SubmissionEvent {
+@Table("upload")
+public class Upload {
+  @Id private UUID uploadId;
+  @NonNull private String studyId;
+  @NonNull private String submitterSampleId;
   @NonNull private UUID submissionId;
   @NonNull private UUID userId;
-  @NonNull private List<Map<String, String>> records;
-  @NonNull private ConcurrentHashMap<String, SubmissionFile> submissionFilesMap;
+  private OffsetDateTime createdAt;
+  @NonNull private UploadStatus status;
+  private UUID analysisId;
+  private String error;
+  private List<String> originalFilePair;
 }

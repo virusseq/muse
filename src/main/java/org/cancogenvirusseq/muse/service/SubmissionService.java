@@ -23,17 +23,23 @@ import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFil
 import static org.cancogenvirusseq.muse.components.TsvParser.parseTsvStrToFlatRecords;
 
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
-import org.cancogenvirusseq.muse.api.model.SubmissionListResponse;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
+import org.cancogenvirusseq.muse.model.SubmissionFile;
+import org.cancogenvirusseq.muse.repository.SubmissionRepository;
+import org.cancogenvirusseq.muse.repository.model.Submission;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -42,16 +48,23 @@ import reactor.util.function.Tuples;
 
 @Service
 @Slf4j
-public class SubmissionsService {
-  public Sinks.Many<SubmissionEvent> submissionsSink =
-      Sinks.many().unicast().onBackpressureBuffer();
+public class SubmissionService {
 
-  public Mono<SubmissionListResponse> getSubmissions(
-      String userId, Integer pageSize, Integer pageToken) {
-    return Mono.just(new SubmissionListResponse(Collections.emptyList()));
+  private final SubmissionRepository submissionRepository;
+  public final Sinks.Many<SubmissionEvent> submissionsSink;
+
+  public SubmissionService(@NonNull SubmissionRepository submissionRepository) {
+    this.submissionRepository = submissionRepository;
+    this.submissionsSink = Sinks.many().unicast().onBackpressureBuffer();
   }
 
-  public Mono<SubmissionCreateResponse> submit(Flux<FilePart> fileParts) {
+  public Flux<Submission> getSubmissions(Pageable page, SecurityContext securityContext) {
+    return submissionRepository.findAllByUserId(
+        UUID.fromString(securityContext.getAuthentication().getName()), page);
+  }
+
+  public Mono<SubmissionCreateResponse> submit(
+      Flux<FilePart> fileParts, SecurityContext securityContext) {
     return validateAndSplitSubmission(fileParts)
         // take validated map of fileType => filePartList and
         // convert to Flux Tuples(fileType, fileString)
@@ -73,27 +86,58 @@ public class SubmissionsService {
             fileTypeFilePart ->
                 fileContentToString(fileTypeFilePart.getT2().content())
                     .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)))
-        // reduce flux of Tuples(fileType, fileString) into a single SubmissionEvent
+        // reduce flux of Tuples(fileType, fileString) into a single tuple of (records,
+        // submissionFilesMap)
         .reduce(
-            SubmissionEvent.builder()
-                .submissionId(UUID.randomUUID())
-                .submissionFileMap(new ConcurrentHashMap<>())
-                .records(new ArrayList<>())
-                .build(),
-            (submissionEvent, fileTypeFileStr) -> {
+            Tuples.of(
+                new ArrayList<Map<String, String>>(),
+                new ConcurrentHashMap<String, SubmissionFile>()),
+            (recordsSubmissionFiles, fileTypeFileStr) -> {
               switch (fileTypeFileStr.getT1()) {
                 case "tsv":
                   parseTsvStrToFlatRecords(fileTypeFileStr.getT2())
-                      .forEach(record -> submissionEvent.getRecords().add(record));
+                      .forEach(record -> recordsSubmissionFiles.getT1().add(record));
                   break;
                 case "fasta":
-                  submissionEvent
-                      .getSubmissionFileMap()
+                  recordsSubmissionFiles
+                      .getT2()
                       .putAll(processFileStrContent(fileTypeFileStr.getT2()));
                   break;
               }
-              return submissionEvent;
+              return recordsSubmissionFiles;
             })
+        // record submission to database, create submissionEvent
+        .flatMap(
+            recordsSubmissionFiles ->
+                fileParts
+                    .map(FilePart::filename)
+                    .collectList()
+                    .flatMap(
+                        fileList ->
+                            submissionRepository
+                                .save(
+                                    Submission.builder()
+                                        .userId(
+                                            UUID.fromString(
+                                                securityContext.getAuthentication().getName()))
+                                        .createdAt(OffsetDateTime.now())
+                                        .originalFileNames(fileList)
+                                        .totalRecords(recordsSubmissionFiles.getT1().size())
+                                        .build())
+                                // from recorded submission, create submissionEvent
+                                .map(
+                                    submission ->
+                                        SubmissionEvent.builder()
+                                            .submissionId(submission.getSubmissionId())
+                                            .userId(
+                                                UUID.fromString(
+                                                    securityContext
+                                                        .getAuthentication()
+                                                        .getName())) // todo: auto UUID::fromString
+                                            // somehow?
+                                            .records(recordsSubmissionFiles.getT1())
+                                            .submissionFilesMap(recordsSubmissionFiles.getT2())
+                                            .build())))
         // emit submission event to sink for further processing
         .doOnNext(submissionsSink::tryEmitNext)
         // return submissionId to user

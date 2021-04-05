@@ -16,23 +16,34 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
+-- CREATE TYPE upload_status as enum ('SUBMITTED', 'PROCESSING', 'COMPLETE', 'ERROR'); todo: only do this if not exists (flyway?)
 
-@Data
-@Builder
-@AllArgsConstructor
-public class SubmissionEvent {
-  @NonNull private UUID submissionId;
-  @NonNull private UUID userId;
-  @NonNull private List<Map<String, String>> records;
-  @NonNull private ConcurrentHashMap<String, SubmissionFile> submissionFilesMap;
-}
+CREATE TABLE if not exists submission
+(
+    submission_id       uuid        DEFAULT uuid_generate_v4(),
+    user_id             uuid   not null,
+    created_at          timestamptz DEFAULT current_timestamp,
+    total_records       int    not null,
+    original_file_names text[] not null,
+    PRIMARY KEY (submission_id)
+);
+
+CREATE TABLE if not exists upload
+(
+    upload_id           uuid        DEFAULT uuid_generate_v4(),
+    study_id            VARCHAR(32)   not null,
+    submitter_sample_id VARCHAR(32)   not null,
+    submission_id       uuid          not null,
+    user_id             uuid          not null,
+    created_at          timestamptz DEFAULT current_timestamp,
+    status              upload_status not null,
+    analysis_Id         uuid,
+    error               text,
+    original_file_pair  text[]        not null,
+    PRIMARY KEY (upload_id),
+    CONSTRAINT fk_submission
+        FOREIGN KEY (submission_id)
+            REFERENCES submission (submission_id)
+);

@@ -18,19 +18,10 @@
 
 package org.cancogenvirusseq.muse.api.model;
 
-import io.swagger.annotations.ApiModel;
-import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import org.cancogenvirusseq.muse.model.UploadDTO;
+import lombok.RequiredArgsConstructor;
 
-@Data
-@Builder
-@AllArgsConstructor
-@ApiModel(
-    description = "A list of uploads initiated as a result of submitting .tsv/.fasta file pairs")
-public class UploadListResponse {
-  @NonNull List<UploadDTO> uploads;
+@RequiredArgsConstructor
+public enum SubmissionSortField {
+  createdAt,
+  submissionId
 }

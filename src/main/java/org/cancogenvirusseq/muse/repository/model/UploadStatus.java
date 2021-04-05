@@ -16,19 +16,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.service;
+package org.cancogenvirusseq.muse.repository.model;
 
-import java.util.Collections;
-import java.util.Optional;
-import java.util.UUID;
-import org.cancogenvirusseq.muse.api.model.UploadListResponse;
-import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
-
-@Service
-public class UploadsService {
-  public Mono<UploadListResponse> getUploads(
-      String userId, Integer pageSize, Integer pageToken, Optional<UUID> submissionId) {
-    return Mono.just(new UploadListResponse(Collections.emptyList()));
-  }
+public enum UploadStatus {
+  SUBMITTED,
+  PROCESSING,
+  COMPLETE,
+  ERROR;
 }

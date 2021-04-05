@@ -16,20 +16,23 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.api.model;
+package org.cancogenvirusseq.muse.repository.model;
 
-import io.swagger.annotations.ApiModel;
+import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import org.cancogenvirusseq.muse.model.SubmissionDTO;
+import java.util.UUID;
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Data
 @Builder
 @AllArgsConstructor
-@ApiModel(description = "A list of submissions")
-public class SubmissionListResponse {
-  @NonNull List<SubmissionDTO> submissions;
+@Table("submission")
+public class Submission {
+  @Id private UUID submissionId;
+  @NonNull private UUID userId;
+  private OffsetDateTime createdAt;
+  @NonNull private List<String> originalFileNames;
+  @NonNull private Integer totalRecords;
 }

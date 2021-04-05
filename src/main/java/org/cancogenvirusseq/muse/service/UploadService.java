@@ -16,23 +16,32 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.service;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
 import lombok.NonNull;
+import lombok.val;
+import org.cancogenvirusseq.muse.repository.UploadRepository;
+import org.cancogenvirusseq.muse.repository.model.Upload;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
-@Data
-@Builder
-@AllArgsConstructor
-public class SubmissionEvent {
-  @NonNull private UUID submissionId;
-  @NonNull private UUID userId;
-  @NonNull private List<Map<String, String>> records;
-  @NonNull private ConcurrentHashMap<String, SubmissionFile> submissionFilesMap;
+@Service
+public class UploadService {
+  private final UploadRepository uploadRepository;
+
+  public UploadService(@NonNull UploadRepository uploadRepository) {
+    this.uploadRepository = uploadRepository;
+  }
+
+  public Flux<Upload> getUploads(
+      Pageable page, Optional<UUID> submissionId, SecurityContext securityContext) {
+    val userId = UUID.fromString(securityContext.getAuthentication().getName());
+    return submissionId
+        .map(id -> uploadRepository.findAllByUserIdAndSubmissionId(userId, id, page))
+        .orElse(uploadRepository.findAllByUserId(userId, page));
+  }
 }

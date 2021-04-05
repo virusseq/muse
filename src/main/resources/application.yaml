@@ -3,9 +3,18 @@ spring:
     name: "Muse"
     version: @project.version@
     description: "Molecular Upload Submission sErvice"
+  profiles:
+    active: secure
 
 server:
   port: 8080
+
+postgres:
+  host: localhost
+  port: 5432
+  database: postgres
+  username: postgres
+  password: postgres
 ---
 spring.profiles: secure
 auth:
@@ -13,6 +22,6 @@ auth:
   jwtPublicKeyStr: "-----BEGIN PUBLIC KEY-----\nSET ME IF YOU DONT HAVE A URL, BUT URL TAKES PRIORITY\n-----END PUBLIC KEY-----"
   scopes:
     read:
-      - CANCOGEN-DATA.READ
+      - DOMAIN.READ
     write:
-      - CANCOGEN-DATA.WRITE
+      - DOMAIN.WRITE
