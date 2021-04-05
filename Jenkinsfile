@@ -11,10 +11,6 @@ pipeline {
 apiVersion: v1
 kind: Pod
 spec:
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
   containers:
   - name: jdk
     tty: true
@@ -22,6 +18,10 @@ spec:
     env:
       - name: DOCKER_HOST
         value: tcp://localhost:2375
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
   - name: dind-daemon
     image: docker:18.06-dind
     securityContext:
@@ -45,6 +45,10 @@ spec:
     env:
     - name: DOCKER_HOST
       value: tcp://localhost:2375
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
   volumes:
   - name: dind-storage
     emptyDir: {}
