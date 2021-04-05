@@ -71,8 +71,10 @@ spec:
             }
             steps {
                 container('docker') {
-                    withCredentials([usernamePassword(credentialsId: 'cancogenContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
+                    withCredentials([usernamePassword(credentialsId: 'cancogen-github',
+                            usernameVariable: 'GITHUB_APP',
+                            passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
+                        sh 'docker login ghcr.io -u GITHUB_APP -p GITHUB_ACCESS_TOKEN'
                     }
 
                     // DNS error if --network is default
@@ -105,13 +107,12 @@ spec:
             }
             steps {
                 container('docker') {
-                    withCredentials([usernamePassword(credentialsId: 'cancogenGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                    withCredentials([usernamePassword(credentialsId: 'cancogen-github',
+                            usernameVariable: 'GITHUB_APP',
+                            passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
                         sh "git tag ${version}"
-                        sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${gitHubRepo} --tags"
-                    }
-
-                    withCredentials([usernamePassword(credentialsId: 'cancogenContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
+                        sh "git push https://${GITHUB_APP}:${GITHUB_ACCESS_TOKEN}@github.com/${gitHubRepo} --tags"
+                        sh 'docker login ghcr.io -u GITHUB_APP -p GITHUB_ACCESS_TOKEN'
                     }
 
                     // DNS error if --network is default
