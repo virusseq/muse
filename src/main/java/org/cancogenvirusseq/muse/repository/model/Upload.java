@@ -28,7 +28,6 @@ import org.springframework.data.relational.core.mapping.Table;
 @Data
 @Builder
 @AllArgsConstructor
-@RequiredArgsConstructor
 @Table("upload")
 public class Upload {
   @Id private UUID uploadId;

@@ -61,13 +61,6 @@ public class SubmissionService {
 
   public Mono<SubmissionCreateResponse> submit(
       Flux<FilePart> fileParts, SecurityContext securityContext) {
-    val userId =
-        securityContext != null
-                && securityContext.getAuthentication() != null
-                && securityContext.getAuthentication().getName() == null
-            ? UUID.fromString(securityContext.getAuthentication().getName())
-            : UUID.randomUUID();
-
     return validateAndSplitSubmission(fileParts)
         // take validated map of fileType => filePartList and
         // convert to Flux Tuples(fileType, fileString)
@@ -120,7 +113,9 @@ public class SubmissionService {
                             submissionRepository
                                 .save(
                                     Submission.builder()
-                                        .userId(userId)
+                                        .userId(
+                                            UUID.fromString(
+                                                securityContext.getAuthentication().getName()))
                                         .createdAt(OffsetDateTime.now())
                                         .originalFileNames(fileList)
                                         .totalRecords(recordsSubmissionFiles.getT1().size())
@@ -130,7 +125,11 @@ public class SubmissionService {
                                     submission ->
                                         SubmissionEvent.builder()
                                             .submissionId(submission.getSubmissionId())
-                                            .userId(userId) // todo: auto UUID::fromString
+                                            .userId(
+                                                UUID.fromString(
+                                                    securityContext
+                                                        .getAuthentication()
+                                                        .getName())) // todo: auto UUID::fromString
                                             // somehow?
                                             .records(recordsSubmissionFiles.getT1())
                                             .submissionFilesMap(recordsSubmissionFiles.getT2())
