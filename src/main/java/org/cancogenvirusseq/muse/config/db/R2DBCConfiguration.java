@@ -16,30 +16,62 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.config;
+package org.cancogenvirusseq.muse.config.db;
 
 import com.google.common.base.Strings;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.postgresql.codec.EnumCodec;
 import io.r2dbc.spi.ConnectionFactory;
-import java.util.Collections;
-import java.util.List;
 import lombok.val;
-import org.springframework.beans.factory.annotation.Value;
+import org.cancogenvirusseq.muse.repository.model.UploadStatus;
+import org.cancogenvirusseq.muse.repository.model.UploadStatusConverter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.r2dbc.config.AbstractR2dbcConfiguration;
 import org.springframework.data.r2dbc.connectionfactory.init.ConnectionFactoryInitializer;
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 
+import java.util.Collections;
+import java.util.List;
+
 @Configuration
 @EnableR2dbcRepositories(basePackages = "org.cancogenvirusseq.muse.repository")
-public class R2DBCConfiguration {
+public class R2DBCConfiguration extends AbstractR2dbcConfiguration {
+
+  @Autowired private PostgresProperties properties;
 
   @Bean
   ConnectionFactoryInitializer initializer(ConnectionFactory connectionFactory) {
     ConnectionFactoryInitializer initializer = new ConnectionFactoryInitializer();
     initializer.setConnectionFactory(connectionFactory);
     return initializer;
+  }
+
+  @Override
+  @Bean
+  public ConnectionFactory connectionFactory() {
+    val postgresqlConnectionConfiguration = PostgresqlConnectionConfiguration.builder();
+
+    postgresqlConnectionConfiguration
+            .host(properties.getHost())
+            .port(properties.getPort())
+            .database(properties.getDatabase());
+
+    if (!Strings.isNullOrEmpty(properties.getUsername())) {
+      postgresqlConnectionConfiguration.username(properties.getUsername());
+    }
+
+    if (!Strings.isNullOrEmpty(properties.getPassword())) {
+      postgresqlConnectionConfiguration.password(properties.getPassword());
+    }
+
+    // register sql enum upload_status to Java enum UploadStatus
+    val codecRegistrar = EnumCodec.builder().withEnum("upload_status", UploadStatus.class).build();
+
+    return new PostgresqlConnectionFactory(
+        postgresqlConnectionConfiguration.codecRegistrar(codecRegistrar).build());
   }
 
   @Override

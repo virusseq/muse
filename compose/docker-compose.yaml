@@ -132,9 +132,9 @@ services:
   muse-db:
     image: postgres:11.1
     environment:
-      POSTGRES_DB: postgres
+      POSTGRES_DB: muse
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
 
