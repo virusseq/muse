@@ -54,11 +54,10 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-// @Profile("secure")
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
 @RequiredArgsConstructor
-public class AuthEnabledConfig {
+public class AuthConfig {
   private final AuthProperties authProperties;
   private final ResourceLoader resourceLoader;
 
