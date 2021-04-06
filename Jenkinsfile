@@ -1,4 +1,5 @@
-def dockerRepo = "ghcr.io/cancogen-virus-seq/muse"
+def dockerRepo = "docker.pkg.github.com/cancogen-virus-seq/muse/muse"
+def dockerLoginUrl = "https://docker.pkg.github.com"
 def gitHubRepo = "cancogen-virus-seq/muse"
 def chartVersion = "0.1.0"
 def commit = "UNKNOWN"
@@ -45,6 +46,8 @@ spec:
     env:
     - name: DOCKER_HOST
       value: tcp://localhost:2375
+    - name: HOME
+      value: /home/jenkins/agent
     securityContext:
       runAsUser: 1000
       runAsGroup: 1000
@@ -83,7 +86,7 @@ spec:
                     withCredentials([usernamePassword(credentialsId: 'cancogen-github',
                             usernameVariable: 'GITHUB_APP',
                             passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
-                        sh 'docker login ghcr.io -u $GITHUB_APP -p $GITHUB_ACCESS_TOKEN'
+                        sh "docker login ${dockerLoginUrl} -u ${GITHUB_APP} -p ${GITHUB_ACCESS_TOKEN}"
                     }
 
                     // DNS error if --network is default
@@ -121,7 +124,7 @@ spec:
                             passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
                         sh "git tag ${version}"
                         sh "git push https://${GITHUB_APP}:${GITHUB_ACCESS_TOKEN}@github.com/${gitHubRepo} --tags"
-                        sh 'docker login ghcr.io -u $GITHUB_APP -p $GITHUB_ACCESS_TOKEN'
+                        sh "docker login ${dockerLoginUrl} -u ${GITHUB_APP} -p ${GITHUB_ACCESS_TOKEN}"
                     }
 
                     // DNS error if --network is default
