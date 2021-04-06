@@ -36,7 +36,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -55,7 +54,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-//@Profile("secure")
+// @Profile("secure")
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
 @RequiredArgsConstructor
@@ -71,9 +70,7 @@ public class AuthEnabledConfig {
         .pathMatchers("/actuator/**")
         .permitAll()
         .pathMatchers("/submissions/**", "/uploads/**", "/download")
-        .permitAll()
-//        .hasAnyAuthority(authProperties.getScopes().getWrite().toArray(String[]::new))
-//        .authenticated()
+        .hasAnyAuthority(authProperties.getScopes().getWrite().toArray(String[]::new))
         .pathMatchers(
             "/v2/api-docs",
             "/configuration/ui",

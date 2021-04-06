@@ -21,6 +21,7 @@ package org.cancogenvirusseq.muse.service;
 import static java.util.stream.Collectors.groupingByConcurrent;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
 import static org.cancogenvirusseq.muse.components.TsvParser.parseTsvStrToFlatRecords;
+import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
 
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
@@ -113,9 +114,7 @@ public class SubmissionService {
                             submissionRepository
                                 .save(
                                     Submission.builder()
-                                        .userId(
-                                            UUID.fromString(
-                                                securityContext.getAuthentication().getName()))
+                                        .userId(getUserIdFromContext(securityContext))
                                         .createdAt(OffsetDateTime.now())
                                         .originalFileNames(fileList)
                                         .totalRecords(recordsSubmissionFiles.getT1().size())
@@ -125,12 +124,7 @@ public class SubmissionService {
                                     submission ->
                                         SubmissionEvent.builder()
                                             .submissionId(submission.getSubmissionId())
-                                            .userId(
-                                                UUID.fromString(
-                                                    securityContext
-                                                        .getAuthentication()
-                                                        .getName())) // todo: auto UUID::fromString
-                                            // somehow?
+                                            .userId(getUserIdFromContext(securityContext))
                                             .records(recordsSubmissionFiles.getT1())
                                             .submissionFilesMap(recordsSubmissionFiles.getT2())
                                             .build())))
