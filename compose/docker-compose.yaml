@@ -14,7 +14,7 @@ services:
     expose:
       - "8080"
     ports:
-      - "9082:8080"
+      - "8081:8080"
     depends_on:
       - ego-postgres
   ego-postgres:
@@ -25,7 +25,7 @@ services:
     expose:
       - "5432"
     volumes:
-      - "./docker/ego-init:/docker-entrypoint-initdb.d"
+      - "./ego-init:/docker-entrypoint-initdb.d"
     ports:
       - "9444:5432"
 
@@ -53,13 +53,13 @@ services:
       BUCKET_NAME_OBJECT: oicr.icgc.test
       BUCKET_NAME_STATE: oicr.icgc.test
       COLLABORATORY_DATA_DIRECTORY: data
-      METADATA_URL: http://localhost:8080
+      METADATA_URL: http://localhost:8089
       S3_ENDPOINT:  http://localhost:8085
       S3_ACCESSKEY: minio
       S3_SECRETKEY: minio123
       S3_SIGV4ENABLED: "true"
-      AUTH_JWT_PUBLICKEYURL: http://localhost:9082/oauth/token/public_key
-      AUTH_SERVER_URL: http://localhost:9082/o/check_api_key/
+      AUTH_JWT_PUBLICKEYURL: http://localhost:8081/oauth/token/public_key
+      AUTH_SERVER_URL: http://localhost:8081/o/check_api_key/
       AUTH_SERVER_CLIENTID: score
       AUTH_SERVER_CLIENTSECRET: scoresecret
       AUTH_SERVER_TOKENNAME: apiKey
@@ -94,15 +94,15 @@ services:
     ports:
       - "8432:5432"
     volumes:
-      - "./docker/song-db-init:/docker-entrypoint-initdb.d"
+      - "./song-db-init:/docker-entrypoint-initdb.d"
   song-server:
     network_mode: "host"
     image: overture/song-server:4.5.0
     environment:
-      SERVER_PORT: 8080
+      SERVER_PORT: 8089
       SPRING_PROFILES_ACTIVE: "prod,secure,default,jwt,score-client-cred"
-      AUTH_JWT_PUBLICKEYURL: http://localhost:9082/oauth/token/public_key
-      AUTH_SERVER_URL: http://localhost:9082/o/check_api_key/
+      AUTH_JWT_PUBLICKEYURL: http://localhost:8081/oauth/token/public_key
+      AUTH_SERVER_URL: http://localhost:8081/o/check_api_key/
       AUTH_SERVER_CLIENTID: song
       AUTH_SERVER_TOKENNAME: apiKey
       AUTH_SERVER_CLIENTSECRET: songsecret
@@ -110,11 +110,11 @@ services:
       AUTH_SERVER_SCOPE_STUDY_SUFFIX: .WRITE
       AUTH_SERVER_SCOPE_SYSTEM: song.WRITE
       SCORE_URL: http://localhost:8087
-      SCORE_CLIENTCREDENTIALS_ID: songToScore
-      SCORE_CLIENTCREDENTIALS_SECRET: songToScoreSecret
-      SCORE_CLIENTCREDENTIALS_TOKENURL: http://localhost:9082/oauth/token
+      SCORE_CLIENTCREDENTIALS_ID: adminId
+      SCORE_CLIENTCREDENTIALS_SECRET: adminSecret
+      SCORE_CLIENTCREDENTIALS_TOKENURL: http://localhost:8081/oauth/token
       SCORE_CLIENTCREDENTIALS_SYSTEMSCOPE: "score.WRITE"
-      MANAGEMENT_SERVER_PORT: 8081
+      MANAGEMENT_SERVER_PORT: 8088
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
       SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:8432/song?stringtype=unspecified
@@ -122,7 +122,7 @@ services:
       SPRING_FLYWAY_LOCATIONS: "classpath:db/migration"
     ports:
       - "5006:5006"
-      - "8080:8080"
+      - "8089:8089"
     depends_on:
       - song-db
       - ego-api

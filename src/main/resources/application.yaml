@@ -3,11 +3,9 @@ spring:
     name: "Muse"
     version: @project.version@
     description: "Molecular Upload Submission sErvice"
-#  profiles:
-#    active: secure
 
 server:
-  port: 8089
+  port: 8080
 
 postgres:
   host: localhost
@@ -17,12 +15,11 @@ postgres:
   password: postgres
 
 songScoreClient:
-  songRootUrl: "http://localhost:8080/"
+  songRootUrl: "http://localhost:8089/"
   scoreRootUrl: "http://localhost:8087/"
   systemApiToken: f69b726d-d40f-4261-b105-1ec7e6bf04d5
 
 ---
-spring.profiles: secure
 auth:
   jwtPublicKeyUrl: "http://localhost:8081/oauth/token/public_key"
   jwtPublicKeyStr: "-----BEGIN PUBLIC KEY-----\nSET ME IF YOU DONT HAVE A URL, BUT URL TAKES PRIORITY\n-----END PUBLIC KEY-----"

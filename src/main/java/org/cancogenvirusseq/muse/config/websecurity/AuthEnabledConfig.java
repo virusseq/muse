@@ -55,7 +55,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-@Profile("secure")
+//@Profile("secure")
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
 @RequiredArgsConstructor
@@ -72,6 +72,8 @@ public class AuthEnabledConfig {
         .permitAll()
         .pathMatchers("/submissions/**", "/uploads/**", "/download")
         .permitAll()
+//        .hasAnyAuthority(authProperties.getScopes().getWrite().toArray(String[]::new))
+//        .authenticated()
         .pathMatchers(
             "/v2/api-docs",
             "/configuration/ui",
