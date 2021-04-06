@@ -103,7 +103,6 @@ public class SongScoreService {
 
     return repo.save(upload)
         .flatMap(u -> songScoreClient.submitPayload(u.getStudyId(), payload))
-        .onErrorMap(t -> new Exception("Failed to submit payload"))
         .flatMap(
             submitResponse -> {
               upload.setAnalysisId(UUID.fromString(submitResponse.getAnalysisId()));

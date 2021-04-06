@@ -18,13 +18,12 @@
 
 package org.cancogenvirusseq.muse;
 
-import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 class MuseApplicationTests {
 
-//  @Test
+  //  @Test
   // todo: either remove or update to not attempt Postgres connect on test (after flyway work)
-//  void contextLoads() {}
+  //  void contextLoads() {}
 }

@@ -1,5 +1,7 @@
 package org.cancogenvirusseq.muse.components;
 
+import static java.lang.String.format;
+
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -38,7 +40,8 @@ public class SongScoreClient {
   }
 
   public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
-    return WebClient.create(songRootUrl + "/submit/" + studyId)
+    val url = format(songRootUrl + "/submit/%s", studyId);
+    return WebClient.create(url)
         .post()
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue(payload))
@@ -50,8 +53,8 @@ public class SongScoreClient {
   }
 
   public Mono<AnalysisFileResponse> getFileSpecFromSong(String studyId, UUID analysisId) {
-    return WebClient.create(
-            songRootUrl + "/studies/" + studyId + "/analysis/" + analysisId.toString() + "/files")
+    val url = format(songRootUrl + "/studies/%s/analysis/%s/files", studyId, analysisId.toString());
+    return WebClient.create(url)
         .get()
         .retrieve()
         .bodyToFlux(AnalysisFileResponse.class)
@@ -63,15 +66,11 @@ public class SongScoreClient {
   public Mono<ScoreFileSpec> initScoreUpload(
       AnalysisFileResponse analysisFileResponse, String md5Sum) {
     val url =
-        scoreRootUrl
-            + "/upload/"
-            + analysisFileResponse.getObjectId()
-            + "/uploads?"
-            + "fileSize="
-            + analysisFileResponse.getFileSize()
-            + "&md5="
-            + md5Sum
-            + "&overwrite=true";
+        format(
+            scoreRootUrl + "/upload/%s/uploads?fileSize=%s&md5=%s&overwrite=true",
+            analysisFileResponse.getObjectId(),
+            analysisFileResponse.getFileSize(),
+            md5Sum);
 
     return WebClient.create(url)
         .post()
@@ -82,8 +81,8 @@ public class SongScoreClient {
         .log();
   }
 
-  // Mono<String> is etag
-  public Mono<String> uploadAndFinalize(ScoreFileSpec scoreFileSpec, String fileContent, String md5) {
+  public Mono<String> uploadAndFinalize(
+      ScoreFileSpec scoreFileSpec, String fileContent, String md5) {
     // we expect only one file part
     val presignedUrl = decodeUrl(scoreFileSpec.getParts().get(0).getUrl());
 
@@ -100,27 +99,17 @@ public class SongScoreClient {
         .log();
   }
 
-  // The finalize step in score requires finalizing each file part and then the whole upload
-  // we only have one file part, so we finalize the part and upload one after the other
   private Mono<String> finalizeScoreUpload(ScoreFileSpec scoreFileSpec, String md5, String etag) {
     val objectId = scoreFileSpec.getObjectId();
     val uploadId = scoreFileSpec.getUploadId();
 
-    // finialize part publisher
     val finalizePartUrl =
-        scoreRootUrl
-            + "/upload/"
-            + objectId
-            + "/parts?"
-            + "uploadId="
-            + uploadId
-            + "&etag="
-            + etag
-            + "&md5="
-            + md5
-            +
-            // we expect only one file part
-            "&partNumber=1";
+        format(
+            scoreRootUrl + "/upload/%s/parts?uploadId=%s&etag=%s&md5=%s&partNumber=1",
+            objectId,
+            uploadId,
+            etag,
+            md5);
     val finalizeUploadPart =
         WebClient.create(finalizePartUrl)
             .post()
@@ -128,7 +117,7 @@ public class SongScoreClient {
             .retrieve()
             .toBodilessEntity();
 
-    val finalizeUploadUrl = scoreRootUrl + "/upload/" + objectId + "?" + "uploadId=" + uploadId;
+    val finalizeUploadUrl = format(scoreRootUrl + "/upload/%s?uploadId=%s", objectId, uploadId);
     val finalizeUpload =
         WebClient.create(finalizeUploadUrl)
             .post()
@@ -136,6 +125,8 @@ public class SongScoreClient {
             .retrieve()
             .toBodilessEntity();
 
+    // The finalize step in score requires finalizing each file part and then the whole upload
+    // we only have one file part, so we finalize the part and upload one after the other
     return finalizeUploadPart.then(finalizeUpload).map(Objects::toString).log();
   }
 
@@ -145,12 +136,10 @@ public class SongScoreClient {
 
   public Mono<String> publishAnalysis(String studyId, String analysisId) {
     val url =
-        songRootUrl
-            + "/studies/"
-            + studyId
-            + "/analysis/publish/"
-            + analysisId
-            + "?ignoreUndefinedMd5=false";
+        format(
+            songRootUrl + "/studies/%s/analysis/publish/%s?ignoreUndefinedMd5=false",
+            studyId,
+            analysisId);
     return WebClient.create(url)
         .put()
         .header("Authorization", "Bearer " + systemApiToken)
@@ -165,8 +154,8 @@ public class SongScoreClient {
     return getFileLink(objectId).flatMap(this::downloadFromS3);
   }
 
-  public Mono<String> getFileLink(String objectId) {
-    val url = scoreRootUrl + "/download/" + objectId + "?offset=0&length=-1&external=true";
+  private Mono<String> getFileLink(String objectId) {
+    val url = format(scoreRootUrl + "/download/%s?offset=0&length=-1&external=true", objectId);
     return WebClient.create(url)
         .get()
         .header("Authorization", "Bearer " + systemApiToken)
@@ -176,7 +165,7 @@ public class SongScoreClient {
         .map(spec -> spec.getParts().get(0).getUrl());
   }
 
-  public Mono<String> downloadFromS3(String presignedUrl) {
+  private Mono<String> downloadFromS3(String presignedUrl) {
     return WebClient.create(decodeUrl(presignedUrl))
         .get()
         .retrieve()
@@ -184,7 +173,7 @@ public class SongScoreClient {
         .log();
   }
 
-  public static String decodeUrl(String str) {
+  private static String decodeUrl(String str) {
     return URLDecoder.decode(str, StandardCharsets.UTF_8);
   }
 }
