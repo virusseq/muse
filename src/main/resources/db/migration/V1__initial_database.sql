@@ -18,7 +18,7 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TYPE upload_status as enum ('QUEUED', 'PROCESSING', 'COMPLETE', 'ERROR'); /* todo: only do this if not exists (flyway?) otherwise comment out for now */
+CREATE TYPE upload_status as enum ('QUEUED', 'PROCESSING', 'COMPLETE', 'ERROR');
 
 CREATE TABLE if not exists submission
 (
