@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
-import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.model.song_score.AnalysisFileResponse;
@@ -16,71 +15,59 @@ import org.cancogenvirusseq.muse.model.song_score.SubmitResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.client.*;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
-import org.springframework.security.oauth2.client.web.server.UnAuthenticatedServerOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 @Slf4j
 @Component
 public class SongScoreClient {
+  final WebClient songClient;
+  final WebClient scoreClient;
 
-  @Value("${songScoreClient.songRootUrl}")
-  String songRootUrl;
+  private static final String RESOURCE_ID_HEADER = "X-Resource-ID";
+  private static final String OUATH_RESOURCE_ID = "songScoreOauth";
 
-  @Value("${songScoreClient.scoreRootUrl}")
-  String scoreRootUrl;
+  public SongScoreClient(
+      @Value("${songScoreClient.songRootUrl}") String songRootUrl,
+      @Value("${songScoreClient.scoreRootUrl}") String scoreRootUrl,
+      @Value("${songScoreClient.clientId}") String clientId,
+      @Value("${songScoreClient.clientSecret}") String clientSecret,
+      @Value("${songScoreClient.tokenUrl}") String tokenUrl) {
 
-  @Value("${songScoreClient.systemApiToken}")
-  String systemApiToken;
+    val oauthFilter = createOauthFilter(OUATH_RESOURCE_ID, tokenUrl, clientId, clientSecret);
 
-  WebClient songClient;
-  WebClient scoreClient;
+    songClient =
+        WebClient.builder()
+            .baseUrl(songRootUrl)
+            .filter(oauthFilter)
+            .defaultHeader(RESOURCE_ID_HEADER, OUATH_RESOURCE_ID)
+            .build();
 
-  String clientId = "adminId";
-  String clientSecret = "adminSecret";
-  String tokenUrl = "http://localhost:8081/oauth/token";
+    scoreClient =
+        WebClient.builder()
+            .baseUrl(scoreRootUrl)
+            .filter(oauthFilter)
+            .defaultHeader(RESOURCE_ID_HEADER, OUATH_RESOURCE_ID)
+            .build();
 
-  @PostConstruct
-  public void init() {
     log.info("Initialized song score client.");
     log.info("songRootUrl - " + songRootUrl);
     log.info("scoreRootUrl - " + scoreRootUrl);
-
-    val registration = ClientRegistration
-                                              .withRegistrationId("my-platform")
-                                              .tokenUri(tokenUrl)
-                                              .clientId(clientId)
-                                              .clientSecret(clientSecret)
-                                              .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                              .build();
-    val oauth = new ServerOAuth2AuthorizedClientExchangeFilterFunction(
-            new InMemoryReactiveClientRegistrationRepository(registration),
-            new UnAuthenticatedServerOAuth2AuthorizedClientRepository()
-    );
-
-    oauth.setDefaultClientRegistrationId("my-platform");
-
-    songClient = WebClient.builder()
-                         .baseUrl(songRootUrl)
-                         .filter(oauth)
-                         .defaultHeader("X-Resource-ID", "my-platform")
-                         .build();
-
-    scoreClient = WebClient.builder().baseUrl(scoreRootUrl)
-                          .filter(oauth)
-                          .defaultHeader("X-Resource-ID", "my-platform")
-                          .filter(oauth).build();
   }
 
   public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
     val uri = format("/submit/%s", studyId);
-    return songClient.post().uri(uri)
+    return songClient
+        .post()
+        .uri(uri)
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue(payload))
         .retrieve()
@@ -90,9 +77,10 @@ public class SongScoreClient {
   }
 
   public Mono<AnalysisFileResponse> getFileSpecFromSong(String studyId, UUID analysisId) {
-    val url = format(songRootUrl + "/studies/%s/analysis/%s/files", studyId, analysisId.toString());
-    return WebClient.create(url)
+    val url = format("/studies/%s/analysis/%s/files", studyId, analysisId.toString());
+    return songClient
         .get()
+        .uri(url)
         .retrieve()
         .bodyToFlux(AnalysisFileResponse.class)
         // we expect only one file to be uploaded in each analysis
@@ -105,14 +93,12 @@ public class SongScoreClient {
       AnalysisFileResponse analysisFileResponse, String md5Sum) {
     val url =
         format(
-            scoreRootUrl + "/upload/%s/uploads?fileSize=%s&md5=%s&overwrite=true",
-            analysisFileResponse.getObjectId(),
-            analysisFileResponse.getFileSize(),
-            md5Sum);
+            "/upload/%s/uploads?fileSize=%s&md5=%s&overwrite=true",
+            analysisFileResponse.getObjectId(), analysisFileResponse.getFileSize(), md5Sum);
 
-    return WebClient.create(url)
+    return scoreClient
         .post()
-        .header("Authorization", "Bearer " + systemApiToken)
+        .uri(url)
         .retrieve()
         .bodyToMono(ScoreFileSpec.class)
         .onErrorMap(logAndMapWithMsg("Failed to initialize upload"))
@@ -143,25 +129,12 @@ public class SongScoreClient {
 
     val finalizePartUrl =
         format(
-            scoreRootUrl + "/upload/%s/parts?uploadId=%s&etag=%s&md5=%s&partNumber=1",
-            objectId,
-            uploadId,
-            etag,
-            md5);
-    val finalizeUploadPart =
-        WebClient.create(finalizePartUrl)
-            .post()
-            .header("Authorization", "Bearer " + systemApiToken)
-            .retrieve()
-            .toBodilessEntity();
+            "/upload/%s/parts?uploadId=%s&etag=%s&md5=%s&partNumber=1",
+            objectId, uploadId, etag, md5);
+    val finalizeUploadPart = scoreClient.post().uri(finalizePartUrl).retrieve().toBodilessEntity();
 
-    val finalizeUploadUrl = format(scoreRootUrl + "/upload/%s?uploadId=%s", objectId, uploadId);
-    val finalizeUpload =
-        WebClient.create(finalizeUploadUrl)
-            .post()
-            .header("Authorization", "Bearer " + systemApiToken)
-            .retrieve()
-            .toBodilessEntity();
+    val finalizeUploadUrl = format("/upload/%s?uploadId=%s", objectId, uploadId);
+    val finalizeUpload = scoreClient.post().uri(finalizeUploadUrl).retrieve().toBodilessEntity();
 
     // The finalize step in score requires finalizing each file part and then the whole upload
     // we only have one file part, so we finalize the part and upload one after the other
@@ -170,13 +143,10 @@ public class SongScoreClient {
 
   public Mono<String> publishAnalysis(String studyId, UUID analysisId) {
     val url =
-        format(
-            songRootUrl + "/studies/%s/analysis/publish/%s?ignoreUndefinedMd5=false",
-            studyId,
-            analysisId);
-    return WebClient.create(url)
+        format("/studies/%s/analysis/publish/%s?ignoreUndefinedMd5=false", studyId, analysisId);
+    return songClient
         .put()
-        .header("Authorization", "Bearer " + systemApiToken)
+        .uri(url)
         .retrieve()
         .toBodilessEntity()
         .map(Objects::toString)
@@ -191,10 +161,10 @@ public class SongScoreClient {
   }
 
   private Mono<String> getFileLink(String objectId) {
-    val url = format(scoreRootUrl + "/download/%s?offset=0&length=-1&external=true", objectId);
-    return WebClient.create(url)
+    val url = format("/download/%s?offset=0&length=-1&external=true", objectId);
+    return scoreClient
         .get()
-        .header("Authorization", "Bearer " + systemApiToken)
+        .uri(url)
         .retrieve()
         .bodyToMono(ScoreFileSpec.class)
         // we request length = -1 which returns one file part
@@ -219,5 +189,32 @@ public class SongScoreClient {
       log.error("SongScoreClient Error - {}", t.getMessage());
       return new Error(msg);
     };
+  }
+
+  private ExchangeFilterFunction createOauthFilter(
+      String regId, String tokenUrl, String clientId, String clientSecret) {
+    // create client registration with Id for lookup by filter when needed
+    val registration =
+        ClientRegistration.withRegistrationId(regId)
+            .tokenUri(tokenUrl)
+            .clientId(clientId)
+            .clientSecret(clientSecret)
+            .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+            .build();
+    val repo = new InMemoryReactiveClientRegistrationRepository(registration);
+
+    // create new client manager to isolate from server oauth2 manager
+    // more info: https://github.com/spring-projects/spring-security/issues/7984
+    val authorizedClientService = new InMemoryReactiveOAuth2AuthorizedClientService(repo);
+    val authorizedClientManager =
+        new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(
+            repo, authorizedClientService);
+    authorizedClientManager.setAuthorizedClientProvider(
+        new ClientCredentialsReactiveOAuth2AuthorizedClientProvider());
+
+    // create filter function
+    val oauth = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
+    oauth.setDefaultClientRegistrationId(regId);
+    return oauth;
   }
 }

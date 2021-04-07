@@ -47,11 +47,6 @@ public class DownloadsService {
               val objectId = analysisFileResponse.getObjectId();
               return songScoreClient.downloadObject(objectId);
             })
-        .onErrorMap(
-            throwable -> {
-              throwable.printStackTrace();
-              log.error("Error occured - {}", throwable.getMessage());
-              return new Error("Internal Server Error, try again later");
-            });
+        .onErrorMap(throwable -> new Error("Internal Server Error, try again later"));
   }
 }

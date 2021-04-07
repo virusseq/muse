@@ -57,18 +57,11 @@ public class SongScoreService {
   private Disposable createSubmitUploadDisposable() {
     return sink.asFlux()
         .flatMap(this::extractPayloadUploadAndSubFileFromEvent)
-        .onErrorContinue(
-               (t, obj) -> {
-                   t.printStackTrace();
-                   log.error("Disposable Panic - {}", t.getMessage());
-                   log.error("Disposable Panic cause by - {}", obj);
-               })
         .flatMap(this::submitAndUploadToSongScore)
-
         .subscribe();
   }
 
-  private Flux<Tuple3<String, Upload, SubmissionFile>> extractPayloadUploadAndSubFileFromEvent(
+  public Flux<Tuple3<String, Upload, SubmissionFile>> extractPayloadUploadAndSubFileFromEvent(
       SubmissionEvent submissionEvent) {
     val records = submissionEvent.getRecords();
     val map = submissionEvent.getSubmissionFilesMap();
@@ -103,7 +96,7 @@ public class SongScoreService {
                 }));
   }
 
-  private Mono<Upload> submitAndUploadToSongScore(Tuple3<String, Upload, SubmissionFile> tuples3) {
+  public Mono<Upload> submitAndUploadToSongScore(Tuple3<String, Upload, SubmissionFile> tuples3) {
     val payload = tuples3.getT1();
     val upload = tuples3.getT2();
     val submissionFile = tuples3.getT3();
