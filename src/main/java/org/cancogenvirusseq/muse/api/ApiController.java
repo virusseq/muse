@@ -18,7 +18,9 @@
 
 package org.cancogenvirusseq.muse.api;
 
-import java.nio.ByteBuffer;
+import static java.lang.String.format;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,11 +28,13 @@ import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionService;
 import org.cancogenvirusseq.muse.service.UploadService;
 import org.cancogenvirusseq.muse.utils.SecurityContextWrapper;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -49,6 +53,8 @@ public class ApiController implements ApiDefinition {
   private final SubmissionService submissionService;
   private final UploadService uploadService;
   private final DownloadsService downloadsService;
+
+  private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
   @GetMapping("/submissions")
   public Mono<ResponseEntity<EntityListResponse<SubmissionDTO>>> getSubmissions(
@@ -84,10 +90,11 @@ public class ApiController implements ApiDefinition {
         .transform(this::listResponseTransform);
   }
 
-  @PostMapping("/download")
-  public Mono<ResponseEntity<Flux<ByteBuffer>>> download(
+  public ResponseEntity<Flux<DataBuffer>> download(
       @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
-    return downloadsService.download(downloadRequest).map(this::respondOk);
+    return ResponseEntity.ok()
+        .header(CONTENT_DISPOSITION_HEADER, format("attachment; filename=%s", downloadRequest.getStudyId() + FASTA_FILE_EXTENSION))
+        .body(downloadsService.download(downloadRequest));
   }
 
   @ExceptionHandler

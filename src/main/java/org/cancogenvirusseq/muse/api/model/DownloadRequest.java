@@ -28,5 +28,6 @@ import lombok.NonNull;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DownloadRequest {
+  @NonNull private String studyId;
   @NonNull private List<String> analysisIds;
 }

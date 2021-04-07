@@ -19,10 +19,10 @@
 package org.cancogenvirusseq.muse.api;
 
 import io.swagger.annotations.*;
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.cancogenvirusseq.muse.api.model.*;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -173,6 +173,5 @@ public interface ApiDefinition {
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE,
       consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  Mono<ResponseEntity<Flux<ByteBuffer>>> download(
-      @Valid @RequestBody DownloadRequest downloadRequest);
+  ResponseEntity<Flux<DataBuffer>> download(@Valid @RequestBody DownloadRequest downloadRequest);
 }

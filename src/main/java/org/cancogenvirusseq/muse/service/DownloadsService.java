@@ -18,15 +18,35 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import java.nio.ByteBuffer;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.cancogenvirusseq.muse.api.model.DownloadRequest;
+import org.cancogenvirusseq.muse.components.SongScoreClient;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class DownloadsService {
-  public Mono<Flux<ByteBuffer>> download(DownloadRequest downloadRequest) {
-    return Mono.just(Flux.empty());
+
+  final SongScoreClient songScoreClient;
+
+  public Flux<DataBuffer> download(DownloadRequest downloadRequest) {
+    val analysisIds = downloadRequest.getAnalysisIds();
+    val studyId = downloadRequest.getStudyId();
+
+    return Flux.fromIterable(analysisIds)
+        .map(UUID::fromString)
+        .flatMap(analysisId -> songScoreClient.getFileSpecFromSong(studyId, analysisId))
+        .flatMap(
+            analysisFileResponse -> {
+              val objectId = analysisFileResponse.getObjectId();
+              return songScoreClient.downloadObject(objectId);
+            })
+        .onErrorMap(throwable -> new Error("Internal Server Error, try again later"));
   }
 }
