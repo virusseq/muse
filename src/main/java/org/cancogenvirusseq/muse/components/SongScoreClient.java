@@ -16,6 +16,11 @@ import org.cancogenvirusseq.muse.model.song_score.SubmitResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
+import org.springframework.security.oauth2.client.web.server.UnAuthenticatedServerOAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -34,20 +39,50 @@ public class SongScoreClient {
   @Value("${songScoreClient.systemApiToken}")
   String systemApiToken;
 
+  WebClient songClient;
+  WebClient scoreClient;
+
+  String clientId = "adminId";
+  String clientSecret = "adminSecret";
+  String tokenUrl = "http://localhost:8081/oauth/token";
+
   @PostConstruct
   public void init() {
     log.info("Initialized song score client.");
     log.info("songRootUrl - " + songRootUrl);
     log.info("scoreRootUrl - " + scoreRootUrl);
+
+    val registration = ClientRegistration
+                                              .withRegistrationId("my-platform")
+                                              .tokenUri(tokenUrl)
+                                              .clientId(clientId)
+                                              .clientSecret(clientSecret)
+                                              .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                                              .build();
+    val oauth = new ServerOAuth2AuthorizedClientExchangeFilterFunction(
+            new InMemoryReactiveClientRegistrationRepository(registration),
+            new UnAuthenticatedServerOAuth2AuthorizedClientRepository()
+    );
+
+    oauth.setDefaultClientRegistrationId("my-platform");
+
+    songClient = WebClient.builder()
+                         .baseUrl(songRootUrl)
+                         .filter(oauth)
+                         .defaultHeader("X-Resource-ID", "my-platform")
+                         .build();
+
+    scoreClient = WebClient.builder().baseUrl(scoreRootUrl)
+                          .filter(oauth)
+                          .defaultHeader("X-Resource-ID", "my-platform")
+                          .filter(oauth).build();
   }
 
   public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
-    val url = format(songRootUrl + "/submit/%s", studyId);
-    return WebClient.create(url)
-        .post()
+    val uri = format("/submit/%s", studyId);
+    return songClient.post().uri(uri)
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue(payload))
-        .header("Authorization", "Bearer " + systemApiToken)
         .retrieve()
         .bodyToMono(SubmitResponse.class)
         .onErrorMap(logAndMapWithMsg("Failed to submit payload"))

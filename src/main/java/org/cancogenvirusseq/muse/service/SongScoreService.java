@@ -57,12 +57,14 @@ public class SongScoreService {
   private Disposable createSubmitUploadDisposable() {
     return sink.asFlux()
         .flatMap(this::extractPayloadUploadAndSubFileFromEvent)
-        .flatMap(this::submitAndUploadToSongScore)
         .onErrorContinue(
-            (t, obj) -> {
-              log.error("Panic because - {}", t.getMessage());
-              log.error("Panic cause by - {}", obj);
-            })
+               (t, obj) -> {
+                   t.printStackTrace();
+                   log.error("Disposable Panic - {}", t.getMessage());
+                   log.error("Disposable Panic cause by - {}", obj);
+               })
+        .flatMap(this::submitAndUploadToSongScore)
+
         .subscribe();
   }
 
