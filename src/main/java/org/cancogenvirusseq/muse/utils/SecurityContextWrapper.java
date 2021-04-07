@@ -18,6 +18,7 @@
 
 package org.cancogenvirusseq.muse.utils;
 
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -45,5 +46,9 @@ public class SecurityContextWrapper {
     return (T t, U u) ->
         ReactiveSecurityContextHolder.getContext()
             .flatMapMany(securityContext -> triFunctionToWrap.apply(t, u, securityContext));
+  }
+
+  public static UUID getUserIdFromContext(SecurityContext securityContext) {
+    return UUID.fromString(securityContext.getAuthentication().getName());
   }
 }

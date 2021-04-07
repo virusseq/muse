@@ -21,13 +21,14 @@ package org.cancogenvirusseq.muse.service;
 import static java.util.stream.Collectors.groupingByConcurrent;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
 import static org.cancogenvirusseq.muse.components.TsvParser.parseTsvStrToFlatRecords;
+import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
 
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
@@ -47,16 +48,12 @@ import reactor.core.publisher.Sinks;
 import reactor.util.function.Tuples;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class SubmissionService {
 
   private final SubmissionRepository submissionRepository;
-  public final Sinks.Many<SubmissionEvent> submissionsSink;
-
-  public SubmissionService(@NonNull SubmissionRepository submissionRepository) {
-    this.submissionRepository = submissionRepository;
-    this.submissionsSink = Sinks.many().unicast().onBackpressureBuffer();
-  }
+  private final Sinks.Many<SubmissionEvent> songScoreSubmitUploadSink;
 
   public Flux<Submission> getSubmissions(Pageable page, SecurityContext securityContext) {
     return submissionRepository.findAllByUserId(
@@ -117,9 +114,7 @@ public class SubmissionService {
                             submissionRepository
                                 .save(
                                     Submission.builder()
-                                        .userId(
-                                            UUID.fromString(
-                                                securityContext.getAuthentication().getName()))
+                                        .userId(getUserIdFromContext(securityContext))
                                         .createdAt(OffsetDateTime.now())
                                         .originalFileNames(fileList)
                                         .totalRecords(recordsSubmissionFiles.getT1().size())
@@ -129,17 +124,12 @@ public class SubmissionService {
                                     submission ->
                                         SubmissionEvent.builder()
                                             .submissionId(submission.getSubmissionId())
-                                            .userId(
-                                                UUID.fromString(
-                                                    securityContext
-                                                        .getAuthentication()
-                                                        .getName())) // todo: auto UUID::fromString
-                                            // somehow?
+                                            .userId(getUserIdFromContext(securityContext))
                                             .records(recordsSubmissionFiles.getT1())
                                             .submissionFilesMap(recordsSubmissionFiles.getT2())
                                             .build())))
         // emit submission event to sink for further processing
-        .doOnNext(submissionsSink::tryEmitNext)
+        .doOnNext(songScoreSubmitUploadSink::tryEmitNext)
         // return submissionId to user
         .map(
             submissionEvent ->
