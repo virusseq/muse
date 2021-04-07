@@ -19,8 +19,6 @@
 package org.cancogenvirusseq.muse.api;
 
 import io.swagger.annotations.*;
-import java.util.UUID;
-import javax.validation.Valid;
 import org.cancogenvirusseq.muse.api.model.*;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.data.domain.Sort;
@@ -33,7 +31,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
-import java.nio.ByteBuffer;
 import java.util.UUID;
 
 @Api(value = "Molecular Upload Submission sErvice (Muse)", tags = "Muse")
@@ -60,7 +57,7 @@ public interface ApiDefinition {
       value = "/submissions",
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  Mono<ResponseEntity<EntityListResponse<SubmissionDTO>>> getSubmissions(
+  Mono<EntityListResponse<SubmissionDTO>> getSubmissions(
       @ApiParam(
               example = "0",
               value =
@@ -102,7 +99,7 @@ public interface ApiDefinition {
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.POST)
-  Mono<ResponseEntity<SubmissionCreateResponse>> submit(
+  Mono<SubmissionCreateResponse> submit(
       // this isn't working correctly in the swagger-ui, know issue:
       // https://github.com/springfox/springfox/issues/3464
       @ApiParam(
@@ -128,7 +125,7 @@ public interface ApiDefinition {
       value = "/uploads",
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  Mono<ResponseEntity<EntityListResponse<UploadDTO>>> getUploads(
+  Mono<EntityListResponse<UploadDTO>> getUploads(
       @ApiParam(
               example = "0",
               value =
