@@ -18,19 +18,9 @@
 
 package org.cancogenvirusseq.muse.config.websecurity;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toUnmodifiableList;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.security.KeyFactory;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.*;
-import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +43,17 @@ import org.springframework.security.oauth2.server.resource.authentication.Reacti
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import reactor.core.publisher.Mono;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.security.KeyFactory;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.*;
+import java.util.function.Function;
+
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toUnmodifiableList;
+
 @Slf4j
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
@@ -66,7 +67,7 @@ public class AuthConfig {
     http.csrf()
         .disable()
         .authorizeExchange()
-        .pathMatchers("/actuator/**")
+        .pathMatchers("/actuator/**", "/uploads-stream")
         .permitAll()
         .pathMatchers("/submissions/**", "/uploads/**", "/download")
         .hasAnyAuthority(authProperties.getScopes().getWrite().toArray(String[]::new))

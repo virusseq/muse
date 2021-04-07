@@ -39,7 +39,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -52,7 +51,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
-@Controller
+@RestController
 @RequiredArgsConstructor
 public class ApiController implements ApiDefinition {
 
@@ -97,8 +96,7 @@ public class ApiController implements ApiDefinition {
   }
 
   @GetMapping(path = "/uploads-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-  @ResponseStatus(value = HttpStatus.OK)
-  public Flux<UploadDTO> streamUploads(@Valid UUID submissionId) {
+  public Flux<UploadDTO> streamUploads(UUID submissionId) {
     return SecurityContextWrapper.forFlux(uploadService::getUploads)
         .apply(Optional.ofNullable(submissionId))
         .map(UploadDTO::fromDAO)
