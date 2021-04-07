@@ -58,10 +58,15 @@ public class SongScoreService {
     return sink.asFlux()
         .flatMap(this::extractPayloadUploadAndSubFileFromEvent)
         .flatMap(this::submitAndUploadToSongScore)
+        .onErrorContinue(
+            (t, obj) -> {
+              log.error("Panic because - {}", t.getMessage());
+              log.error("Panic cause by - {}", obj);
+            })
         .subscribe();
   }
 
-  public Flux<Tuple3<String, Upload, SubmissionFile>> extractPayloadUploadAndSubFileFromEvent(
+  private Flux<Tuple3<String, Upload, SubmissionFile>> extractPayloadUploadAndSubFileFromEvent(
       SubmissionEvent submissionEvent) {
     val records = submissionEvent.getRecords();
     val map = submissionEvent.getSubmissionFilesMap();
@@ -96,7 +101,7 @@ public class SongScoreService {
                 }));
   }
 
-  public Mono<Upload> submitAndUploadToSongScore(Tuple3<String, Upload, SubmissionFile> tuples3) {
+  private Mono<Upload> submitAndUploadToSongScore(Tuple3<String, Upload, SubmissionFile> tuples3) {
     val payload = tuples3.getT1();
     val upload = tuples3.getT2();
     val submissionFile = tuples3.getT3();

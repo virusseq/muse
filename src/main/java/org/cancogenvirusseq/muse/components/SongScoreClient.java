@@ -6,6 +6,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -13,6 +14,7 @@ import org.cancogenvirusseq.muse.model.song_score.AnalysisFileResponse;
 import org.cancogenvirusseq.muse.model.song_score.ScoreFileSpec;
 import org.cancogenvirusseq.muse.model.song_score.SubmitResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -48,7 +50,7 @@ public class SongScoreClient {
         .header("Authorization", "Bearer " + systemApiToken)
         .retrieve()
         .bodyToMono(SubmitResponse.class)
-        .onErrorMap(t -> new Error("Failed to submit payload"))
+        .onErrorMap(logAndMapWithMsg("Failed to submit payload"))
         .log();
   }
 
@@ -60,6 +62,7 @@ public class SongScoreClient {
         .bodyToFlux(AnalysisFileResponse.class)
         // we expect only one file to be uploaded in each analysis
         .next()
+        .onErrorMap(logAndMapWithMsg("Failed to get FileSpec from SONG"))
         .log();
   }
 
@@ -77,7 +80,7 @@ public class SongScoreClient {
         .header("Authorization", "Bearer " + systemApiToken)
         .retrieve()
         .bodyToMono(ScoreFileSpec.class)
-        .onErrorMap(t -> new Error("Failed to initialize upload"))
+        .onErrorMap(logAndMapWithMsg("Failed to initialize upload"))
         .log();
   }
 
@@ -95,7 +98,7 @@ public class SongScoreClient {
         .toBodilessEntity()
         .map(res -> res.getHeaders().getETag().replace("\"", ""))
         .flatMap(eTag -> finalizeScoreUpload(scoreFileSpec, md5, eTag))
-        .onErrorMap(t -> new Error("Failed to upload and finalize"))
+        .onErrorMap(logAndMapWithMsg("Failed to upload and finalize"))
         .log();
   }
 
@@ -131,10 +134,6 @@ public class SongScoreClient {
   }
 
   public Mono<String> publishAnalysis(String studyId, UUID analysisId) {
-    return publishAnalysis(studyId, analysisId.toString());
-  }
-
-  public Mono<String> publishAnalysis(String studyId, String analysisId) {
     val url =
         format(
             songRootUrl + "/studies/%s/analysis/publish/%s?ignoreUndefinedMd5=false",
@@ -146,12 +145,14 @@ public class SongScoreClient {
         .retrieve()
         .toBodilessEntity()
         .map(Objects::toString)
-        .onErrorMap(t -> new Error("Failed to publish analysis"))
+        .onErrorMap(logAndMapWithMsg("Failed to publish analysis"))
         .log();
   }
 
-  public Mono<String> downloadObject(String objectId) {
-    return getFileLink(objectId).flatMap(this::downloadFromS3);
+  public Mono<DataBuffer> downloadObject(String objectId) {
+    return getFileLink(objectId)
+        .flatMap(this::downloadFromS3)
+        .onErrorMap(logAndMapWithMsg("Failed to publish analysis"));
   }
 
   private Mono<String> getFileLink(String objectId) {
@@ -165,15 +166,23 @@ public class SongScoreClient {
         .map(spec -> spec.getParts().get(0).getUrl());
   }
 
-  private Mono<String> downloadFromS3(String presignedUrl) {
+  private Mono<DataBuffer> downloadFromS3(String presignedUrl) {
     return WebClient.create(decodeUrl(presignedUrl))
         .get()
         .retrieve()
-        .bodyToMono(String.class)
+        .bodyToMono(DataBuffer.class)
         .log();
   }
 
   private static String decodeUrl(String str) {
     return URLDecoder.decode(str, StandardCharsets.UTF_8);
+  }
+
+  private static Function<Throwable, Throwable> logAndMapWithMsg(String msg) {
+    return t -> {
+      t.printStackTrace();
+      log.error("SongScoreClient Error - {}", t.getMessage());
+      return new Error(msg);
+    };
   }
 }
