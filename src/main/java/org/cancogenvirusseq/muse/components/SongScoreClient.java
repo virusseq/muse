@@ -64,10 +64,9 @@ public class SongScoreClient {
   }
 
   public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
-    val uri = format("/submit/%s", studyId);
     return songClient
         .post()
-        .uri(uri)
+        .uri(format("/submit/%s", studyId))
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue(payload))
         .retrieve()
@@ -77,10 +76,9 @@ public class SongScoreClient {
   }
 
   public Mono<AnalysisFileResponse> getFileSpecFromSong(String studyId, UUID analysisId) {
-    val url = format("/studies/%s/analysis/%s/files", studyId, analysisId.toString());
     return songClient
         .get()
-        .uri(url)
+        .uri(format("/studies/%s/analysis/%s/files", studyId, analysisId.toString()))
         .retrieve()
         .bodyToFlux(AnalysisFileResponse.class)
         // we expect only one file to be uploaded in each analysis
@@ -91,14 +89,14 @@ public class SongScoreClient {
 
   public Mono<ScoreFileSpec> initScoreUpload(
       AnalysisFileResponse analysisFileResponse, String md5Sum) {
-    val url =
+    val uri =
         format(
             "/upload/%s/uploads?fileSize=%s&md5=%s&overwrite=true",
             analysisFileResponse.getObjectId(), analysisFileResponse.getFileSize(), md5Sum);
 
     return scoreClient
         .post()
-        .uri(url)
+        .uri(uri)
         .retrieve()
         .bodyToMono(ScoreFileSpec.class)
         .onErrorMap(logAndMapWithMsg("Failed to initialize upload"))
@@ -127,14 +125,14 @@ public class SongScoreClient {
     val objectId = scoreFileSpec.getObjectId();
     val uploadId = scoreFileSpec.getUploadId();
 
-    val finalizePartUrl =
+    val finalizePartUri =
         format(
             "/upload/%s/parts?uploadId=%s&etag=%s&md5=%s&partNumber=1",
             objectId, uploadId, etag, md5);
-    val finalizeUploadPart = scoreClient.post().uri(finalizePartUrl).retrieve().toBodilessEntity();
+    val finalizeUploadPart = scoreClient.post().uri(finalizePartUri).retrieve().toBodilessEntity();
 
-    val finalizeUploadUrl = format("/upload/%s?uploadId=%s", objectId, uploadId);
-    val finalizeUpload = scoreClient.post().uri(finalizeUploadUrl).retrieve().toBodilessEntity();
+    val finalizeUploadUri = format("/upload/%s?uploadId=%s", objectId, uploadId);
+    val finalizeUpload = scoreClient.post().uri(finalizeUploadUri).retrieve().toBodilessEntity();
 
     // The finalize step in score requires finalizing each file part and then the whole upload
     // we only have one file part, so we finalize the part and upload one after the other
@@ -142,11 +140,10 @@ public class SongScoreClient {
   }
 
   public Mono<String> publishAnalysis(String studyId, UUID analysisId) {
-    val url =
-        format("/studies/%s/analysis/publish/%s?ignoreUndefinedMd5=false", studyId, analysisId);
     return songClient
         .put()
-        .uri(url)
+        .uri(
+            format("/studies/%s/analysis/publish/%s?ignoreUndefinedMd5=false", studyId, analysisId))
         .retrieve()
         .toBodilessEntity()
         .map(Objects::toString)
@@ -161,10 +158,9 @@ public class SongScoreClient {
   }
 
   private Mono<String> getFileLink(String objectId) {
-    val url = format("/download/%s?offset=0&length=-1&external=true", objectId);
     return scoreClient
         .get()
-        .uri(url)
+        .uri(format("/download/%s?offset=0&length=-1&external=true", objectId))
         .retrieve()
         .bodyToMono(ScoreFileSpec.class)
         // we request length = -1 which returns one file part
