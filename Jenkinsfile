@@ -45,6 +45,8 @@ spec:
     env:
     - name: DOCKER_HOST
       value: tcp://localhost:2375
+    - name: HOME
+      value: /home/jenkins/agent
     securityContext:
       runAsUser: 1000
       runAsGroup: 1000
@@ -80,10 +82,8 @@ spec:
             }
             steps {
                 container('docker') {
-                    withCredentials([usernamePassword(credentialsId: 'cancogen-github',
-                            usernameVariable: 'GITHUB_APP',
-                            passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
-                        sh 'docker login ghcr.io -u $GITHUB_APP -p $GITHUB_ACCESS_TOKEN'
+                    withCredentials([usernamePassword(credentialsId: 'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
                     }
 
                     // DNS error if --network is default
@@ -116,12 +116,13 @@ spec:
             }
             steps {
                 container('docker') {
-                    withCredentials([usernamePassword(credentialsId: 'cancogen-github',
-                            usernameVariable: 'GITHUB_APP',
-                            passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
+                    withCredentials([usernamePassword(credentialsId: 'argoGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh "git tag ${version}"
-                        sh "git push https://${GITHUB_APP}:${GITHUB_ACCESS_TOKEN}@github.com/${gitHubRepo} --tags"
-                        sh 'docker login ghcr.io -u $GITHUB_APP -p $GITHUB_ACCESS_TOKEN'
+                        sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${gitHubRepo} --tags"
+                    }
+
+                    withCredentials([usernamePassword(credentialsId: 'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
                     }
 
                     // DNS error if --network is default
