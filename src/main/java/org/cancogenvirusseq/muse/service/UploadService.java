@@ -18,8 +18,6 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import java.util.Optional;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.val;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
@@ -29,6 +27,9 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.util.Optional;
+import java.util.UUID;
+
 @Service
 public class UploadService {
   private final UploadRepository uploadRepository;
@@ -37,11 +38,18 @@ public class UploadService {
     this.uploadRepository = uploadRepository;
   }
 
-  public Flux<Upload> getUploads(
+  public Flux<Upload> getUploadsPaged(
       Pageable page, Optional<UUID> submissionId, SecurityContext securityContext) {
     val userId = UUID.fromString(securityContext.getAuthentication().getName());
     return submissionId
         .map(id -> uploadRepository.findAllByUserIdAndSubmissionId(userId, id, page))
         .orElse(uploadRepository.findAllByUserId(userId, page));
+  }
+
+  public Flux<Upload> getUploads(Optional<UUID> submissionId, SecurityContext securityContext) {
+    val userId = UUID.fromString(securityContext.getAuthentication().getName());
+    return submissionId
+        .map(id -> uploadRepository.findAllByUserIdAndSubmissionId(userId, id))
+        .orElse(uploadRepository.findAllByUserId(userId));
   }
 }

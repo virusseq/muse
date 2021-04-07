@@ -32,6 +32,10 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.validation.Valid;
+import java.nio.ByteBuffer;
+import java.util.UUID;
+
 @Api(value = "Molecular Upload Submission sErvice (Muse)", tags = "Muse")
 public interface ApiDefinition {
   String BAD_REQUEST = "The request is malformed.";
@@ -55,7 +59,6 @@ public interface ApiDefinition {
   @RequestMapping(
       value = "/submissions",
       produces = MediaType.APPLICATION_JSON_VALUE,
-      consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
   Mono<ResponseEntity<EntityListResponse<SubmissionDTO>>> getSubmissions(
       @ApiParam(
@@ -124,7 +127,6 @@ public interface ApiDefinition {
   @RequestMapping(
       value = "/uploads",
       produces = MediaType.APPLICATION_JSON_VALUE,
-      consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
   Mono<ResponseEntity<EntityListResponse<UploadDTO>>> getUploads(
       @ApiParam(
@@ -149,6 +151,31 @@ public interface ApiDefinition {
           @Valid
           @RequestParam(value = "sortField", defaultValue = "createdAt", required = false)
           UploadSortField sortField,
+      @ApiParam(
+              example = "7fe7da94-bd30-4867-8a5e-042f6d9ccc48",
+              value = "OPTIONAL: Filter list response by submissionId")
+          @Valid
+          @RequestParam(value = "submissionId", required = false)
+          UUID submissionId);
+
+  @ApiOperation(
+      value = "Stream Uploads",
+      nickname = "Stream Uploads",
+      response = UploadDTO.class,
+      tags = "Muse")
+  @ApiResponses(
+      value = {
+        @ApiResponse(code = 200, message = "", response = UploadDTO.class),
+        @ApiResponse(code = 400, message = BAD_REQUEST, response = ErrorResponse.class),
+        @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
+        @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
+        @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
+      })
+  @RequestMapping(
+      value = "/uploads-stream",
+      produces = MediaType.TEXT_EVENT_STREAM_VALUE,
+      method = RequestMethod.GET)
+  Flux<UploadDTO> streamUploads(
       @ApiParam(
               example = "7fe7da94-bd30-4867-8a5e-042f6d9ccc48",
               value = "OPTIONAL: Filter list response by submissionId")
