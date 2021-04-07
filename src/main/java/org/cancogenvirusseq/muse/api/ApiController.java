@@ -92,9 +92,8 @@ public class ApiController implements ApiDefinition {
 
   public ResponseEntity<Flux<DataBuffer>> download(
       @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
-    val fileName = downloadRequest.getStudyId() + FASTA_FILE_EXTENSION;
     return ResponseEntity.ok()
-        .header(CONTENT_DISPOSITION_HEADER, format("attachment; filename=%s", fileName))
+        .header(CONTENT_DISPOSITION_HEADER, format("attachment; filename=%s", downloadRequest.getStudyId() + FASTA_FILE_EXTENSION))
         .body(downloadsService.download(downloadRequest));
   }
 
