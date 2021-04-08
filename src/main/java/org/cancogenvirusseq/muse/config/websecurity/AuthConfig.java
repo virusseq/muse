@@ -71,9 +71,9 @@ public class AuthConfig {
     http.csrf()
         .disable()
         .authorizeExchange()
-        .pathMatchers("/actuator/**", "/uploads-stream")
+        .pathMatchers("/actuator/**")
         .permitAll()
-        .pathMatchers("/submissions/**", "/uploads/**", "/download")
+        .pathMatchers("/submissions/**", "/uploads/**", "/uploads-stream", "/download")
         .hasAnyAuthority(authProperties.getScopes().getWrite().toArray(String[]::new))
         .pathMatchers(
             "/v2/api-docs",
