@@ -23,6 +23,7 @@ import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlResult;
 import io.r2dbc.spi.ConnectionFactory;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
@@ -79,8 +80,9 @@ public class UploadService {
 
   public Flux<Upload> getUploadStream(UUID submissionId, SecurityContext securityContext) {
     return connection
-        .getNotifications()
+        .getNotifications() // returns 🔥🔥🔥 HOT Flux 🔥🔥🔥
         .map(Notification::getParameter)
+        .filter(Objects::nonNull)
         .map(this::uploadFromString)
         // filter for the JWT UUID from the security context
         .filter(
