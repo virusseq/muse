@@ -16,17 +16,21 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.repository;
+CREATE OR REPLACE FUNCTION notify_upload() RETURNS TRIGGER AS
+$$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = row_to_json(NEW);
+    PERFORM pg_notify('upload_notification', payload::text);
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
 
-import org.cancogenvirusseq.muse.repository.model.Upload;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
-import reactor.core.publisher.Flux;
+DROP TRIGGER IF EXISTS trigger_notify_upload ON upload;
 
-import java.util.UUID;
-
-public interface UploadRepository extends ReactiveCrudRepository<Upload, UUID> {
-  Flux<Upload> findAllByUserId(UUID userId, Pageable pageable);
-
-  Flux<Upload> findAllByUserIdAndSubmissionId(UUID userId, UUID submissionId, Pageable pageable);
-}
+CREATE TRIGGER trigger_notify_upload
+    AFTER INSERT OR UPDATE
+    ON upload
+    FOR EACH ROW
+EXECUTE PROCEDURE notify_upload();

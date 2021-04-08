@@ -86,11 +86,8 @@ public class ApiController implements ApiDefinition {
         .transform(this::listResponseTransform);
   }
 
-  public Flux<UploadDTO> streamUploads(String accessToken, UUID submissionId) {
-    return SecurityContextWrapper.forFlux(uploadService::getUploads)
-        .apply(Optional.ofNullable(submissionId))
-        .map(UploadDTO::fromDAO)
-        .delayElements(Duration.ofSeconds(1));
+  public Flux<String> streamUploads(String accessToken, UUID submissionId) {
+    return uploadService.getUploadStream();
   }
 
   public ResponseEntity<Flux<DataBuffer>> download(

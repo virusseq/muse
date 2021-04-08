@@ -18,6 +18,10 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import io.r2dbc.postgresql.api.Notification;
+import io.r2dbc.postgresql.api.PostgresqlConnection;
+import io.r2dbc.postgresql.api.PostgresqlResult;
+import io.r2dbc.spi.ConnectionFactory;
 import lombok.NonNull;
 import lombok.val;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
@@ -26,16 +30,37 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class UploadService {
   private final UploadRepository uploadRepository;
+  private final PostgresqlConnection connection;
 
-  public UploadService(@NonNull UploadRepository uploadRepository) {
+  public UploadService(
+      @NonNull UploadRepository uploadRepository, @NonNull ConnectionFactory connectionFactory) {
     this.uploadRepository = uploadRepository;
+    this.connection =
+        Mono.from(connectionFactory.create()).cast(PostgresqlConnection.class).block();
+  }
+
+  @PostConstruct
+  private void postConstruct() {
+    connection
+        .createStatement("LISTEN upload_notification")
+        .execute()
+        .flatMap(PostgresqlResult::getRowsUpdated)
+        .subscribe();
+  }
+
+  @PreDestroy
+  private void preDestroy() {
+    connection.close().subscribe();
   }
 
   public Flux<Upload> getUploadsPaged(
@@ -46,10 +71,7 @@ public class UploadService {
         .orElse(uploadRepository.findAllByUserId(userId, page));
   }
 
-  public Flux<Upload> getUploads(Optional<UUID> submissionId, SecurityContext securityContext) {
-    val userId = UUID.fromString(securityContext.getAuthentication().getName());
-    return submissionId
-        .map(id -> uploadRepository.findAllByUserIdAndSubmissionId(userId, id))
-        .orElse(uploadRepository.findAllByUserId(userId));
+  public Flux<String> getUploadStream() {
+    return connection.getNotifications().map(Notification::getParameter);
   }
 }
