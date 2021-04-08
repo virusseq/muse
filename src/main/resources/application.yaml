@@ -29,3 +29,8 @@ auth:
       - DOMAIN.READ
     write:
       - DOMAIN.WRITE
+
+management:
+  endpoint:
+    health:
+      show-details: NEVER
