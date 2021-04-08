@@ -16,41 +16,23 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.repository.model;
+package org.cancogenvirusseq.muse.config;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-@Table("upload")
-public class Upload {
-  @Id private UUID uploadId;
+@Configuration
+public class JacksonObjectMapper {
+  @Bean
+  @Primary
+  public ObjectMapper objectMapper() {
 
-  @NonNull private String studyId;
+    ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new JavaTimeModule());
 
-  @NonNull private String submitterSampleId;
-
-  @NonNull private UUID submissionId;
-
-  @NonNull private UUID userId;
-
-  private OffsetDateTime createdAt;
-
-  @NonNull private UploadStatus status;
-
-  private UUID analysisId;
-
-  private String error;
-
-  private List<String> originalFilePair;
+    return objectMapper;
+  }
 }

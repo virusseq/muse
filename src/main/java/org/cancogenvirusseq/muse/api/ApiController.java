@@ -22,13 +22,11 @@ import static java.lang.String.format;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionService;
@@ -40,13 +38,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-@Controller
+@RestController
 @RequiredArgsConstructor
 public class ApiController implements ApiDefinition {
 
@@ -56,8 +56,7 @@ public class ApiController implements ApiDefinition {
 
   private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
-  @GetMapping("/submissions")
-  public Mono<ResponseEntity<EntityListResponse<SubmissionDTO>>> getSubmissions(
+  public Mono<EntityListResponse<SubmissionDTO>> getSubmissions(
       Integer page, Integer size, Sort.Direction sortDirection, SubmissionSortField sortField) {
     return SecurityContextWrapper.forFlux(submissionService::getSubmissions)
         .apply(PageRequest.of(page, size, Sort.by(sortDirection, sortField.toString())))
@@ -66,34 +65,36 @@ public class ApiController implements ApiDefinition {
         .transform(this::listResponseTransform);
   }
 
-  @PostMapping("/submissions")
-  public Mono<ResponseEntity<SubmissionCreateResponse>> submit(
-      @RequestPart("files") Flux<FilePart> fileParts) {
-    return SecurityContextWrapper.forMono(submissionService::submit)
-        .apply(fileParts)
-        .map(this::respondOk);
+  public Mono<SubmissionCreateResponse> submit(@RequestPart("files") Flux<FilePart> fileParts) {
+    return SecurityContextWrapper.forMono(submissionService::submit).apply(fileParts);
   }
 
-  @GetMapping("/uploads")
-  public Mono<ResponseEntity<EntityListResponse<UploadDTO>>> getUploads(
+  public Mono<EntityListResponse<UploadDTO>> getUploads(
       Integer page,
       Integer size,
       Sort.Direction sortDirection,
       UploadSortField sortField,
       UUID submissionId) {
-    return SecurityContextWrapper.forFlux(uploadService::getUploads)
+    return SecurityContextWrapper.forFlux(uploadService::getUploadsPaged)
         .apply(
-            PageRequest.of(page, size, Sort.by(sortDirection, sortField.toString())),
-            Optional.ofNullable(submissionId))
+            PageRequest.of(page, size, Sort.by(sortDirection, sortField.toString())), submissionId)
         .map(UploadDTO::fromDAO)
         .collectList()
         .transform(this::listResponseTransform);
   }
 
+  public Flux<UploadDTO> streamUploads(String accessToken, UUID submissionId) {
+    return SecurityContextWrapper.forFlux(uploadService::getUploadStream)
+        .apply(submissionId)
+        .map(UploadDTO::fromDAO);
+  }
+
   public ResponseEntity<Flux<DataBuffer>> download(
       @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
     return ResponseEntity.ok()
-        .header(CONTENT_DISPOSITION_HEADER, format("attachment; filename=%s", downloadRequest.getStudyId() + FASTA_FILE_EXTENSION))
+        .header(
+            CONTENT_DISPOSITION_HEADER,
+            format("attachment; filename=%s", downloadRequest.getStudyId() + FASTA_FILE_EXTENSION))
         .body(downloadsService.download(downloadRequest));
   }
 
@@ -107,14 +108,7 @@ public class ApiController implements ApiDefinition {
     }
   }
 
-  private <T> ResponseEntity<T> respondOk(T response) {
-    return new ResponseEntity<T>(response, HttpStatus.OK);
-  }
-
-  private <T> Mono<ResponseEntity<EntityListResponse<T>>> listResponseTransform(
-      Mono<List<T>> entities) {
-    return entities
-        .map(entityList -> EntityListResponse.<T>builder().data(entityList).build())
-        .map(this::respondOk);
+  private <T> Mono<EntityListResponse<T>> listResponseTransform(Mono<List<T>> entities) {
+    return entities.map(entityList -> EntityListResponse.<T>builder().data(entityList).build());
   }
 }

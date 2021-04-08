@@ -16,41 +16,21 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.repository.model;
+CREATE OR REPLACE FUNCTION notify_upload() RETURNS TRIGGER AS
+$$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = row_to_json(NEW);
+    PERFORM pg_notify('upload_notification', payload::text);
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
+DROP TRIGGER IF EXISTS trigger_notify_upload ON upload;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-@Table("upload")
-public class Upload {
-  @Id private UUID uploadId;
-
-  @NonNull private String studyId;
-
-  @NonNull private String submitterSampleId;
-
-  @NonNull private UUID submissionId;
-
-  @NonNull private UUID userId;
-
-  private OffsetDateTime createdAt;
-
-  @NonNull private UploadStatus status;
-
-  private UUID analysisId;
-
-  private String error;
-
-  private List<String> originalFilePair;
-}
+CREATE TRIGGER trigger_notify_upload
+    AFTER INSERT OR UPDATE
+    ON upload
+    FOR EACH ROW
+EXECUTE PROCEDURE notify_upload();
