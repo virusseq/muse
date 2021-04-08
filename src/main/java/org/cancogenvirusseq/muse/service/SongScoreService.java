@@ -42,7 +42,7 @@ public class SongScoreService {
 
   private Sinks.Many<SubmissionEvent> sink = Sinks.many().unicast().onBackpressureBuffer();
 
-  private Disposable submitUploadDisposable;
+  @Getter private Disposable submitUploadDisposable;
 
   @PostConstruct
   public void init() {
