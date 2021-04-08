@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class UploadHealthCheck implements HealthIndicator {
 
-  private static final String MESSAGE_KEY = "Upload Disposable";
+  private static final String MESSAGE_KEY = "uploadDisposable";
 
   private final SongScoreService songScoreService;
 
