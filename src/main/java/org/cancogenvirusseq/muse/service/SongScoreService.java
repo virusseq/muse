@@ -91,7 +91,7 @@ public class SongScoreService {
                   val filesNode = createFilesObject(submissionFile);
                   payload.set("files", filesNode);
 
-                  log.info(payload.toPrettyString());
+                  log.debug(payload.toPrettyString());
                   return Tuples.of(payload.toString(), upload, submissionFile);
                 }));
   }

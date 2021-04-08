@@ -172,7 +172,7 @@ public interface ApiDefinition {
       value = "/uploads-stream",
       produces = MediaType.TEXT_EVENT_STREAM_VALUE,
       method = RequestMethod.GET)
-  Flux<String> streamUploads(
+  Flux<UploadDTO> streamUploads(
       @RequestParam(value = "access_token") String accessToken,
       @ApiParam(
               example = "7fe7da94-bd30-4867-8a5e-042f6d9ccc48",

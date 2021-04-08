@@ -32,14 +32,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
-import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static java.lang.String.format;
@@ -56,7 +57,6 @@ public class ApiController implements ApiDefinition {
 
   private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
-  @GetMapping("/submissions")
   public Mono<EntityListResponse<SubmissionDTO>> getSubmissions(
       Integer page, Integer size, Sort.Direction sortDirection, SubmissionSortField sortField) {
     return SecurityContextWrapper.forFlux(submissionService::getSubmissions)
@@ -66,7 +66,6 @@ public class ApiController implements ApiDefinition {
         .transform(this::listResponseTransform);
   }
 
-  @PostMapping("/submissions")
   public Mono<SubmissionCreateResponse> submit(@RequestPart("files") Flux<FilePart> fileParts) {
     return SecurityContextWrapper.forMono(submissionService::submit).apply(fileParts);
   }
@@ -79,15 +78,16 @@ public class ApiController implements ApiDefinition {
       UUID submissionId) {
     return SecurityContextWrapper.forFlux(uploadService::getUploadsPaged)
         .apply(
-            PageRequest.of(page, size, Sort.by(sortDirection, sortField.toString())),
-            Optional.ofNullable(submissionId))
+            PageRequest.of(page, size, Sort.by(sortDirection, sortField.toString())), submissionId)
         .map(UploadDTO::fromDAO)
         .collectList()
         .transform(this::listResponseTransform);
   }
 
-  public Flux<String> streamUploads(String accessToken, UUID submissionId) {
-    return uploadService.getUploadStream();
+  public Flux<UploadDTO> streamUploads(String accessToken, UUID submissionId) {
+    return SecurityContextWrapper.forFlux(uploadService::getUploadStream)
+        .apply(submissionId)
+        .map(UploadDTO::fromDAO);
   }
 
   public ResponseEntity<Flux<DataBuffer>> download(

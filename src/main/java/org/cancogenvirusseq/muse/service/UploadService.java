@@ -18,11 +18,13 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlResult;
 import io.r2dbc.spi.ConnectionFactory;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.val;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
@@ -41,10 +43,15 @@ import java.util.UUID;
 public class UploadService {
   private final UploadRepository uploadRepository;
   private final PostgresqlConnection connection;
+  private final ObjectMapper objectMapper;
 
   public UploadService(
-      @NonNull UploadRepository uploadRepository, @NonNull ConnectionFactory connectionFactory) {
+      @NonNull UploadRepository uploadRepository,
+      @NonNull ConnectionFactory connectionFactory,
+      @NonNull ObjectMapper objectMapper) {
     this.uploadRepository = uploadRepository;
+    this.objectMapper = objectMapper;
+    // no need for .toFuture().get() here as constructors are allowed to block
     this.connection =
         Mono.from(connectionFactory.create()).cast(PostgresqlConnection.class).block();
   }
@@ -64,14 +71,32 @@ public class UploadService {
   }
 
   public Flux<Upload> getUploadsPaged(
-      Pageable page, Optional<UUID> submissionId, SecurityContext securityContext) {
+      Pageable page, UUID submissionId, SecurityContext securityContext) {
     val userId = UUID.fromString(securityContext.getAuthentication().getName());
-    return submissionId
+    return Optional.ofNullable(submissionId)
         .map(id -> uploadRepository.findAllByUserIdAndSubmissionId(userId, id, page))
         .orElse(uploadRepository.findAllByUserId(userId, page));
   }
 
-  public Flux<String> getUploadStream() {
-    return connection.getNotifications().map(Notification::getParameter);
+  public Flux<Upload> getUploadStream(UUID submissionId, SecurityContext securityContext) {
+    return connection
+        .getNotifications()
+        .map(Notification::getParameter)
+        .map(this::uploadFromString)
+        // filter for the JWT UUID from the security context
+        .filter(
+            upload ->
+                upload.getUserId().toString().equals(securityContext.getAuthentication().getName()))
+        // filter for the submissionID if provided otherwise ignore (filter always == true)
+        .filter(
+            upload ->
+                Optional.ofNullable(submissionId)
+                    .map(submissionIdVal -> submissionIdVal == upload.getSubmissionId())
+                    .orElse(true));
+  }
+
+  @SneakyThrows
+  private Upload uploadFromString(String uploadPayloadStr) {
+    return objectMapper.readValue(uploadPayloadStr, Upload.class);
   }
 }
