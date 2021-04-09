@@ -21,6 +21,7 @@ import org.cancogenvirusseq.muse.exceptions.submission.PayloadFileMapperExceptio
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.springframework.stereotype.Component;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 @Slf4j
 @Component
@@ -57,7 +58,7 @@ public class PayloadFileMapper {
   }
 
   private static BiFunction<MapperReduceResult, Map<String, String>, MapperReduceResult>
-  accumulator(ConcurrentHashMap<String, SubmissionFile> filesMap, String payloadTemplate) {
+      accumulator(ConcurrentHashMap<String, SubmissionFile> filesMap, String payloadTemplate) {
     return (acc, r) -> {
       val partialPayloadStr = convertRecordToPayload(r, payloadTemplate);
       val payload = fromJsonStr(partialPayloadStr);
@@ -72,6 +73,8 @@ public class PayloadFileMapper {
       acc.getUsedSampleIds().add(sampleId);
       val filesNode = createFilesObject(submissionFile);
       payload.set("files", filesNode);
+      acc.getRecordsMapped().add(Tuples.of(payload, submissionFile));
+
       return acc;
     };
   }
@@ -117,8 +120,8 @@ public class PayloadFileMapper {
   @Data
   @NoArgsConstructor
   static class MapperReduceResult {
-    List<String> usedSampleIds;
-    List<String> sampleIdInRecordMissingFile;
-    List<Tuple2<ObjectNode, SubmissionFile>> recordsMapped;
+    List<String> usedSampleIds = new ArrayList<>();
+    List<String> sampleIdInRecordMissingFile = new ArrayList<>();
+    List<Tuple2<ObjectNode, SubmissionFile>> recordsMapped = new ArrayList<>();
   }
 }
