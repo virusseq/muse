@@ -50,6 +50,7 @@ import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
+import org.springframework.security.oauth2.server.resource.web.server.ServerBearerTokenAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import reactor.core.publisher.Mono;
 
@@ -63,12 +64,16 @@ public class AuthConfig {
 
   @Bean
   public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
+    ServerBearerTokenAuthenticationConverter authenticationConverter =
+        new ServerBearerTokenAuthenticationConverter();
+    authenticationConverter.setAllowUriQueryParameter(true);
+
     http.csrf()
         .disable()
         .authorizeExchange()
         .pathMatchers("/actuator/**")
         .permitAll()
-        .pathMatchers("/submissions/**", "/uploads/**", "/download")
+        .pathMatchers("/submissions/**", "/uploads/**", "/uploads-stream", "/download")
         .hasAnyAuthority(authProperties.getScopes().getWrite().toArray(String[]::new))
         .pathMatchers(
             "/v2/api-docs",
@@ -84,6 +89,7 @@ public class AuthConfig {
         .authenticated()
         .and()
         .oauth2ResourceServer()
+        .bearerTokenConverter(authenticationConverter)
         .jwt()
         .jwtDecoder(jwtDecoder())
         .jwtAuthenticationConverter(grantedAuthoritiesExtractor());

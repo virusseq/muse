@@ -55,9 +55,8 @@ public interface ApiDefinition {
   @RequestMapping(
       value = "/submissions",
       produces = MediaType.APPLICATION_JSON_VALUE,
-      consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  Mono<ResponseEntity<EntityListResponse<SubmissionDTO>>> getSubmissions(
+  Mono<EntityListResponse<SubmissionDTO>> getSubmissions(
       @ApiParam(
               example = "0",
               value =
@@ -99,7 +98,7 @@ public interface ApiDefinition {
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.POST)
-  Mono<ResponseEntity<SubmissionCreateResponse>> submit(
+  Mono<SubmissionCreateResponse> submit(
       // this isn't working correctly in the swagger-ui, know issue:
       // https://github.com/springfox/springfox/issues/3464
       @ApiParam(
@@ -124,9 +123,8 @@ public interface ApiDefinition {
   @RequestMapping(
       value = "/uploads",
       produces = MediaType.APPLICATION_JSON_VALUE,
-      consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  Mono<ResponseEntity<EntityListResponse<UploadDTO>>> getUploads(
+  Mono<EntityListResponse<UploadDTO>> getUploads(
       @ApiParam(
               example = "0",
               value =
@@ -149,6 +147,32 @@ public interface ApiDefinition {
           @Valid
           @RequestParam(value = "sortField", defaultValue = "createdAt", required = false)
           UploadSortField sortField,
+      @ApiParam(
+              example = "7fe7da94-bd30-4867-8a5e-042f6d9ccc48",
+              value = "OPTIONAL: Filter list response by submissionId")
+          @Valid
+          @RequestParam(value = "submissionId", required = false)
+          UUID submissionId);
+
+  @ApiOperation(
+      value = "Stream Uploads",
+      nickname = "Stream Uploads",
+      response = UploadDTO.class,
+      tags = "Muse")
+  @ApiResponses(
+      value = {
+        @ApiResponse(code = 200, message = "", response = UploadDTO.class),
+        @ApiResponse(code = 400, message = BAD_REQUEST, response = ErrorResponse.class),
+        @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
+        @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
+        @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
+      })
+  @RequestMapping(
+      value = "/uploads-stream",
+      produces = MediaType.TEXT_EVENT_STREAM_VALUE,
+      method = RequestMethod.GET)
+  Flux<UploadDTO> streamUploads(
+      @RequestParam(value = "access_token") String accessToken,
       @ApiParam(
               example = "7fe7da94-bd30-4867-8a5e-042f6d9ccc48",
               value = "OPTIONAL: Filter list response by submissionId")

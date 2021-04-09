@@ -29,7 +29,6 @@ import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.service.DownloadsService;
@@ -42,13 +41,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-@Controller
+@RestController
 @RequiredArgsConstructor
 public class ApiController implements ApiDefinition {
 
@@ -58,8 +59,7 @@ public class ApiController implements ApiDefinition {
 
   private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
-  @GetMapping("/submissions")
-  public Mono<ResponseEntity<EntityListResponse<SubmissionDTO>>> getSubmissions(
+  public Mono<EntityListResponse<SubmissionDTO>> getSubmissions(
       Integer page, Integer size, Sort.Direction sortDirection, SubmissionSortField sortField) {
     return SecurityContextWrapper.forFlux(submissionService::getSubmissions)
         .apply(PageRequest.of(page, size, Sort.by(sortDirection, sortField.toString())))
@@ -68,7 +68,24 @@ public class ApiController implements ApiDefinition {
         .transform(this::listResponseTransform);
   }
 
-  @PostMapping("/submissions")
+  public Mono<ResponseEntity<SubmissionCreateResponse>> submit(
+          @RequestPart("files") Flux<FilePart> fileParts) {
+    return SecurityContextWrapper.forMono(submissionService::submit)
+                   .apply(fileParts)
+                   .map(this::respondOk)
+                   .onErrorResume(
+                           t -> {
+                             t.printStackTrace();
+                             if (t instanceof MuseBaseException) {
+                               val res =
+                                       new SubmissionCreateResponse("", ((MuseBaseException) t).getErrorObject());
+                               return Mono.just(new ResponseEntity<>(res, HttpStatus.BAD_REQUEST));
+                             }
+                             val res = new SubmissionCreateResponse("", Map.of("msg", "Internal Server Error!"));
+                             return Mono.just(new ResponseEntity<>(res, HttpStatus.INTERNAL_SERVER_ERROR));
+                           });
+  }
+
   public Mono<ResponseEntity<SubmissionCreateResponse>> submit(
       @RequestPart("files") Flux<FilePart> fileParts) {
     return SecurityContextWrapper.forMono(submissionService::submit)
@@ -87,7 +104,6 @@ public class ApiController implements ApiDefinition {
             });
   }
 
-  @GetMapping("/uploads")
   public Mono<ResponseEntity<EntityListResponse<UploadDTO>>> getUploads(
       Integer page,
       Integer size,
@@ -101,6 +117,12 @@ public class ApiController implements ApiDefinition {
         .map(UploadDTO::fromDAO)
         .collectList()
         .transform(this::listResponseTransform);
+  }
+
+  public Flux<UploadDTO> streamUploads(String accessToken, UUID submissionId) {
+    return SecurityContextWrapper.forFlux(uploadService::getUploadStream)
+        .apply(submissionId)
+        .map(UploadDTO::fromDAO);
   }
 
   public ResponseEntity<Flux<DataBuffer>> download(
@@ -122,14 +144,7 @@ public class ApiController implements ApiDefinition {
     }
   }
 
-  private <T> ResponseEntity<T> respondOk(T response) {
-    return new ResponseEntity<T>(response, HttpStatus.OK);
-  }
-
-  private <T> Mono<ResponseEntity<EntityListResponse<T>>> listResponseTransform(
-      Mono<List<T>> entities) {
-    return entities
-        .map(entityList -> EntityListResponse.<T>builder().data(entityList).build())
-        .map(this::respondOk);
+  private <T> Mono<EntityListResponse<T>> listResponseTransform(Mono<List<T>> entities) {
+    return entities.map(entityList -> EntityListResponse.<T>builder().data(entityList).build());
   }
 }
