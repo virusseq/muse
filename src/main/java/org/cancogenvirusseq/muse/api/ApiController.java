@@ -28,6 +28,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.cancogenvirusseq.muse.api.model.*;
+import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionService;
 import org.cancogenvirusseq.muse.service.UploadService;
@@ -102,6 +103,8 @@ public class ApiController implements ApiDefinition {
   public ResponseEntity<ErrorResponse> handle(Throwable ex) {
     if (ex instanceof IllegalArgumentException) {
       return ErrorResponse.errorResponseEntity(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage());
+    } else if (ex instanceof MuseBaseException) {
+      return ErrorResponse.errorResponseEntity((MuseBaseException) ex);
     } else {
       return ErrorResponse.errorResponseEntity(
           HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage());

@@ -18,14 +18,14 @@
 
 package org.cancogenvirusseq.muse.model;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
+import reactor.util.function.Tuple2;
 
 @Data
 @Builder
@@ -33,6 +33,5 @@ import lombok.NonNull;
 public class SubmissionEvent {
   @NonNull private UUID submissionId;
   @NonNull private UUID userId;
-  @NonNull private List<Map<String, String>> records;
-  @NonNull private ConcurrentHashMap<String, SubmissionFile> submissionFilesMap;
+  @NonNull private List<Tuple2<ObjectNode, SubmissionFile>> payloadFileTuples;
 }

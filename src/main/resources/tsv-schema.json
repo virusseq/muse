@@ -1,10 +1,6 @@
 [
   { "name": "studyId", "valueType": "string" },
   {
-    "name": "name",
-    "valueType": "string"
-  },
-  {
     "name": "submitterSampleId",
     "valueType": "string"
   },
@@ -21,7 +17,7 @@
     "valueType": "string"
   },
   {
-    "name": "age",
+    "name": "host_age",
     "valueType": "number"
   }
 ]

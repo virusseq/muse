@@ -1,2 +1,2 @@
-studyId	submitterSampleId	sampleType	submitterSpecimenId	gender	submitterDonorId	host_age	organism	collected_by
-COVIDPR	Qc-L00244359	Total RNA	CoV-2-001-SP	Female	CoV-2-001	80	Missing	LSPQ
+studyId	submitterSampleId	submitterSpecimenId	gender	submitterDonorId	host_age
+COVIDPR	Qc-L00244359	CoV-2-001-SP	Female	CoV-2-001	80

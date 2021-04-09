@@ -1,4 +1,4 @@
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.model.tsv_parser;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

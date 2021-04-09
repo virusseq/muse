@@ -1,22 +1,16 @@
 package org.cancogenvirusseq.muse.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.StringWriter;
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
+
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.app.Velocity;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
-import org.cancogenvirusseq.muse.model.TsvParserProperties;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
 import org.cancogenvirusseq.muse.repository.model.UploadStatus;
@@ -34,13 +28,9 @@ import reactor.util.function.Tuples;
 @RequiredArgsConstructor
 public class SongScoreService {
   final SongScoreClient songScoreClient;
-  final TsvParserProperties tsvParserProperties;
   final UploadRepository repo;
 
-  private static final String SAMPLE_ID_HEADER = "submitterSampleId";
-  private static final String STUDY_ID_HEADER = "studyId";
-
-  private Sinks.Many<SubmissionEvent> sink = Sinks.many().unicast().onBackpressureBuffer();
+  private final Sinks.Many<SubmissionEvent> sink = Sinks.many().unicast().onBackpressureBuffer();
 
   @Getter private Disposable submitUploadDisposable;
 
@@ -56,24 +46,25 @@ public class SongScoreService {
 
   private Disposable createSubmitUploadDisposable() {
     return sink.asFlux()
-        .flatMap(this::extractPayloadUploadAndSubFileFromEvent)
+        .flatMap(this::toStreamOfPayloadUploadAndSubFile)
         .flatMap(this::submitAndUploadToSongScore)
         .subscribe();
   }
 
-  public Flux<Tuple3<String, Upload, SubmissionFile>> extractPayloadUploadAndSubFileFromEvent(
+  public Flux<Tuple3<String, Upload, SubmissionFile>> toStreamOfPayloadUploadAndSubFile(
       SubmissionEvent submissionEvent) {
-    val records = submissionEvent.getRecords();
-    val map = submissionEvent.getSubmissionFilesMap();
+    val records = submissionEvent.getPayloadFileTuples();
 
     return Flux.fromStream(
         records
             .parallelStream()
             .map(
                 r -> {
-                  val sampleId = r.get(SAMPLE_ID_HEADER);
-                  val studyId = r.get(STUDY_ID_HEADER);
-                  val submissionFile = map.get(sampleId);
+                  val payload = r.getT1();
+                  val submissionFile = r.getT2();
+
+                  val sampleId = getFirstSubmitterSampleId(payload);
+                  val studyId = getStudyId(payload);
 
                   val upload =
                       Upload.builder()
@@ -85,13 +76,6 @@ public class SongScoreService {
                           .originalFilePair(List.of(submissionFile.getFileName()))
                           .build();
 
-                  val partialPayloadStr = convertRecordToPayload(r);
-                  val payload = fromJsonStr(partialPayloadStr);
-
-                  val filesNode = createFilesObject(submissionFile);
-                  payload.set("files", filesNode);
-
-                  log.debug(payload.toPrettyString());
                   return Tuples.of(payload.toString(), upload, submissionFile);
                 }));
   }
@@ -132,33 +116,5 @@ public class SongScoreService {
               upload.setError(t.getMessage());
               return repo.save(upload);
             });
-  }
-
-  @SneakyThrows
-  private ObjectNode fromJsonStr(String jsonStr) {
-    return new ObjectMapper().readValue(jsonStr, ObjectNode.class);
-  }
-
-  private String convertRecordToPayload(Map<String, String> valuesMap) {
-    val context = new VelocityContext();
-    valuesMap.forEach(context::put);
-    val writer = new StringWriter();
-    Velocity.evaluate(context, writer, "", tsvParserProperties.getPayloadJsonTemplate());
-    return writer.toString();
-  }
-
-  private static JsonNode createFilesObject(SubmissionFile submissionFile) {
-    val filesArray = JsonNodeFactory.instance.arrayNode(1);
-    val fileObj = JsonNodeFactory.instance.objectNode();
-
-    fileObj.put("fileName", submissionFile.getFileName());
-    fileObj.put("fileSize", submissionFile.getFileSize());
-    fileObj.put("fileMd5sum", submissionFile.getFileMd5sum());
-    fileObj.put("fileAccess", submissionFile.getFileAccess());
-    fileObj.put("fileType", submissionFile.getFileType());
-    fileObj.put("dataType", submissionFile.getDataType());
-
-    filesArray.insert(0, fileObj);
-    return filesArray;
   }
 }
