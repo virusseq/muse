@@ -66,11 +66,8 @@ public class ApiController implements ApiDefinition {
         .transform(this::listResponseTransform);
   }
 
-  public Mono<ResponseEntity<SubmissionCreateResponse>> submit(
-      @RequestPart("files") Flux<FilePart> fileParts) {
-    return SecurityContextWrapper.forMono(submissionService::submit)
-        .apply(fileParts)
-        .map(ResponseEntity::ok);
+  public Mono<SubmissionCreateResponse> submit(@RequestPart("files") Flux<FilePart> fileParts) {
+    return SecurityContextWrapper.forMono(submissionService::submit).apply(fileParts);
   }
 
   public Mono<EntityListResponse<UploadDTO>> getUploads(

@@ -98,7 +98,7 @@ public interface ApiDefinition {
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.POST)
-  Mono<ResponseEntity<SubmissionCreateResponse>> submit(
+  Mono<SubmissionCreateResponse> submit(
       // this isn't working correctly in the swagger-ui, know issue:
       // https://github.com/springfox/springfox/issues/3464
       @ApiParam(

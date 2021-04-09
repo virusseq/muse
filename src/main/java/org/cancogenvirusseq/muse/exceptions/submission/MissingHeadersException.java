@@ -4,18 +4,11 @@ import java.util.List;
 import java.util.Map;
 import lombok.Value;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
-import org.springframework.http.HttpStatus;
 
 @Value
 public class MissingHeadersException extends Throwable implements MuseBaseException {
   List<String> missingHeaders;
   List<String> unknownHeaders;
-
-
-  @Override
-  public HttpStatus getStatusCode() {
-    return null;
-  }
 
   @Override
   public String getErrorMessage() {
