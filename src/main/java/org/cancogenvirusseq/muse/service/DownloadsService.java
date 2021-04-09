@@ -18,15 +18,17 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.DownloadRequest;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
+import org.cancogenvirusseq.muse.exceptions.download.DownloadException;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -47,6 +49,10 @@ public class DownloadsService {
               val objectId = analysisFileResponse.getObjectId();
               return songScoreClient.downloadObject(objectId);
             })
-        .onErrorMap(throwable -> new Error("Internal Server Error, try again later"));
+        .onErrorMap(
+            throwable -> {
+              log.error(throwable.getLocalizedMessage(), throwable);
+              return new DownloadException();
+            });
   }
 }
