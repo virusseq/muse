@@ -76,6 +76,8 @@ public class SongScoreService {
                           .originalFilePair(List.of(submissionFile.getFileName()))
                           .build();
 
+                  log.debug(payload.toPrettyString());
+
                   return Tuples.of(payload.toString(), upload, submissionFile);
                 }));
   }

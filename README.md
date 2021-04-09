@@ -8,9 +8,7 @@ A docker-compose setup is available with all required services for MUSE in `./co
 ## Run:
  Move to compose folder: `cd compose`
  
- Start containers: `docker compose up -d`
- 
- Initialize minio: `sh ./init.sh`
+ Initialize dependency services: `./init-dep.sh`
  
 Note: Sometimes SONG-server might fail to start if DB is not ready yet; restart should fix it
 

@@ -1,3 +1,6 @@
+echo Start dependency services
+docker-compose up -d
+
 echo Make default test bucket
 docker run --rm \
     --network host \

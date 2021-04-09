@@ -10,7 +10,7 @@ services:
       SPRING_FLYWAY_ENABLED: "true"
       SPRING_FLYWAY_LOCATIONS: "classpath:flyway/sql,classpath:db/migration"
       SPRING_PROFILES: demo, auth
-      JWT_DURATIONMS: 300000 # expire tokens in 5 min for local testing
+      JWT_DURATIONMS: 1800000 # expire tokens in 30 min for local testing
     expose:
       - "8080"
     ports:
