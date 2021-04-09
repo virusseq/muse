@@ -22,14 +22,11 @@ import static java.lang.String.format;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.service.DownloadsService;
@@ -73,18 +70,7 @@ public class ApiController implements ApiDefinition {
       @RequestPart("files") Flux<FilePart> fileParts) {
     return SecurityContextWrapper.forMono(submissionService::submit)
         .apply(fileParts)
-        .map(ResponseEntity::ok)
-        .onErrorResume(
-            t -> {
-              t.printStackTrace();
-              if (t instanceof MuseBaseException) {
-                val res =
-                    new SubmissionCreateResponse("", ((MuseBaseException) t).getErrorObject());
-                return Mono.just(new ResponseEntity<>(res, HttpStatus.BAD_REQUEST));
-              }
-              val res = new SubmissionCreateResponse("", Map.of("msg", "Internal Server Error!"));
-              return Mono.just(new ResponseEntity<>(res, HttpStatus.INTERNAL_SERVER_ERROR));
-            });
+        .map(ResponseEntity::ok);
   }
 
   public Mono<EntityListResponse<UploadDTO>> getUploads(
@@ -120,6 +106,8 @@ public class ApiController implements ApiDefinition {
   public ResponseEntity<ErrorResponse> handle(Throwable ex) {
     if (ex instanceof IllegalArgumentException) {
       return ErrorResponse.errorResponseEntity(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage());
+    } else if (ex instanceof MuseBaseException) {
+      return ErrorResponse.errorResponseEntity((MuseBaseException) ex);
     } else {
       return ErrorResponse.errorResponseEntity(
           HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage());
