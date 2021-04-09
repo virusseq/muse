@@ -19,14 +19,13 @@
 package org.cancogenvirusseq.muse.api.model;
 
 import io.swagger.annotations.ApiModel;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -36,7 +35,6 @@ public class ErrorResponse {
   private HttpStatus status;
   private String message;
   private Map<String, Object> errorInfo;
-  
 
   public static ResponseEntity<ErrorResponse> errorResponseEntity(
       HttpStatus status, String message) {
@@ -44,9 +42,8 @@ public class ErrorResponse {
   }
 
   public static ResponseEntity<ErrorResponse> errorResponseEntity(MuseBaseException ex) {
-    return new ResponseEntity<>(new ErrorResponse(
-            ex.getStatusCode(),
-            ex.getErrorMessage(),
-            ex.getErrorInfo()), ex.getStatusCode());
+    return new ResponseEntity<>(
+        new ErrorResponse(ex.getStatusCode(), ex.getErrorMessage(), ex.getErrorInfo()),
+        ex.getStatusCode());
   }
 }

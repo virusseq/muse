@@ -1,6 +1,7 @@
 package org.cancogenvirusseq.muse.components;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,10 +10,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
@@ -20,7 +21,6 @@ import org.cancogenvirusseq.muse.exceptions.submission.PayloadFileMapperExceptio
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.springframework.stereotype.Component;
 import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 @Slf4j
 @Component
@@ -34,33 +34,15 @@ public class PayloadFileMapper {
     val records = tuple2.getT1();
     val filesMap = tuple2.getT2();
 
-    val usedSampleIds = new ArrayList<String>();
-    val sampleIdInRecordMissingFile = new ArrayList<String>();
+    val result =
+        records.stream()
+            .reduce(
+                new MapperReduceResult(),
+                accumulator(filesMap, config.getPayloadJsonTemplate()),
+                combiner());
 
-    List<Tuple2<ObjectNode, SubmissionFile>> mapped =
-        records
-            .parallelStream()
-            .map(
-                r -> {
-                  val partialPayloadStr = convertRecordToPayload(r);
-                  val payload = fromJsonStr(partialPayloadStr);
-
-                  val sampleId = payload.get("samples").get(0).get("submitterSampleId").asText();
-
-                  val submissionFile = filesMap.get(sampleId);
-                  if (submissionFile == null) {
-                    sampleIdInRecordMissingFile.add(sampleId);
-                    return null;
-                  }
-                  usedSampleIds.add(sampleId);
-
-                  val filesNode = createFilesObject(submissionFile);
-                  payload.set("files", filesNode);
-
-                  return Tuples.of(payload, submissionFile);
-                })
-            .filter(Objects::nonNull)
-            .collect(toUnmodifiableList());
+    val usedSampleIds = result.getUsedSampleIds();
+    val sampleIdInRecordMissingFile = result.getSampleIdInRecordMissingFile();
 
     val sampleIdInFileMissingInTsv =
         filesMap.keySet().stream()
@@ -71,7 +53,36 @@ public class PayloadFileMapper {
       throw new PayloadFileMapperException(sampleIdInFileMissingInTsv, sampleIdInRecordMissingFile);
     }
 
-    return mapped;
+    return result.getRecordsMapped();
+  }
+
+  private static BiFunction<MapperReduceResult, Map<String, String>, MapperReduceResult>
+  accumulator(ConcurrentHashMap<String, SubmissionFile> filesMap, String payloadTemplate) {
+    return (acc, r) -> {
+      val partialPayloadStr = convertRecordToPayload(r, payloadTemplate);
+      val payload = fromJsonStr(partialPayloadStr);
+      val sampleId = getFirstSubmitterSampleId(payload);
+
+      val submissionFile = filesMap.get(sampleId);
+      if (submissionFile == null) {
+        acc.getSampleIdInRecordMissingFile().add(sampleId);
+        return acc;
+      }
+
+      acc.getUsedSampleIds().add(sampleId);
+      val filesNode = createFilesObject(submissionFile);
+      payload.set("files", filesNode);
+      return acc;
+    };
+  }
+
+  private static BinaryOperator<MapperReduceResult> combiner() {
+    return (first, second) -> {
+      first.getRecordsMapped().addAll(second.getRecordsMapped());
+      first.getUsedSampleIds().addAll(second.getUsedSampleIds());
+      first.getSampleIdInRecordMissingFile().addAll(second.getSampleIdInRecordMissingFile());
+      return first;
+    };
   }
 
   @SneakyThrows
@@ -79,11 +90,12 @@ public class PayloadFileMapper {
     return new ObjectMapper().readValue(jsonStr, ObjectNode.class);
   }
 
-  private String convertRecordToPayload(Map<String, String> valuesMap) {
+  private static String convertRecordToPayload(
+      Map<String, String> valuesMap, String payloadTemplate) {
     val context = new VelocityContext();
     valuesMap.forEach(context::put);
     val writer = new StringWriter();
-    Velocity.evaluate(context, writer, "", config.getPayloadJsonTemplate());
+    Velocity.evaluate(context, writer, "", payloadTemplate);
     return writer.toString();
   }
 
@@ -100,5 +112,13 @@ public class PayloadFileMapper {
 
     filesArray.insert(0, fileObj);
     return filesArray;
+  }
+
+  @Data
+  @NoArgsConstructor
+  static class MapperReduceResult {
+    List<String> usedSampleIds;
+    List<String> sampleIdInRecordMissingFile;
+    List<Tuple2<ObjectNode, SubmissionFile>> recordsMapped;
   }
 }

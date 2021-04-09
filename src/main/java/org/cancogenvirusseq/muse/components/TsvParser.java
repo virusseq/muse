@@ -80,7 +80,8 @@ public class TsvParser {
                   fieldErrors.addAll(checkValueTypes(record, j));
 
                   return record;
-                }).collect(toUnmodifiableList());
+                })
+            .collect(toUnmodifiableList());
 
     return new ParserValidResult(records, fieldErrors);
   }
