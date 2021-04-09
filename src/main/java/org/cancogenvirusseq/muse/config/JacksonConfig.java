@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 @Configuration
-public class JacksonObjectMapper {
+public class JacksonConfig {
   @Bean
   @Primary
   public ObjectMapper objectMapper() {
