@@ -18,6 +18,16 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import static java.util.stream.Collectors.groupingByConcurrent;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
+import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
+
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -39,17 +49,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.function.Tuples;
-
-import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.groupingByConcurrent;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
-import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
 
 @Service
 @RequiredArgsConstructor
@@ -74,10 +73,14 @@ public class SubmissionService {
         .flatMapMany(
             filePartsMap ->
                 Flux.fromStream(
-                    filePartsMap.entrySet().parallelStream()
+                    filePartsMap
+                        .entrySet()
+                        .parallelStream()
                         .flatMap(
                             filePartsMapEntries ->
-                                filePartsMapEntries.getValue().parallelStream()
+                                filePartsMapEntries
+                                    .getValue()
+                                    .parallelStream()
                                     .map(
                                         filePart ->
                                             Tuples.of(filePartsMapEntries.getKey(), filePart)))))
