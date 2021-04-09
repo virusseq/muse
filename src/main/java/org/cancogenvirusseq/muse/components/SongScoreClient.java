@@ -85,6 +85,7 @@ public class SongScoreClient {
         .bodyToFlux(AnalysisFileResponse.class)
         // we expect only one file to be uploaded in each analysis
         .next()
+        // TODO: handle song exceptions here for analysis not found, etc.
         .onErrorMap(logAndMapWithMsg("Failed to get FileSpec from SONG"))
         .log();
   }
@@ -156,7 +157,8 @@ public class SongScoreClient {
   public Mono<DataBuffer> downloadObject(String objectId) {
     return getFileLink(objectId)
         .flatMap(this::downloadFromS3)
-        .onErrorMap(logAndMapWithMsg("Failed to publish analysis"));
+        // todo: either map to something directly or handle centrally in logAndMapWithMsg
+        .onErrorMap(logAndMapWithMsg("Object download failed"));
   }
 
   private Mono<String> getFileLink(String objectId) {
@@ -181,6 +183,7 @@ public class SongScoreClient {
     return URLDecoder.decode(str, StandardCharsets.UTF_8);
   }
 
+  // TODO: consider handling webclient errors here?
   private static Function<Throwable, Throwable> logAndMapWithMsg(String msg) {
     return t -> {
       log.error("SongScoreClient Error - {}", t.getLocalizedMessage(), t);
