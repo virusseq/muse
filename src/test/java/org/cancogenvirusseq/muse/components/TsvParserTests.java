@@ -6,8 +6,8 @@
 // import java.util.Map;
 // import lombok.SneakyThrows;
 // import lombok.val;
-// import org.cancogenvirusseq.muse.model.TsvFieldSchema;
-// import org.cancogenvirusseq.muse.model.TsvParserProperties;
+// import org.cancogenvirusseq.muse.model.tsv_parser.TsvFieldSchema;
+// import org.cancogenvirusseq.muse.model.MuseProperties;
 // import org.junit.jupiter.api.Test;
 // import reactor.test.StepVerifier;
 //
@@ -30,7 +30,7 @@
 //            + "    \"samples\": [{\"submitterSampleId\": \"$submitterSampleId\"}]"
 //            + "}";
 //
-//    val tsvParserProperties = new TsvParserProperties(fields, jsonTemplateStr);
+//    val tsvParserProperties = new MuseProperties(fields, jsonTemplateStr);
 //    val parser = new TsvParser(tsvParserProperties);
 //
 //    val tsvStr =

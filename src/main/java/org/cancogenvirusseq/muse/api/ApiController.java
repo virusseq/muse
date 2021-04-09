@@ -22,6 +22,7 @@ import static java.lang.String.format;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import javax.validation.Valid;
@@ -30,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
+import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionService;
 import org.cancogenvirusseq.muse.service.UploadService;
@@ -71,7 +73,18 @@ public class ApiController implements ApiDefinition {
       @RequestPart("files") Flux<FilePart> fileParts) {
     return SecurityContextWrapper.forMono(submissionService::submit)
         .apply(fileParts)
-        .map(this::respondOk);
+        .map(this::respondOk)
+        .onErrorResume(
+            t -> {
+              t.printStackTrace();
+              if (t instanceof MuseBaseException) {
+                val res =
+                    new SubmissionCreateResponse("", ((MuseBaseException) t).getErrorObject());
+                return Mono.just(new ResponseEntity<>(res, HttpStatus.BAD_REQUEST));
+              }
+              val res = new SubmissionCreateResponse("", Map.of("msg", "Internal Server Error!"));
+              return Mono.just(new ResponseEntity<>(res, HttpStatus.INTERNAL_SERVER_ERROR));
+            });
   }
 
   @GetMapping("/uploads")
@@ -93,7 +106,9 @@ public class ApiController implements ApiDefinition {
   public ResponseEntity<Flux<DataBuffer>> download(
       @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
     return ResponseEntity.ok()
-        .header(CONTENT_DISPOSITION_HEADER, format("attachment; filename=%s", downloadRequest.getStudyId() + FASTA_FILE_EXTENSION))
+        .header(
+            CONTENT_DISPOSITION_HEADER,
+            format("attachment; filename=%s", downloadRequest.getStudyId() + FASTA_FILE_EXTENSION))
         .body(downloadsService.download(downloadRequest));
   }
 
