@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.DownloadRequest;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
+import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.exceptions.download.DownloadUnknownException;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
@@ -49,9 +50,13 @@ public class DownloadsService {
               return songScoreClient.downloadObject(objectId);
             })
         .onErrorMap(
-            throwable -> {
-              log.error(throwable.getLocalizedMessage(), throwable);
-              return new DownloadUnknownException();
+            t -> {
+              log.error(t.getLocalizedMessage(), t);
+              if (t instanceof MuseBaseException) {
+                return t;
+              } else {
+                return new DownloadUnknownException();
+              }
             });
   }
 }

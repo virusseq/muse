@@ -112,10 +112,10 @@ public class SongScoreService {
               return repo.save(upload);
             })
         .onErrorResume(
-            (err) -> {
-              log.error(err.getLocalizedMessage(), err);
+            t -> {
+              log.error(t.getLocalizedMessage(), t);
               upload.setStatus(UploadStatus.ERROR);
-              upload.setError(err.getLocalizedMessage());
+              upload.setError(t.getLocalizedMessage());
               return repo.save(upload);
             });
   }

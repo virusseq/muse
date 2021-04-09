@@ -15,7 +15,9 @@ import org.cancogenvirusseq.muse.model.song_score.SubmitResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
-import org.springframework.security.oauth2.client.*;
+import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.ClientCredentialsReactiveOAuth2AuthorizedClientProvider;
+import org.springframework.security.oauth2.client.InMemoryReactiveOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
@@ -181,8 +183,7 @@ public class SongScoreClient {
 
   private static Function<Throwable, Throwable> logAndMapWithMsg(String msg) {
     return t -> {
-      t.printStackTrace();
-      log.error("SongScoreClient Error - {}", t.getMessage());
+      log.error("SongScoreClient Error - {}", t.getLocalizedMessage(), t);
       return new Error(msg);
     };
   }
