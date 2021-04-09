@@ -29,6 +29,7 @@ import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.service.DownloadsService;
@@ -69,28 +70,10 @@ public class ApiController implements ApiDefinition {
   }
 
   public Mono<ResponseEntity<SubmissionCreateResponse>> submit(
-          @RequestPart("files") Flux<FilePart> fileParts) {
-    return SecurityContextWrapper.forMono(submissionService::submit)
-                   .apply(fileParts)
-                   .map(this::respondOk)
-                   .onErrorResume(
-                           t -> {
-                             t.printStackTrace();
-                             if (t instanceof MuseBaseException) {
-                               val res =
-                                       new SubmissionCreateResponse("", ((MuseBaseException) t).getErrorObject());
-                               return Mono.just(new ResponseEntity<>(res, HttpStatus.BAD_REQUEST));
-                             }
-                             val res = new SubmissionCreateResponse("", Map.of("msg", "Internal Server Error!"));
-                             return Mono.just(new ResponseEntity<>(res, HttpStatus.INTERNAL_SERVER_ERROR));
-                           });
-  }
-
-  public Mono<ResponseEntity<SubmissionCreateResponse>> submit(
       @RequestPart("files") Flux<FilePart> fileParts) {
     return SecurityContextWrapper.forMono(submissionService::submit)
         .apply(fileParts)
-        .map(this::respondOk)
+        .map(ResponseEntity::ok)
         .onErrorResume(
             t -> {
               t.printStackTrace();
@@ -104,16 +87,15 @@ public class ApiController implements ApiDefinition {
             });
   }
 
-  public Mono<ResponseEntity<EntityListResponse<UploadDTO>>> getUploads(
+  public Mono<EntityListResponse<UploadDTO>> getUploads(
       Integer page,
       Integer size,
       Sort.Direction sortDirection,
       UploadSortField sortField,
       UUID submissionId) {
-    return SecurityContextWrapper.forFlux(uploadService::getUploads)
+    return SecurityContextWrapper.forFlux(uploadService::getUploadsPaged)
         .apply(
-            PageRequest.of(page, size, Sort.by(sortDirection, sortField.toString())),
-            Optional.ofNullable(submissionId))
+            PageRequest.of(page, size, Sort.by(sortDirection, sortField.toString())), submissionId)
         .map(UploadDTO::fromDAO)
         .collectList()
         .transform(this::listResponseTransform);
