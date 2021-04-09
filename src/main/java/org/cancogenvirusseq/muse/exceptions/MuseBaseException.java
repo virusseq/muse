@@ -1,7 +1,9 @@
 package org.cancogenvirusseq.muse.exceptions;
 
-import java.util.Map;
 import org.springframework.http.HttpStatus;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public interface MuseBaseException {
   default HttpStatus getStatusCode() {
@@ -10,5 +12,7 @@ public interface MuseBaseException {
 
   String getErrorMessage();
 
-  Map<String, Object> getErrorInfo();
+  default Map<String, Object> getErrorInfo() {
+    return new HashMap<>();
+  }
 }
