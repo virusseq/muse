@@ -30,7 +30,7 @@ public class MuseAppConfig {
     val mapper = new ObjectMapper();
     val fieldSchemas = mapper.readValue(url1, new TypeReference<List<TsvFieldSchema>>() {});
 
-    URL url2 = Resources.getResource("payload-template.vm");
+    URL url2 = Resources.getResource("payload-template");
 
     this.tsvFieldSchemas = ImmutableList.copyOf(fieldSchemas);
     this.expectedTsvHeaders =

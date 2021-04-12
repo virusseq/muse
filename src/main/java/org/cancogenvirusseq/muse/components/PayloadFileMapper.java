@@ -7,15 +7,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.app.Velocity;
+import org.apache.commons.text.StringSubstitutor;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
 import org.cancogenvirusseq.muse.exceptions.submission.PayloadFileMapperException;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
@@ -95,11 +93,10 @@ public class PayloadFileMapper {
 
   private static String convertRecordToPayload(
       Map<String, String> valuesMap, String payloadTemplate) {
-    val context = new VelocityContext();
-    valuesMap.forEach(context::put);
-    val writer = new StringWriter();
-    Velocity.evaluate(context, writer, "", payloadTemplate);
-    return writer.toString();
+    val sub = new StringSubstitutor(valuesMap);
+    // throw error if valuesMap is missing template values in payloadTemplate
+    sub.setEnableUndefinedVariableException(true);
+    return sub.replace(payloadTemplate);
   }
 
   private static JsonNode createFilesObject(SubmissionFile submissionFile) {
