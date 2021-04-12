@@ -1,12 +1,12 @@
 package org.cancogenvirusseq.muse.model.song_score;
 
-import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.springframework.http.HttpStatus;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
-public class ClientInputError extends Throwable {
+public class SongScoreClientException extends Throwable {
+  HttpStatus status;
   String msg;
-  Map<String, Object> errorInfo;
 }

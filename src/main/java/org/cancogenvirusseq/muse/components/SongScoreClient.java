@@ -13,7 +13,6 @@ import org.cancogenvirusseq.muse.model.song_score.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.ClientCredentialsReactiveOAuth2AuthorizedClientProvider;
@@ -24,10 +23,9 @@ import org.springframework.security.oauth2.client.web.reactive.function.client.S
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -84,22 +82,7 @@ public class SongScoreClient {
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue(payload))
         .retrieve()
-        // Catch song 400 errors and extract info about schema violation errors
-        .onStatus(
-            HttpStatus::is4xxClientError,
-            clientResponse ->
-                clientResponse
-                    .bodyToMono(SongErrorResponse.class)
-                    .map(
-                        res -> {
-                          if (res.getErrorId().equalsIgnoreCase(SCHEMA_VIOLATION_ERROR)) {
-                            throw new Error(res.getMessage());
-                          }
-                          throw new Error("Failed to submit payload");
-                        }))
         .bodyToMono(ValidSubmitResponse.class)
-        // Handle generic web client exceptions
-        .onErrorMap(WebClientException.class, logAndMapWithMsg("Failed to submit payload"))
         .log();
   }
 
@@ -107,34 +90,21 @@ public class SongScoreClient {
     return songClient
         .get()
         .uri(format("/studies/%s/analysis/%s/files", studyId, analysisId.toString()))
-        .retrieve()
-        .bodyToFlux(AnalysisFileResponse.class)
-        // we expect only one file to be uploaded in each analysis
-        .next()
-        // TODO: handle song exceptions here for analysis not found, etc.
-        .onErrorMap(logAndMapWithMsg("Failed to get FileSpec from SONG"))
+        // endpoint returns array but, we expect only one file to be uploaded in each analysis
+        .exchangeToMono(withClassTypeAndDefaultErrorHandle(AnalysisFileResponse.class))
         .log();
   }
 
-  public Mono<List<AnalysisFileResponse>> getFileSpecsFromSong(
-      String studyId, List<UUID> analysisIds) {
-    List<UUID> failedAnalysisIds = new ArrayList<>();
-    return Flux.fromIterable(analysisIds)
-        .flatMap(id -> getFileSpecFromSong(studyId, id).doOnError(t -> failedAnalysisIds.add(id)))
-        // noop on error, but need to continue or flux dies
-        .onErrorContinue((t, o) -> {})
-        .collectList()
-        .handle(
-            (fileSpecs, sink) -> {
-              if (failedAnalysisIds.size() > 0) {
-                sink.error(
-                    new ClientInputError(
-                        "Failed to get file spec for some analysisIds.",
-                        Map.of("failedAnalysisIds", failedAnalysisIds)));
-                return;
-              }
-              sink.next(fileSpecs);
-            });
+  private static <V> Function<ClientResponse, ? extends Mono<V>> withClassTypeAndDefaultErrorHandle(Class<V> classType) {
+       return clientResponse -> {
+         val status = clientResponse.statusCode();
+         if (clientResponse.statusCode().isError()) {
+           return clientResponse
+                          .bodyToMono(ErrorResponse.class)
+                          .flatMap(res -> Mono.error(new SongScoreClientException(status, res.getMessage())));
+         }
+         return clientResponse.bodyToMono(classType);
+       };
   }
 
   public Mono<ScoreFileSpec> initScoreUpload(
@@ -149,7 +119,6 @@ public class SongScoreClient {
         .uri(uri)
         .retrieve()
         .bodyToMono(ScoreFileSpec.class)
-        .onErrorMap(logAndMapWithMsg("Failed to initialize upload"))
         .log();
   }
 
@@ -167,7 +136,6 @@ public class SongScoreClient {
         .toBodilessEntity()
         .map(res -> res.getHeaders().getETag().replace("\"", ""))
         .flatMap(eTag -> finalizeScoreUpload(scoreFileSpec, md5, eTag))
-        .onErrorMap(logAndMapWithMsg("Failed to upload and finalize"))
         .log();
   }
 
@@ -197,15 +165,12 @@ public class SongScoreClient {
         .retrieve()
         .toBodilessEntity()
         .map(Objects::toString)
-        .onErrorMap(logAndMapWithMsg("Failed to publish analysis"))
         .log();
   }
 
   public Mono<DataBuffer> downloadObject(String objectId) {
     return getFileLink(objectId)
-        .flatMap(this::downloadFromS3)
-        // todo: either map to something directly or handle centrally in logAndMapWithMsg
-        .onErrorMap(logAndMapWithMsg("Object download failed"));
+        .flatMap(this::downloadFromS3);
   }
 
   private Mono<String> getFileLink(String objectId) {
@@ -228,14 +193,6 @@ public class SongScoreClient {
 
   private static String decodeUrl(String str) {
     return URLDecoder.decode(str, StandardCharsets.UTF_8);
-  }
-
-  // TODO: consider handling webclient errors here?
-  private static Function<Throwable, Throwable> logAndMapWithMsg(String msg) {
-    return t -> {
-      log.error("SongScoreClient Error - {}", t.getLocalizedMessage(), t);
-      return new Error(msg);
-    };
   }
 
   private ExchangeFilterFunction createOauthFilter(
