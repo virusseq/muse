@@ -4,16 +4,12 @@ import static java.lang.String.format;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.cancogenvirusseq.muse.model.song_score.AnalysisFileResponse;
-import org.cancogenvirusseq.muse.model.song_score.InvalidSubmitResponse;
-import org.cancogenvirusseq.muse.model.song_score.ScoreFileSpec;
-import org.cancogenvirusseq.muse.model.song_score.ValidSubmitResponse;
+import org.cancogenvirusseq.muse.model.song_score.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -31,6 +27,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -42,7 +39,7 @@ public class SongScoreClient {
   private static final String RESOURCE_ID_HEADER = "X-Resource-ID";
   private static final String OUATH_RESOURCE_ID = "songScoreOauth";
 
-  private final static String SCHEMA_VIOLATION_ERROR = "schema.violation";
+  private static final String SCHEMA_VIOLATION_ERROR = "schema.violation";
 
   @Autowired
   public SongScoreClient(
@@ -88,20 +85,22 @@ public class SongScoreClient {
         .body(BodyInserters.fromValue(payload))
         .retrieve()
         // Catch song 400 errors and extract info about schema violation errors
-        .onStatus(HttpStatus::is4xxClientError,
-                clientResponse -> clientResponse
-                .bodyToMono(InvalidSubmitResponse.class)
-                .map(res -> {
-                  if (res.getErrorId().equalsIgnoreCase(SCHEMA_VIOLATION_ERROR)) {
-                    throw new Error(res.getMessage());
-                  }
-                  throw new Error("Failed to submit payload");
-                })
-        )
-       .bodyToMono(ValidSubmitResponse.class)
-       // Handle generic web client exceptions
-       .onErrorMap(WebClientException.class, logAndMapWithMsg("Failed to submit payload"))
-       .log();
+        .onStatus(
+            HttpStatus::is4xxClientError,
+            clientResponse ->
+                clientResponse
+                    .bodyToMono(SongErrorResponse.class)
+                    .map(
+                        res -> {
+                          if (res.getErrorId().equalsIgnoreCase(SCHEMA_VIOLATION_ERROR)) {
+                            throw new Error(res.getMessage());
+                          }
+                          throw new Error("Failed to submit payload");
+                        }))
+        .bodyToMono(ValidSubmitResponse.class)
+        // Handle generic web client exceptions
+        .onErrorMap(WebClientException.class, logAndMapWithMsg("Failed to submit payload"))
+        .log();
   }
 
   public Mono<AnalysisFileResponse> getFileSpecFromSong(String studyId, UUID analysisId) {
@@ -115,6 +114,27 @@ public class SongScoreClient {
         // TODO: handle song exceptions here for analysis not found, etc.
         .onErrorMap(logAndMapWithMsg("Failed to get FileSpec from SONG"))
         .log();
+  }
+
+  public Mono<List<AnalysisFileResponse>> getFileSpecsFromSong(
+      String studyId, List<UUID> analysisIds) {
+    List<UUID> failedAnalysisIds = new ArrayList<>();
+    return Flux.fromIterable(analysisIds)
+        .flatMap(id -> getFileSpecFromSong(studyId, id).doOnError(t -> failedAnalysisIds.add(id)))
+        // noop on error, but need to continue or flux dies
+        .onErrorContinue((t, o) -> {})
+        .collectList()
+        .handle(
+            (fileSpecs, sink) -> {
+              if (failedAnalysisIds.size() > 0) {
+                sink.error(
+                    new ClientInputError(
+                        "Failed to get file spec for some analysisIds.",
+                        Map.of("failedAnalysisIds", failedAnalysisIds)));
+                return;
+              }
+              sink.next(fileSpecs);
+            });
   }
 
   public Mono<ScoreFileSpec> initScoreUpload(

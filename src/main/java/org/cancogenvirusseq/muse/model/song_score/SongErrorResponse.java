@@ -7,7 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class InvalidSubmitResponse {
+public class SongErrorResponse {
+  public static final String ERROR_ID_SCHEMA_VIOLATION = "schema.violation";
+  public static final String ERROR_ID_ANALYSIS_ID_NOT_FOUND = "analysis.id.not.found";
+
   String errorId;
   String message;
 }
