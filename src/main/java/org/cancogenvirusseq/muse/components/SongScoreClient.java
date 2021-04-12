@@ -1,5 +1,12 @@
 package org.cancogenvirusseq.muse.components;
 
+import static java.lang.String.format;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Function;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -22,14 +29,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.function.Function;
-
-import static java.lang.String.format;
 
 @Slf4j
 @Component

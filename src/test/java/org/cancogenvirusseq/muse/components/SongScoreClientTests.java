@@ -18,6 +18,8 @@
 
 package org.cancogenvirusseq.muse.components;
 
+import static org.mockito.Mockito.when;
+
 import org.cancogenvirusseq.muse.model.song_score.SubmitResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,8 +30,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
 import org.springframework.web.reactive.function.client.WebClient.RequestHeadersUriSpec;
 import reactor.core.publisher.Mono;
-
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class SongScoreClientTests {
