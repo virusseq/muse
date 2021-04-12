@@ -7,15 +7,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.model.song_score.AnalysisFileResponse;
 import org.cancogenvirusseq.muse.model.song_score.ScoreFileSpec;
 import org.cancogenvirusseq.muse.model.song_score.SubmitResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
-import org.springframework.security.oauth2.client.*;
+import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.ClientCredentialsReactiveOAuth2AuthorizedClientProvider;
+import org.springframework.security.oauth2.client.InMemoryReactiveOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
@@ -35,6 +39,7 @@ public class SongScoreClient {
   private static final String RESOURCE_ID_HEADER = "X-Resource-ID";
   private static final String OUATH_RESOURCE_ID = "songScoreOauth";
 
+  @Autowired
   public SongScoreClient(
       @Value("${songScoreClient.songRootUrl}") String songRootUrl,
       @Value("${songScoreClient.scoreRootUrl}") String scoreRootUrl,
@@ -63,6 +68,13 @@ public class SongScoreClient {
     log.info("scoreRootUrl - " + scoreRootUrl);
   }
 
+  public SongScoreClient(@NonNull WebClient songClient, @NonNull WebClient scoreClient) {
+    this.songClient = songClient;
+    this.scoreClient = scoreClient;
+
+    log.info("Initialized song score client.");
+  }
+
   public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
     return songClient
         .post()
@@ -83,6 +95,7 @@ public class SongScoreClient {
         .bodyToFlux(AnalysisFileResponse.class)
         // we expect only one file to be uploaded in each analysis
         .next()
+        // TODO: handle song exceptions here for analysis not found, etc.
         .onErrorMap(logAndMapWithMsg("Failed to get FileSpec from SONG"))
         .log();
   }
@@ -154,7 +167,8 @@ public class SongScoreClient {
   public Mono<DataBuffer> downloadObject(String objectId) {
     return getFileLink(objectId)
         .flatMap(this::downloadFromS3)
-        .onErrorMap(logAndMapWithMsg("Failed to publish analysis"));
+        // todo: either map to something directly or handle centrally in logAndMapWithMsg
+        .onErrorMap(logAndMapWithMsg("Object download failed"));
   }
 
   private Mono<String> getFileLink(String objectId) {
@@ -179,10 +193,10 @@ public class SongScoreClient {
     return URLDecoder.decode(str, StandardCharsets.UTF_8);
   }
 
+  // TODO: consider handling webclient errors here?
   private static Function<Throwable, Throwable> logAndMapWithMsg(String msg) {
     return t -> {
-      t.printStackTrace();
-      log.error("SongScoreClient Error - {}", t.getMessage());
+      log.error("SongScoreClient Error - {}", t.getLocalizedMessage(), t);
       return new Error(msg);
     };
   }

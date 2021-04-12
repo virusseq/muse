@@ -101,9 +101,7 @@ public class ApiController implements ApiDefinition {
 
   @ExceptionHandler
   public ResponseEntity<ErrorResponse> handle(Throwable ex) {
-    if (ex instanceof IllegalArgumentException) {
-      return ErrorResponse.errorResponseEntity(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage());
-    } else if (ex instanceof MuseBaseException) {
+    if (ex instanceof MuseBaseException) {
       return ErrorResponse.errorResponseEntity((MuseBaseException) ex);
     } else {
       return ErrorResponse.errorResponseEntity(

@@ -6,8 +6,10 @@ import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
-import lombok.*;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
@@ -110,10 +112,10 @@ public class SongScoreService {
               return repo.save(upload);
             })
         .onErrorResume(
-            (t) -> {
-              t.printStackTrace();
+            t -> {
+              log.error(t.getLocalizedMessage(), t);
               upload.setStatus(UploadStatus.ERROR);
-              upload.setError(t.getMessage());
+              upload.setError(t.getLocalizedMessage());
               return repo.save(upload);
             });
   }

@@ -27,12 +27,14 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.components.PayloadFileMapper;
 import org.cancogenvirusseq.muse.components.TsvParser;
+import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFilesException;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.cancogenvirusseq.muse.repository.SubmissionRepository;
@@ -166,8 +168,11 @@ public class SubmissionService {
                 sink.next(fileTypeMap);
               } else {
                 sink.error(
-                    new IllegalArgumentException(
-                        "Submission must contain exactly one .tsv file and one or more .fasta files"));
+                    new SubmissionFilesException(
+                        fileTypeMap.values().stream()
+                            .flatMap(List::stream)
+                            .map(FilePart::filename)
+                            .collect(Collectors.toList())));
               }
             });
   }

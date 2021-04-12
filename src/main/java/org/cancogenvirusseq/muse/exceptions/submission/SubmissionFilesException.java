@@ -8,18 +8,16 @@ import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
-public class MissingHeadersException extends Throwable implements MuseBaseException {
-  List<String> missingHeaders;
-  List<String> unknownHeaders;
+public class SubmissionFilesException extends Throwable implements MuseBaseException {
+  List<String> filesSubmitted;
 
   @Override
   public String getErrorMessage() {
-    return "Headers are incorrect!";
+    return "Submission must contain exactly one .tsv file and one or more .fasta files";
   }
 
+  @Override
   public Map<String, Object> getErrorInfo() {
-    return Map.of(
-        "missingHeaders", missingHeaders,
-        "unknownHeaders", unknownHeaders);
+    return Map.of("filesSubmitted", filesSubmitted);
   }
 }
