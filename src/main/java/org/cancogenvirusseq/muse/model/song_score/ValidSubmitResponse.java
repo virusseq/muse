@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubmitResponse {
+public class ValidSubmitResponse {
   String analysisId;
   String status;
 }

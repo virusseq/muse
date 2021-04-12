@@ -11,11 +11,13 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.model.song_score.AnalysisFileResponse;
+import org.cancogenvirusseq.muse.model.song_score.InvalidSubmitResponse;
 import org.cancogenvirusseq.muse.model.song_score.ScoreFileSpec;
-import org.cancogenvirusseq.muse.model.song_score.SubmitResponse;
+import org.cancogenvirusseq.muse.model.song_score.ValidSubmitResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.ClientCredentialsReactiveOAuth2AuthorizedClientProvider;
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientException;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -38,6 +41,8 @@ public class SongScoreClient {
 
   private static final String RESOURCE_ID_HEADER = "X-Resource-ID";
   private static final String OUATH_RESOURCE_ID = "songScoreOauth";
+
+  private final static String SCHEMA_VIOLATION_ERROR = "schema.violation";
 
   @Autowired
   public SongScoreClient(
@@ -75,16 +80,28 @@ public class SongScoreClient {
     log.info("Initialized song score client.");
   }
 
-  public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
+  public Mono<ValidSubmitResponse> submitPayload(String studyId, String payload) {
     return songClient
         .post()
         .uri(format("/submit/%s", studyId))
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue(payload))
         .retrieve()
-        .bodyToMono(SubmitResponse.class)
-        .onErrorMap(logAndMapWithMsg("Failed to submit payload"))
-        .log();
+        // Catch song 400 errors and extract info about schema violation errors
+        .onStatus(HttpStatus::is4xxClientError,
+                clientResponse -> clientResponse
+                .bodyToMono(InvalidSubmitResponse.class)
+                .map(res -> {
+                  if (res.getErrorId().equalsIgnoreCase(SCHEMA_VIOLATION_ERROR)) {
+                    throw new Error(res.getMessage());
+                  }
+                  throw new Error("Failed to submit payload");
+                })
+        )
+       .bodyToMono(ValidSubmitResponse.class)
+       // Handle generic web client exceptions
+       .onErrorMap(WebClientException.class, logAndMapWithMsg("Failed to submit payload"))
+       .log();
   }
 
   public Mono<AnalysisFileResponse> getFileSpecFromSong(String studyId, UUID analysisId) {
