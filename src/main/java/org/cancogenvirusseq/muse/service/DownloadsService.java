@@ -25,7 +25,7 @@ import lombok.val;
 import org.cancogenvirusseq.muse.api.model.DownloadRequest;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
-import org.cancogenvirusseq.muse.exceptions.download.DownloadUnknownException;
+import org.cancogenvirusseq.muse.exceptions.songScoreClient.UnknownException;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -55,7 +55,7 @@ public class DownloadsService {
               if (t instanceof MuseBaseException) {
                 return t;
               } else {
-                return new DownloadUnknownException();
+                return new UnknownException();
               }
             });
   }

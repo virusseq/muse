@@ -1,4 +1,4 @@
-package org.cancogenvirusseq.muse.exceptions.download;
+package org.cancogenvirusseq.muse.exceptions.songScoreClient;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
-public class DownloadUnknownException extends Throwable implements MuseBaseException {
+public class UnknownException extends Throwable implements MuseBaseException {
   @Override
   public HttpStatus getStatusCode() {
     return HttpStatus.INTERNAL_SERVER_ERROR;
