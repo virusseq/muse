@@ -1,11 +1,5 @@
 package org.cancogenvirusseq.muse.service;
 
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
-
-import java.util.List;
-import java.util.UUID;
-import javax.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +18,13 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
+
+import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.UUID;
+
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
 
 @Slf4j
 @Service
@@ -55,32 +56,25 @@ public class SongScoreService {
 
   public Flux<Tuple3<String, Upload, SubmissionFile>> toStreamOfPayloadUploadAndSubFile(
       SubmissionEvent submissionEvent) {
-    val records = submissionEvent.getPayloadFileTuples();
+    val submissionRequests = submissionEvent.getSubmissionRequests();
 
     return Flux.fromStream(
-        records
-            .parallelStream()
+        submissionRequests.parallelStream()
             .map(
                 r -> {
-                  val payload = r.getT1();
-                  val submissionFile = r.getT2();
-
-                  val sampleId = getFirstSubmitterSampleId(payload);
-                  val studyId = getStudyId(payload);
-
                   val upload =
                       Upload.builder()
-                          .studyId(studyId)
-                          .submitterSampleId(sampleId)
+                          .studyId(getStudyId(r.getPayload()))
+                          .submitterSampleId(getFirstSubmitterSampleId(r.getPayload()))
                           .submissionId(submissionEvent.getSubmissionId())
                           .userId(submissionEvent.getUserId())
                           .status(UploadStatus.QUEUED)
-                          .originalFilePair(List.of(submissionFile.getFileName()))
+                          .originalFilePair(List.of(r.getSubmissionFile().getFileName()))
                           .build();
 
-                  log.debug(payload.toPrettyString());
+                  log.debug(r.getPayload().toPrettyString());
 
-                  return Tuples.of(payload.toString(), upload, submissionFile);
+                  return Tuples.of(r.getPayload().toString(), upload, r.getSubmissionFile());
                 }));
   }
 
