@@ -1,17 +1,12 @@
 package org.cancogenvirusseq.muse.components;
 
-import static java.lang.String.format;
-
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.function.Function;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.model.song_score.AnalysisFileResponse;
 import org.cancogenvirusseq.muse.model.song_score.ScoreFileSpec;
 import org.cancogenvirusseq.muse.model.song_score.SubmitResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
@@ -28,6 +23,14 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Function;
+
+import static java.lang.String.format;
+
 @Slf4j
 @Component
 public class SongScoreClient {
@@ -37,6 +40,7 @@ public class SongScoreClient {
   private static final String RESOURCE_ID_HEADER = "X-Resource-ID";
   private static final String OUATH_RESOURCE_ID = "songScoreOauth";
 
+  @Autowired
   public SongScoreClient(
       @Value("${songScoreClient.songRootUrl}") String songRootUrl,
       @Value("${songScoreClient.scoreRootUrl}") String scoreRootUrl,
@@ -63,6 +67,13 @@ public class SongScoreClient {
     log.info("Initialized song score client.");
     log.info("songRootUrl - " + songRootUrl);
     log.info("scoreRootUrl - " + scoreRootUrl);
+  }
+
+  public SongScoreClient(@NonNull WebClient songClient, @NonNull WebClient scoreClient) {
+    this.songClient = songClient;
+    this.scoreClient = scoreClient;
+
+    log.info("Initialized song score client.");
   }
 
   public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
