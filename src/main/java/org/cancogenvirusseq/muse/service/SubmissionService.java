@@ -18,16 +18,6 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import static java.util.stream.Collectors.groupingByConcurrent;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
-import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
-
-import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -35,8 +25,9 @@ import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.components.PayloadFileMapper;
 import org.cancogenvirusseq.muse.components.TsvParser;
 import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFilesException;
+import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
-import org.cancogenvirusseq.muse.model.SubmissionFile;
+import org.cancogenvirusseq.muse.model.SubmissionRequest;
 import org.cancogenvirusseq.muse.repository.SubmissionRepository;
 import org.cancogenvirusseq.muse.repository.model.Submission;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -48,7 +39,18 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingByConcurrent;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
+import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
 
 @Service
 @RequiredArgsConstructor
@@ -67,91 +69,60 @@ public class SubmissionService {
 
   public Mono<SubmissionCreateResponse> submit(
       Flux<FilePart> fileParts, SecurityContext securityContext) {
-    return validateAndSplitSubmission(fileParts)
-        // take validated map of fileType => filePartList and
-        // convert to Flux Tuples(fileType, fileString)
-        .flatMapMany(
-            filePartsMap ->
-                Flux.fromStream(
-                    filePartsMap
-                        .entrySet()
-                        .parallelStream()
-                        .flatMap(
-                            filePartsMapEntries ->
-                                filePartsMapEntries
-                                    .getValue()
-                                    .parallelStream()
-                                    .map(
-                                        filePart ->
-                                            Tuples.of(filePartsMapEntries.getKey(), filePart)))))
-        .flatMap(
-            fileTypeFilePart ->
-                fileContentToString(fileTypeFilePart.getT2().content())
-                    .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)))
-        // reduce flux of Tuples(fileType, fileString) into a single tuple of (records,
-        // submissionFilesMap)
-        .reduce(
-            Tuples.of(
-                new ArrayList<Map<String, String>>(),
-                new ConcurrentHashMap<String, SubmissionFile>()),
-            (recordsSubmissionFiles, fileTypeFileStr) -> {
-              switch (fileTypeFileStr.getT1()) {
-                case "tsv":
-                  tsvParser
-                      .parseAndValidateTsvStrToFlatRecords(fileTypeFileStr.getT2())
-                      .forEach(record -> recordsSubmissionFiles.getT1().add(record));
-                  break;
-                case "fasta":
-                  recordsSubmissionFiles
-                      .getT2()
-                      .putAll(processFileStrContent(fileTypeFileStr.getT2()));
-                  break;
-              }
-              return recordsSubmissionFiles;
-            })
+    return validateSubmission(fileParts)
+        .flatMapIterable(Map::entrySet)
+        .flatMap(this::expandToFileTypeFilePartTuple)
+        .transform(this::readFileContentToString)
+        // reduce flux of Tuples(fileType, fileString) into a SubmissionRequest
+        .reduce(new SubmissionBundle(), this::reduceToSubmissionBundle)
         // validate submission records has fasta file map!
-        .map(payloadFileMapper::mapAllPayloadToSubmissionFile)
+        .map(payloadFileMapper::submissionBundleToSubmissionRequests)
         // record submission to database, create submissionEvent
+        .flatMap(recordsSubmissionFiles -> attachSubmissionFiles(recordsSubmissionFiles, fileParts))
         .flatMap(
-            recordsSubmissionFiles ->
-                fileParts
-                    .map(FilePart::filename)
-                    .collectList()
-                    .flatMap(
-                        fileList ->
-                            submissionRepository
-                                .save(
-                                    Submission.builder()
-                                        .userId(getUserIdFromContext(securityContext))
-                                        .createdAt(OffsetDateTime.now())
-                                        .originalFileNames(fileList)
-                                        .totalRecords(recordsSubmissionFiles.size())
-                                        .build())
-                                // from recorded submission, create submissionEvent
-                                .map(
-                                    submission ->
-                                        SubmissionEvent.builder()
-                                            .submissionId(submission.getSubmissionId())
-                                            .userId(getUserIdFromContext(securityContext))
-                                            .payloadFileTuples(recordsSubmissionFiles)
-                                            .build())))
+            submissionData ->
+                submissionRepository
+                    .save(
+                        Submission.builder()
+                            .userId(getUserIdFromContext(securityContext))
+                            .createdAt(OffsetDateTime.now())
+                            .originalFileNames(submissionData.getT2())
+                            .totalRecords(submissionData.getT1().size())
+                            .build())
+                    // from recorded submission, create submissionEvent
+                    .map(
+                        submission ->
+                            SubmissionEvent.builder()
+                                .submissionId(submission.getSubmissionId())
+                                .userId(getUserIdFromContext(securityContext))
+                                .submissionRequests(submissionData.getT1())
+                                .build()))
         // emit submission event to sink for further processing
         .doOnNext(songScoreSubmitUploadSink::tryEmitNext)
         // return submissionId to user
         .map(
             submissionEvent ->
-                new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()));
+                new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()))
+        .onErrorMap(ex -> ex);
+  }
+
+  private Mono<Tuple2<List<SubmissionRequest>, List<String>>> attachSubmissionFiles(
+      List<SubmissionRequest> recordsSubmissionFilesTuple, Flux<FilePart> fileParts) {
+    return fileParts
+        .map(FilePart::filename)
+        .collectList()
+        .map(fileList -> Tuples.of(recordsSubmissionFilesTuple, fileList));
   }
 
   /**
    * Splits the files into groups by filetype (extension in filename), verifies that there is
-   * exactly one .tsv and 'one or more' .fasta files. Returns a flux containing the file split map
+   * exactly one .tsv and 'one or more' .fasta files. Returns a Mono containing the file split map
    *
    * @param fileParts input flux of file parts
-   * @return a map containing files grouped by type that meet the validation requirements
+   * @return a Mono of Map containing files (value) grouped by type (key) that meet the validation
+   *     requirements
    */
-  private Mono<ConcurrentMap<String, List<FilePart>>> validateAndSplitSubmission(
-      Flux<FilePart> fileParts) {
+  Mono<ConcurrentMap<String, List<FilePart>>> validateSubmission(Flux<FilePart> fileParts) {
     return fileParts
         .collect(
             groupingByConcurrent(
@@ -177,6 +148,20 @@ public class SubmissionService {
             });
   }
 
+  private Flux<Tuple2<String, FilePart>> expandToFileTypeFilePartTuple(
+      Map.Entry<String, List<FilePart>> mapEntry) {
+    return Flux.fromIterable(mapEntry.getValue())
+        .map(filePart -> Tuples.of(mapEntry.getKey(), filePart));
+  }
+
+  private Flux<Tuple2<String, String>> readFileContentToString(
+      Flux<Tuple2<String, FilePart>> fileTypeFilePartTupleFlux) {
+    return fileTypeFilePartTupleFlux.flatMap(
+        fileTypeFilePart ->
+            fileContentToString(fileTypeFilePart.getT2().content())
+                .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)));
+  }
+
   private Mono<String> fileContentToString(Flux<DataBuffer> content) {
     return content
         .map(
@@ -188,5 +173,20 @@ public class SubmissionService {
               return new String(bytes, StandardCharsets.UTF_8);
             })
         .reduce(String::concat);
+  }
+
+  private SubmissionBundle reduceToSubmissionBundle(
+      SubmissionBundle recordsSubmissionFiles, Tuple2<String, String> fileTypeFileStr) {
+    switch (fileTypeFileStr.getT1()) {
+      case "tsv":
+        tsvParser
+            .parseAndValidateTsvStrToFlatRecords(fileTypeFileStr.getT2())
+            .forEach(record -> recordsSubmissionFiles.getRecords().add(record));
+        break;
+      case "fasta":
+        recordsSubmissionFiles.getFiles().putAll(processFileStrContent(fileTypeFileStr.getT2()));
+        break;
+    }
+    return recordsSubmissionFiles;
   }
 }
