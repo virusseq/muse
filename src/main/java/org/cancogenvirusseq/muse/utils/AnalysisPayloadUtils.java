@@ -3,6 +3,8 @@ package org.cancogenvirusseq.muse.utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.experimental.UtilityClass;
 
+import java.util.Optional;
+
 /**
  * Collection utility functions for analysis payloads. These function assume SONG analysis base
  * schema form only.
@@ -10,6 +12,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class AnalysisPayloadUtils {
   public static String getFirstSubmitterSampleId(JsonNode analysisJson) {
+
     return analysisJson.get("samples").get(0).get("submitterSampleId").asText();
   }
 

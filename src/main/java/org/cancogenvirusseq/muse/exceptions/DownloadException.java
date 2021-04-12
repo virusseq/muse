@@ -1,15 +1,15 @@
 package org.cancogenvirusseq.muse.exceptions;
 
+import java.util.List;
 import java.util.Map;
 
 import lombok.AllArgsConstructor;
-import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
+import org.cancogenvirusseq.muse.model.song_score.SongScoreClientException;
 import org.springframework.http.HttpStatus;
 
 @AllArgsConstructor
-public class GenericException extends Throwable implements MuseBaseException {
-  String msg;
-  Map<String, Object> errorInfo;
+public class DownloadException extends Throwable implements MuseBaseException {
+  List<SongScoreClientException> analysisErrors;
 
   @Override
   public HttpStatus getStatusCode() {
@@ -23,6 +23,6 @@ public class GenericException extends Throwable implements MuseBaseException {
 
   @Override
   public Map<String, Object> getErrorInfo() {
-    return errorInfo;
+    return Map.of("analysisWithErrors", analysisErrors);
   }
 }

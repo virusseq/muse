@@ -18,23 +18,25 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.cancogenvirusseq.muse.api.model.DownloadRequest;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
-import org.cancogenvirusseq.muse.exceptions.GenericException;
+import org.cancogenvirusseq.muse.exceptions.DownloadException;
 import org.cancogenvirusseq.muse.exceptions.songScoreClient.UnknownException;
+import org.cancogenvirusseq.muse.model.DownloadFetchResult;
 import org.cancogenvirusseq.muse.model.song_score.AnalysisFileResponse;
 import org.cancogenvirusseq.muse.model.song_score.SongScoreClientException;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toUnmodifiableList;
 
 @Slf4j
 @Service
@@ -44,35 +46,24 @@ public class DownloadsService {
   final SongScoreClient songScoreClient;
 
   public Flux<DataBuffer> download(DownloadRequest downloadRequest) {
-    List<Map<String, Object>> errorInfo = new ArrayList<>();
-    val analysisIds = downloadRequest.getAnalysisIds();
-    val studyId = downloadRequest.getStudyId();
-
-    return Flux.fromIterable(analysisIds)
-       .flatMap(id -> songScoreClient.getFileSpecFromSong(studyId, id)
-                              .doOnError(SongScoreClientException.class, t -> {
-                                  errorInfo.add(
-                                          Map.of(
-                                          "analysisId", id,
-                                          "msg", t.getMsg())
-                                  );
-                                 log.info(errorInfo.toString());
-                              }))
-       // noop on error, but need to continue or flux dies
-       .onErrorContinue((t, o) -> {})
+    return Flux.fromIterable(downloadRequest.getAnalysisIds())
+       .flatMap(id -> songScoreClient
+                              .getFileSpecFromSong(downloadRequest.getStudyId(), id)
+                              .map(fileSpec -> new DownloadFetchResult(id, fileSpec))
+                              .onErrorResume(SongScoreClientException.class, t -> Mono.just(new DownloadFetchResult(id, t))))
        .collectList()
-       .<List<AnalysisFileResponse>>handle(
-               (fileSpecs, sink) -> {
-                   if (errorInfo.size() > 0) {
-                       sink.error(new GenericException(
-                                       "Failed to get file spec for some analysisIds.",
-                                       Map.of("errorInfo", errorInfo)
-                               ));
-                       return;
-                   }
-                   sink.next(fileSpecs);
-               })
+       .map(analysisInfos -> analysisInfos.stream().collect(groupingBy(DownloadFetchResult::hasFileResponse)))
+       .flatMap(mappedInfos -> {
+           if (mappedInfos.get(false).size() == 0) {
+               return Mono.just(mappedInfos.get(true));
+           }
+           return Mono.error(new DownloadException(
+                   mappedInfos.get(false).stream()
+                           .map(DownloadFetchResult::getException)
+                           .collect(toUnmodifiableList())));
+       })
         .flatMapMany(Flux::fromIterable)
+        .map(DownloadFetchResult::getFileResponse)
         .flatMap(
             analysisFileResponse -> {
               val objectId = analysisFileResponse.getObjectId();

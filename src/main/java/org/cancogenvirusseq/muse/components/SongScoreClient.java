@@ -37,8 +37,6 @@ public class SongScoreClient {
   private static final String RESOURCE_ID_HEADER = "X-Resource-ID";
   private static final String OUATH_RESOURCE_ID = "songScoreOauth";
 
-  private static final String SCHEMA_VIOLATION_ERROR = "schema.violation";
-
   @Autowired
   public SongScoreClient(
       @Value("${songScoreClient.songRootUrl}") String songRootUrl,
@@ -75,14 +73,13 @@ public class SongScoreClient {
     log.info("Initialized song score client.");
   }
 
-  public Mono<ValidSubmitResponse> submitPayload(String studyId, String payload) {
+  public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
     return songClient
         .post()
         .uri(format("/submit/%s", studyId))
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue(payload))
-        .retrieve()
-        .bodyToMono(ValidSubmitResponse.class)
+        .exchangeToMono(withClassTypeAndDefaultErrorHandle(SubmitResponse.class))
         .log();
   }
 
@@ -95,18 +92,6 @@ public class SongScoreClient {
         .log();
   }
 
-  private static <V> Function<ClientResponse, ? extends Mono<V>> withClassTypeAndDefaultErrorHandle(Class<V> classType) {
-       return clientResponse -> {
-         val status = clientResponse.statusCode();
-         if (clientResponse.statusCode().isError()) {
-           return clientResponse
-                          .bodyToMono(ErrorResponse.class)
-                          .flatMap(res -> Mono.error(new SongScoreClientException(status, res.getMessage())));
-         }
-         return clientResponse.bodyToMono(classType);
-       };
-  }
-
   public Mono<ScoreFileSpec> initScoreUpload(
       AnalysisFileResponse analysisFileResponse, String md5Sum) {
     val uri =
@@ -117,8 +102,7 @@ public class SongScoreClient {
     return scoreClient
         .post()
         .uri(uri)
-        .retrieve()
-        .bodyToMono(ScoreFileSpec.class)
+        .exchangeToMono(withClassTypeAndDefaultErrorHandle(ScoreFileSpec.class))
         .log();
   }
 
@@ -193,6 +177,20 @@ public class SongScoreClient {
 
   private static String decodeUrl(String str) {
     return URLDecoder.decode(str, StandardCharsets.UTF_8);
+  }
+
+  private static <V> Function<ClientResponse, ? extends Mono<V>> withClassTypeAndDefaultErrorHandle(Class<V> classType) {
+    return clientResponse -> {
+      val status = clientResponse.statusCode();
+      if (clientResponse.statusCode().isError()) {
+        return clientResponse
+                       .bodyToMono(ServerErrorResponse.class)
+                       .flatMap(res -> Mono.error(new SongScoreClientException(status, res.getMessage())));
+      }
+      // TODO - connection refused
+
+      return clientResponse.bodyToMono(classType);
+    };
   }
 
   private ExchangeFilterFunction createOauthFilter(
