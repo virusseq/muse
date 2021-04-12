@@ -102,8 +102,7 @@ public class SubmissionService {
         // return submissionId to user
         .map(
             submissionEvent ->
-                new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()))
-        .onErrorMap(ex -> ex);
+                new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()));
   }
 
   private Mono<Tuple2<List<SubmissionRequest>, List<String>>> attachSubmissionFiles(
@@ -131,14 +130,14 @@ public class SubmissionService {
                         .filter(f -> f.contains("."))
                         .map(f -> f.substring(part.filename().lastIndexOf(".") + 1))
                         .orElse("invalid")))
-        .handle(
-            (fileTypeMap, sink) -> {
+        .flatMap(
+            fileTypeMap -> {
               // validate that we have exactly one .tsv and one or more fasta files
               if (fileTypeMap.getOrDefault("tsv", Collections.emptyList()).size() == 1
                   && fileTypeMap.getOrDefault("fasta", Collections.emptyList()).size() >= 1) {
-                sink.next(fileTypeMap);
+                return Mono.just(fileTypeMap);
               } else {
-                sink.error(
+                return Mono.error(
                     new SubmissionFilesException(
                         fileTypeMap.values().stream()
                             .flatMap(List::stream)

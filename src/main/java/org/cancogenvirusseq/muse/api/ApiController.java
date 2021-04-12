@@ -101,8 +101,8 @@ public class ApiController implements ApiDefinition {
 
   @ExceptionHandler
   public ResponseEntity<ErrorResponse> handle(Throwable ex) {
-    if (ex.getCause() instanceof MuseBaseException) {
-      return ErrorResponse.errorResponseEntity((MuseBaseException) ex.getCause());
+    if (ex instanceof MuseBaseException) {
+      return ErrorResponse.errorResponseEntity((MuseBaseException) ex);
     } else {
       return ErrorResponse.errorResponseEntity(
           HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage());
