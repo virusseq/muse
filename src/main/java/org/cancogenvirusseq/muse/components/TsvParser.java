@@ -73,7 +73,7 @@ public class TsvParser {
 
                   Map<String, String> record = new HashMap<>();
                   for (int i = 0; i < headers.length; ++i) {
-                    record.put(headers[i], i > data.length ? "" : data[i]);
+                    record.put(headers[i], i >= data.length ? "" : data[i]);
                   }
 
                   // collect field errors for record
