@@ -70,6 +70,8 @@ public class AuthConfig {
 
   private static final List<String> ALLOWED_ORIGINS = List.of("*");
 
+  private static final List<String> ALLOWED_HEADERS = List.of("*");
+
   /** State */
   private final AuthProperties authProperties;
 
@@ -130,6 +132,7 @@ public class AuthConfig {
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.setAllowedOrigins(ALLOWED_ORIGINS);
     configuration.setAllowedMethods(ALLOWED_METHODS);
+    configuration.setAllowedHeaders(ALLOWED_HEADERS);
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;
