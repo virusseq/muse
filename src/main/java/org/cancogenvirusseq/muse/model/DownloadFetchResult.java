@@ -27,4 +27,6 @@ public class DownloadFetchResult {
     public Boolean hasFileResponse() {
         return fileResponse != null;
     }
+
+    public Boolean hasException() { return exception != null; }
 }

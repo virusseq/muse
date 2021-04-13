@@ -179,7 +179,7 @@ public class SongScoreClient {
     return URLDecoder.decode(str, StandardCharsets.UTF_8);
   }
 
-  private static <V> Function<ClientResponse, ? extends Mono<V>> withClassTypeAndDefaultErrorHandle(Class<V> classType) {
+  private static <V> Function<ClientResponse, Mono<V>> withClassTypeAndDefaultErrorHandle(Class<V> classType) {
     return clientResponse -> {
       val status = clientResponse.statusCode();
       if (clientResponse.statusCode().isError()) {

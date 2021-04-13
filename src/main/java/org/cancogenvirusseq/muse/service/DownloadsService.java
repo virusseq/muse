@@ -23,17 +23,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.cancogenvirusseq.muse.api.model.DownloadRequest;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
-import org.cancogenvirusseq.muse.exceptions.DownloadException;
-import org.cancogenvirusseq.muse.exceptions.songScoreClient.UnknownException;
+import org.cancogenvirusseq.muse.exceptions.download.DownloadAnalysisFetchException;
+import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
 import org.cancogenvirusseq.muse.model.DownloadFetchResult;
-import org.cancogenvirusseq.muse.model.song_score.AnalysisFileResponse;
 import org.cancogenvirusseq.muse.model.song_score.SongScoreClientException;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.*;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toUnmodifiableList;
@@ -57,10 +54,7 @@ public class DownloadsService {
            if (mappedInfos.get(false).size() == 0) {
                return Mono.just(mappedInfos.get(true));
            }
-           return Mono.error(new DownloadException(
-                   mappedInfos.get(false).stream()
-                           .map(DownloadFetchResult::getException)
-                           .collect(toUnmodifiableList())));
+           return Mono.error(new DownloadAnalysisFetchException(mappedInfos.get(false)));
        })
         .flatMapMany(Flux::fromIterable)
         .map(DownloadFetchResult::getFileResponse)

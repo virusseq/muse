@@ -1,4 +1,4 @@
-package org.cancogenvirusseq.muse.exceptions.songScoreClient;
+package org.cancogenvirusseq.muse.exceptions.download;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
