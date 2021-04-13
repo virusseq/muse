@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.cancogen-virus-seq</groupId>
     <artifactId>muse</artifactId>
-    <version>0.2.0-SNAPSHOT</version>
+    <version>0.1.1</version>
     <name>muse</name>
     <description>Service to submit, validate, and download virus-seq data</description>
     <properties>
