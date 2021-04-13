@@ -70,15 +70,19 @@ public class SubmissionService {
   public Mono<SubmissionCreateResponse> submit(
       Flux<FilePart> fileParts, SecurityContext securityContext) {
     return validateSubmission(fileParts)
+        // extract to entry set
         .flatMapIterable(Map::entrySet)
+        // flatten entry set lists to pair of filetype and filepart
         .flatMap(this::expandToFileTypeFilePartTuple)
+        // read each file in as String
         .transform(this::readFileContentToString)
         // reduce flux of Tuples(fileType, fileString) into a SubmissionRequest
         .reduce(new SubmissionBundle(), this::reduceToSubmissionBundle)
         // validate submission records has fasta file map!
         .map(payloadFileMapper::submissionBundleToSubmissionRequests)
-        // record submission to database, create submissionEvent
-        .flatMap(recordsSubmissionFiles -> attachSubmissionFiles(recordsSubmissionFiles, fileParts))
+        // attach original files to submission request for bookkeeping purposes
+        .flatMap(recordsSubmissionFiles -> attachOriginalFiles(recordsSubmissionFiles, fileParts))
+        // record submission to database
         .flatMap(
             submissionData ->
                 submissionRepository
@@ -103,14 +107,6 @@ public class SubmissionService {
         .map(
             submissionEvent ->
                 new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()));
-  }
-
-  private Mono<Tuple2<List<SubmissionRequest>, List<String>>> attachSubmissionFiles(
-      List<SubmissionRequest> recordsSubmissionFilesTuple, Flux<FilePart> fileParts) {
-    return fileParts
-        .map(FilePart::filename)
-        .collectList()
-        .map(fileList -> Tuples.of(recordsSubmissionFilesTuple, fileList));
   }
 
   /**
@@ -175,17 +171,25 @@ public class SubmissionService {
   }
 
   private SubmissionBundle reduceToSubmissionBundle(
-      SubmissionBundle recordsSubmissionFiles, Tuple2<String, String> fileTypeFileStr) {
-    switch (fileTypeFileStr.getT1()) {
+      SubmissionBundle submissionBundle, Tuple2<String, String> fileTypeFileStringTuple) {
+    switch (fileTypeFileStringTuple.getT1()) {
       case "tsv":
         tsvParser
-            .parseAndValidateTsvStrToFlatRecords(fileTypeFileStr.getT2())
-            .forEach(record -> recordsSubmissionFiles.getRecords().add(record));
+            .parseAndValidateTsvStrToFlatRecords(fileTypeFileStringTuple.getT2())
+            .forEach(record -> submissionBundle.getRecords().add(record));
         break;
       case "fasta":
-        recordsSubmissionFiles.getFiles().putAll(processFileStrContent(fileTypeFileStr.getT2()));
+        submissionBundle.getFiles().putAll(processFileStrContent(fileTypeFileStringTuple.getT2()));
         break;
     }
-    return recordsSubmissionFiles;
+    return submissionBundle;
+  }
+
+  private Mono<Tuple2<List<SubmissionRequest>, List<String>>> attachOriginalFiles(
+      List<SubmissionRequest> submissionRequests, Flux<FilePart> fileParts) {
+    return fileParts
+        .map(FilePart::filename)
+        .collectList()
+        .map(fileList -> Tuples.of(submissionRequests, fileList));
   }
 }
