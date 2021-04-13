@@ -112,7 +112,7 @@ spec:
 
         stage('Release & Tag') {
             when {
-                branch "master"
+                branch "main"
             }
             steps {
                 container('docker') {
@@ -136,7 +136,7 @@ spec:
 
 //        stage('deploy to cancogen-virus-seq-qa') {
 //            when {
-//                branch "master"
+//                branch "main"
 //            }
 //            steps {
 //                build(job: "/provision/helm", parameters: [
