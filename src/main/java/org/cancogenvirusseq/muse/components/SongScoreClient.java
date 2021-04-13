@@ -204,7 +204,7 @@ public class SongScoreClient {
         return clientResponse
             .bodyToMono(ServerErrorResponse.class)
             .flux()
-            .flatMap(res -> Flux.error(new SongScoreClientException(status, res.getMessage())));
+            .flatMap(res -> Flux.error(new SongScoreServerException(status, res.getMessage())));
       }
 
       return clientResponse.bodyToFlux(classType);
@@ -220,7 +220,7 @@ public class SongScoreClient {
             .flatMap(
                 res ->
                     Mono.error(
-                        new SongScoreClientException(
+                        new SongScoreServerException(
                             clientResponse.statusCode(), res.getMessage())));
       }
       return clientResponse.toEntity(classType);

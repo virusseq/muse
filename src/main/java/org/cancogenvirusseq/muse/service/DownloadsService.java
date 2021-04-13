@@ -27,7 +27,7 @@ import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.exceptions.download.DownloadAnalysisFetchException;
 import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
 import org.cancogenvirusseq.muse.model.DownloadAnalysisFetchResult;
-import org.cancogenvirusseq.muse.model.song_score.SongScoreClientException;
+import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -49,7 +49,7 @@ public class DownloadsService {
                     .getAnalysis(downloadRequest.getStudyId(), id)
                     .map(analysis -> new DownloadAnalysisFetchResult(id, analysis))
                     .onErrorResume(
-                        SongScoreClientException.class,
+                        SongScoreServerException.class,
                         t -> Mono.just(new DownloadAnalysisFetchResult(id, t))))
         .collectList()
         .flatMap(

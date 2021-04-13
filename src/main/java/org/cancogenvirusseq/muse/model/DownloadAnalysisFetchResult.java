@@ -5,13 +5,13 @@ import java.util.UUID;
 import lombok.Getter;
 import org.cancogenvirusseq.muse.model.song_score.Analysis;
 import org.cancogenvirusseq.muse.model.song_score.AnalysisFile;
-import org.cancogenvirusseq.muse.model.song_score.SongScoreClientException;
+import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.springframework.http.HttpStatus;
 
 public class DownloadAnalysisFetchResult {
   @Getter final UUID analysisId;
   final Analysis analysis;
-  final SongScoreClientException exception;
+  final SongScoreServerException exception;
 
   public DownloadAnalysisFetchResult(UUID analysisId, Analysis analysis) {
     this.analysisId = analysisId;
@@ -19,7 +19,7 @@ public class DownloadAnalysisFetchResult {
     this.exception = null;
   }
 
-  public DownloadAnalysisFetchResult(UUID analysisId, SongScoreClientException exception) {
+  public DownloadAnalysisFetchResult(UUID analysisId, SongScoreServerException exception) {
     this.analysisId = analysisId;
     this.analysis = null;
     this.exception = exception;
@@ -41,7 +41,7 @@ public class DownloadAnalysisFetchResult {
     return "Analysis is OK";
   }
 
-  public Optional<SongScoreClientException> getException() {
+  public Optional<SongScoreServerException> getException() {
     return Optional.ofNullable(exception);
   }
 
@@ -55,7 +55,7 @@ public class DownloadAnalysisFetchResult {
 
   private Boolean isExceptionStatus404Or400() {
     return Optional.ofNullable(this.exception)
-        .map(SongScoreClientException::getStatus)
+        .map(SongScoreServerException::getStatus)
         .map(status -> status.equals(HttpStatus.BAD_REQUEST) || status.equals(HttpStatus.NOT_FOUND))
         .orElse(false);
   }

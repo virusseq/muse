@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
-public class SongScoreClientException extends Throwable {
+public class SongScoreServerException extends Throwable {
   HttpStatus status;
   String songScoreErrorMsg;
 
