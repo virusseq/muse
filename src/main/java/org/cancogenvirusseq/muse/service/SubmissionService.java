@@ -162,7 +162,7 @@ public class SubmissionService {
             });
   }
 
-  private static Flux<Tuple2<String, FilePart>> expandToFileTypeFilePartTuple(
+  static Flux<Tuple2<String, FilePart>> expandToFileTypeFilePartTuple(
       Map.Entry<String, List<FilePart>> mapEntry) {
     return Flux.fromIterable(mapEntry.getValue())
         .map(filePart -> Tuples.of(mapEntry.getKey(), filePart));

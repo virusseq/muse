@@ -21,6 +21,7 @@ package org.cancogenvirusseq.muse.service;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
+import reactor.util.function.Tuples;
 
 public class SubmissionServiceTests {
 
@@ -54,8 +56,7 @@ public class SubmissionServiceTests {
 
     StepVerifier.create(SubmissionService.validateSubmission(submission))
         .expectNextMatches(actual -> actual.equals(expected))
-        .expectComplete()
-        .verify();
+        .verifyComplete();
   }
 
   @Test
@@ -101,5 +102,15 @@ public class SubmissionServiceTests {
     StepVerifier.create(SubmissionService.validateSubmission(submission))
         .expectError(SubmissionFilesException.class)
         .verify();
+  }
+
+  @Test
+  void expandToFileTypeFilePartTupleTest() {
+    StepVerifier.create(
+            SubmissionService.expandToFileTypeFilePartTuple(
+                Maps.immutableEntry("fasta", List.of(fasta, fasta))))
+        .expectNext(Tuples.of("fasta", fasta))
+        .expectNext(Tuples.of("fasta", fasta))
+        .verifyComplete();
   }
 }
