@@ -13,6 +13,7 @@ import lombok.val;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
+import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
 import org.cancogenvirusseq.muse.repository.model.UploadStatus;
@@ -117,7 +118,11 @@ public class SongScoreService {
             t -> {
               log.error(t.getLocalizedMessage(), t);
               upload.setStatus(UploadStatus.ERROR);
-              upload.setError(t.getLocalizedMessage());
+              if (t instanceof SongScoreServerException) {
+                upload.setError(t.toString());
+              } else {
+                upload.setError(t.getLocalizedMessage());
+              }
               return repo.save(upload);
             });
   }

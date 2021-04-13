@@ -18,17 +18,20 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import java.util.UUID;
-import lombok.RequiredArgsConstructor;
+import java.util.Optional;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.cancogenvirusseq.muse.api.model.DownloadRequest;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
-import org.cancogenvirusseq.muse.exceptions.songScoreClient.UnknownException;
+import org.cancogenvirusseq.muse.exceptions.download.DownloadAnalysisFetchException;
+import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
+import org.cancogenvirusseq.muse.model.DownloadAnalysisFetchResult;
+import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
@@ -38,25 +41,45 @@ public class DownloadsService {
   final SongScoreClient songScoreClient;
 
   public Flux<DataBuffer> download(DownloadRequest downloadRequest) {
-    val analysisIds = downloadRequest.getAnalysisIds();
-    val studyId = downloadRequest.getStudyId();
-
-    return Flux.fromIterable(analysisIds)
-        .map(UUID::fromString)
-        .flatMap(analysisId -> songScoreClient.getFileSpecFromSong(studyId, analysisId))
+    return Flux.fromIterable(downloadRequest.getAnalysisIds())
+        .flatMap(
+            id ->
+                // get analysis from song and map to fetch result
+                songScoreClient
+                    .getAnalysis(downloadRequest.getStudyId(), id)
+                    .map(analysis -> new DownloadAnalysisFetchResult(id, analysis))
+                    .onErrorResume(
+                        SongScoreServerException.class,
+                        t -> Mono.just(new DownloadAnalysisFetchResult(id, t))))
+        .collectList()
+        .flatMap(
+            results -> {
+              // see if any results have error
+              if (results.stream().anyMatch(this::isFetchResultNotOk)) {
+                return Mono.error(new DownloadAnalysisFetchException(results));
+              }
+              // return if no errors found here
+              return Mono.just(results);
+            })
+        .flatMapMany(Flux::fromIterable)
+        .map(DownloadAnalysisFetchResult::getFileInfo)
+        // file will exist because we already checked for valid analysis
+        .map(Optional::get)
         .flatMap(
             analysisFileResponse -> {
               val objectId = analysisFileResponse.getObjectId();
               return songScoreClient.downloadObject(objectId);
             })
-        .onErrorMap(
-            t -> {
-              log.error(t.getLocalizedMessage(), t);
-              if (t instanceof MuseBaseException) {
-                return t;
-              } else {
-                return new UnknownException();
-              }
-            });
+        .onErrorMap(t -> !(t instanceof MuseBaseException), t -> new UnknownException());
+  }
+
+  // Result isNotOk if analysis is missing, is not published or has no file objects
+  private Boolean isFetchResultNotOk(DownloadAnalysisFetchResult fetchResult) {
+    return fetchResult.getException().isPresent()
+        || fetchResult
+            .getAnalysis()
+            .map(a -> !a.isPublished() || !a.hasFiles())
+            // analysis doesn't exist so return true
+            .orElse(true);
   }
 }

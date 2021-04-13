@@ -4,19 +4,18 @@ import static java.lang.String.format;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.cancogenvirusseq.muse.model.song_score.AnalysisFileResponse;
-import org.cancogenvirusseq.muse.model.song_score.ScoreFileSpec;
-import org.cancogenvirusseq.muse.model.song_score.SubmitResponse;
+import org.cancogenvirusseq.muse.model.song_score.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.ClientCredentialsReactiveOAuth2AuthorizedClientProvider;
 import org.springframework.security.oauth2.client.InMemoryReactiveOAuth2AuthorizedClientService;
@@ -26,8 +25,10 @@ import org.springframework.security.oauth2.client.web.reactive.function.client.S
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -75,44 +76,47 @@ public class SongScoreClient {
     log.info("Initialized song score client.");
   }
 
+  public Mono<Analysis> getAnalysis(String studyId, UUID analysisId) {
+    return songClient
+        .get()
+        .uri(format("/studies/%s/analysis/%s", studyId, analysisId.toString()))
+        .exchangeToMono(ofMonoTypeOrHandleError(Analysis.class))
+        .map(HttpEntity::getBody)
+        .log();
+  }
+
   public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
     return songClient
         .post()
         .uri(format("/submit/%s", studyId))
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue(payload))
-        .retrieve()
-        .bodyToMono(SubmitResponse.class)
-        .onErrorMap(logAndMapWithMsg("Failed to submit payload"))
+        .exchangeToMono(ofMonoTypeOrHandleError(SubmitResponse.class))
+        .map(HttpEntity::getBody)
         .log();
   }
 
-  public Mono<AnalysisFileResponse> getFileSpecFromSong(String studyId, UUID analysisId) {
+  public Mono<AnalysisFile> getFileSpecFromSong(String studyId, UUID analysisId) {
     return songClient
         .get()
         .uri(format("/studies/%s/analysis/%s/files", studyId, analysisId.toString()))
-        .retrieve()
-        .bodyToFlux(AnalysisFileResponse.class)
-        // we expect only one file to be uploaded in each analysis
+        // endpoint returns array but, we expect only one file to be uploaded in each analysis
+        .exchangeToFlux(ofFluxTypeOrHandleError(AnalysisFile.class))
         .next()
-        // TODO: handle song exceptions here for analysis not found, etc.
-        .onErrorMap(logAndMapWithMsg("Failed to get FileSpec from SONG"))
         .log();
   }
 
-  public Mono<ScoreFileSpec> initScoreUpload(
-      AnalysisFileResponse analysisFileResponse, String md5Sum) {
+  public Mono<ScoreFileSpec> initScoreUpload(AnalysisFile analysisFile, String md5Sum) {
     val uri =
         format(
             "/upload/%s/uploads?fileSize=%s&md5=%s&overwrite=true",
-            analysisFileResponse.getObjectId(), analysisFileResponse.getFileSize(), md5Sum);
+            analysisFile.getObjectId(), analysisFile.getFileSize(), md5Sum);
 
     return scoreClient
         .post()
         .uri(uri)
-        .retrieve()
-        .bodyToMono(ScoreFileSpec.class)
-        .onErrorMap(logAndMapWithMsg("Failed to initialize upload"))
+        .exchangeToMono(ofMonoTypeOrHandleError(ScoreFileSpec.class))
+        .map(HttpEntity::getBody)
         .log();
   }
 
@@ -126,11 +130,9 @@ public class SongScoreClient {
         .contentType(MediaType.TEXT_PLAIN)
         .contentLength(fileContent.length())
         .body(BodyInserters.fromValue(fileContent))
-        .retrieve()
-        .toBodilessEntity()
+        .exchangeToMono(ofBodilessTypeOrHandleError())
         .map(res -> res.getHeaders().getETag().replace("\"", ""))
         .flatMap(eTag -> finalizeScoreUpload(scoreFileSpec, md5, eTag))
-        .onErrorMap(logAndMapWithMsg("Failed to upload and finalize"))
         .log();
   }
 
@@ -142,10 +144,12 @@ public class SongScoreClient {
         format(
             "/upload/%s/parts?uploadId=%s&etag=%s&md5=%s&partNumber=1",
             objectId, uploadId, etag, md5);
-    val finalizeUploadPart = scoreClient.post().uri(finalizePartUri).retrieve().toBodilessEntity();
+    val finalizeUploadPart =
+        scoreClient.post().uri(finalizePartUri).exchangeToMono(ofBodilessTypeOrHandleError());
 
     val finalizeUploadUri = format("/upload/%s?uploadId=%s", objectId, uploadId);
-    val finalizeUpload = scoreClient.post().uri(finalizeUploadUri).retrieve().toBodilessEntity();
+    val finalizeUpload =
+        scoreClient.post().uri(finalizeUploadUri).exchangeToMono(ofBodilessTypeOrHandleError());
 
     // The finalize step in score requires finalizing each file part and then the whole upload
     // we only have one file part, so we finalize the part and upload one after the other
@@ -157,26 +161,21 @@ public class SongScoreClient {
         .put()
         .uri(
             format("/studies/%s/analysis/publish/%s?ignoreUndefinedMd5=false", studyId, analysisId))
-        .retrieve()
-        .toBodilessEntity()
+        .exchangeToMono(ofBodilessTypeOrHandleError())
         .map(Objects::toString)
-        .onErrorMap(logAndMapWithMsg("Failed to publish analysis"))
         .log();
   }
 
   public Mono<DataBuffer> downloadObject(String objectId) {
-    return getFileLink(objectId)
-        .flatMap(this::downloadFromS3)
-        // todo: either map to something directly or handle centrally in logAndMapWithMsg
-        .onErrorMap(logAndMapWithMsg("Object download failed"));
+    return getFileLink(objectId).flatMap(this::downloadFromS3);
   }
 
   private Mono<String> getFileLink(String objectId) {
     return scoreClient
         .get()
         .uri(format("/download/%s?offset=0&length=-1&external=true", objectId))
-        .retrieve()
-        .bodyToMono(ScoreFileSpec.class)
+        .exchangeToMono(ofMonoTypeOrHandleError(ScoreFileSpec.class))
+        .map(HttpEntity::getBody)
         // we request length = -1 which returns one file part
         .map(spec -> spec.getParts().get(0).getUrl());
   }
@@ -184,8 +183,8 @@ public class SongScoreClient {
   private Mono<DataBuffer> downloadFromS3(String presignedUrl) {
     return WebClient.create(decodeUrl(presignedUrl))
         .get()
-        .retrieve()
-        .bodyToMono(DataBuffer.class)
+        .exchangeToMono(ofMonoTypeOrHandleError(DataBuffer.class))
+        .map(HttpEntity::getBody)
         .log();
   }
 
@@ -193,11 +192,38 @@ public class SongScoreClient {
     return URLDecoder.decode(str, StandardCharsets.UTF_8);
   }
 
-  // TODO: consider handling webclient errors here?
-  private static Function<Throwable, Throwable> logAndMapWithMsg(String msg) {
-    return t -> {
-      log.error("SongScoreClient Error - {}", t.getLocalizedMessage(), t);
-      return new Error(msg);
+  private static Function<ClientResponse, Mono<ResponseEntity<Void>>>
+      ofBodilessTypeOrHandleError() {
+    return ofMonoTypeOrHandleError(Void.class);
+  }
+
+  private static <V> Function<ClientResponse, Flux<V>> ofFluxTypeOrHandleError(Class<V> classType) {
+    return clientResponse -> {
+      val status = clientResponse.statusCode();
+      if (clientResponse.statusCode().isError()) {
+        return clientResponse
+            .bodyToMono(ServerErrorResponse.class)
+            .flux()
+            .flatMap(res -> Flux.error(new SongScoreServerException(status, res.getMessage())));
+      }
+
+      return clientResponse.bodyToFlux(classType);
+    };
+  }
+
+  private static <V> Function<ClientResponse, Mono<ResponseEntity<V>>> ofMonoTypeOrHandleError(
+      Class<V> classType) {
+    return clientResponse -> {
+      if (clientResponse.statusCode().isError()) {
+        return clientResponse
+            .bodyToMono(ServerErrorResponse.class)
+            .flatMap(
+                res ->
+                    Mono.error(
+                        new SongScoreServerException(
+                            clientResponse.statusCode(), res.getMessage())));
+      }
+      return clientResponse.toEntity(classType);
     };
   }
 

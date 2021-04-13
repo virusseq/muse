@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class AnalysisFileResponse {
+public class AnalysisFile {
   String objectId;
   String fileName;
   String fileSize;

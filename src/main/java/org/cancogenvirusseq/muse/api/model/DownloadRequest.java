@@ -19,6 +19,7 @@
 package org.cancogenvirusseq.muse.api.model;
 
 import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,5 +30,5 @@ import lombok.NonNull;
 @NoArgsConstructor
 public class DownloadRequest {
   @NonNull private String studyId;
-  @NonNull private List<String> analysisIds;
+  @NonNull private List<UUID> analysisIds;
 }
