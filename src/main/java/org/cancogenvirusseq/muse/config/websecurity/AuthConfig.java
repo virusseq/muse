@@ -39,6 +39,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -52,6 +53,9 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
 import org.springframework.security.oauth2.server.resource.web.server.ServerBearerTokenAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -59,7 +63,16 @@ import reactor.core.publisher.Mono;
 @EnableReactiveMethodSecurity
 @RequiredArgsConstructor
 public class AuthConfig {
+
+  /** Constants */
+  private static final List<String> ALLOWED_METHODS =
+      List.of("GET", "PUT", "POST", "DELETE", "OPTIONS");
+
+  private static final List<String> ALLOWED_ORIGINS = List.of("*");
+
+  /** State */
   private final AuthProperties authProperties;
+
   private final ResourceLoader resourceLoader;
 
   @Bean
@@ -68,7 +81,8 @@ public class AuthConfig {
         new ServerBearerTokenAuthenticationConverter();
     authenticationConverter.setAllowUriQueryParameter(true);
 
-    http.csrf()
+    http.cors(Customizer.withDefaults())
+        .csrf()
         .disable()
         .authorizeExchange()
         .pathMatchers("/actuator/**")
@@ -109,6 +123,16 @@ public class AuthConfig {
             Iterables.concat(
                 authProperties.getScopes().getRead(), authProperties.getScopes().getWrite()));
     return new ScopeChecker(expectedScopes);
+  }
+
+  @Bean
+  CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOrigins(ALLOWED_ORIGINS);
+    configuration.setAllowedMethods(ALLOWED_METHODS);
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
   }
 
   private Converter<Jwt, Mono<AbstractAuthenticationToken>> grantedAuthoritiesExtractor() {
