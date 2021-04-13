@@ -14,6 +14,7 @@ import lombok.val;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
+import org.cancogenvirusseq.muse.model.song_score.SongScoreClientException;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
 import org.cancogenvirusseq.muse.repository.model.UploadStatus;
@@ -118,16 +119,20 @@ public class SongScoreService {
             t -> {
               log.error(t.getLocalizedMessage(), t);
               upload.setStatus(UploadStatus.ERROR);
-              upload.setError(t.getLocalizedMessage());
+              if (t instanceof SongScoreClientException) {
+                upload.setError(((SongScoreClientException) t).getSongScoreErrorMsg());
+              } else {
+                upload.setError(t.getLocalizedMessage());
+              }
               return repo.save(upload);
             });
   }
 
-    // TODO: consider handling webclient errors here?
-    private static Function<Throwable, Throwable> logAndMapWithMsg(String msg) {
-        return t -> {
-            log.error("SongScoreClient Error - {}", t.getLocalizedMessage(), t);
-            return new Error(msg);
-        };
-    }
+  // TODO: consider handling webclient errors here?
+  private static Function<Throwable, Throwable> logAndMapWithMsg(String msg) {
+    return t -> {
+      log.error("SongScoreClient Error - {}", t.getLocalizedMessage(), t);
+      return new Error(msg);
+    };
+  }
 }

@@ -101,6 +101,7 @@ public class ApiController implements ApiDefinition {
 
   @ExceptionHandler
   public ResponseEntity<ErrorResponse> handle(Throwable ex) {
+    ex.printStackTrace();
     if (ex instanceof MuseBaseException) {
       return ErrorResponse.errorResponseEntity((MuseBaseException) ex);
     } else {

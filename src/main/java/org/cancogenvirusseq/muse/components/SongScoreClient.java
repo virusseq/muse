@@ -13,7 +13,9 @@ import org.cancogenvirusseq.muse.model.song_score.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.ClientCredentialsReactiveOAuth2AuthorizedClientProvider;
 import org.springframework.security.oauth2.client.InMemoryReactiveOAuth2AuthorizedClientService;
@@ -26,6 +28,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -73,36 +76,47 @@ public class SongScoreClient {
     log.info("Initialized song score client.");
   }
 
+  public Mono<Analysis> getAnalysis(String studyId, UUID analysisId) {
+    return songClient
+        .get()
+        .uri(format("/studies/%s/analysis/%s", studyId, analysisId.toString()))
+        .exchangeToMono(ofMonoTypeOrHandleError(Analysis.class))
+        .map(HttpEntity::getBody)
+        .log();
+  }
+
   public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
     return songClient
         .post()
         .uri(format("/submit/%s", studyId))
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue(payload))
-        .exchangeToMono(withClassTypeAndDefaultErrorHandle(SubmitResponse.class))
+        .exchangeToMono(ofMonoTypeOrHandleError(SubmitResponse.class))
+        .map(HttpEntity::getBody)
         .log();
   }
 
-  public Mono<AnalysisFileResponse> getFileSpecFromSong(String studyId, UUID analysisId) {
+  public Mono<AnalysisFile> getFileSpecFromSong(String studyId, UUID analysisId) {
     return songClient
         .get()
         .uri(format("/studies/%s/analysis/%s/files", studyId, analysisId.toString()))
         // endpoint returns array but, we expect only one file to be uploaded in each analysis
-        .exchangeToMono(withClassTypeAndDefaultErrorHandle(AnalysisFileResponse.class))
+        .exchangeToFlux(ofFluxTypeOrHandleError(AnalysisFile.class))
+        .next()
         .log();
   }
 
-  public Mono<ScoreFileSpec> initScoreUpload(
-      AnalysisFileResponse analysisFileResponse, String md5Sum) {
+  public Mono<ScoreFileSpec> initScoreUpload(AnalysisFile analysisFile, String md5Sum) {
     val uri =
         format(
             "/upload/%s/uploads?fileSize=%s&md5=%s&overwrite=true",
-            analysisFileResponse.getObjectId(), analysisFileResponse.getFileSize(), md5Sum);
+            analysisFile.getObjectId(), analysisFile.getFileSize(), md5Sum);
 
     return scoreClient
         .post()
         .uri(uri)
-        .exchangeToMono(withClassTypeAndDefaultErrorHandle(ScoreFileSpec.class))
+        .exchangeToMono(ofMonoTypeOrHandleError(ScoreFileSpec.class))
+        .map(HttpEntity::getBody)
         .log();
   }
 
@@ -116,8 +130,7 @@ public class SongScoreClient {
         .contentType(MediaType.TEXT_PLAIN)
         .contentLength(fileContent.length())
         .body(BodyInserters.fromValue(fileContent))
-        .retrieve()
-        .toBodilessEntity()
+        .exchangeToMono(ofBodilessEntityAndHandleError())
         .map(res -> res.getHeaders().getETag().replace("\"", ""))
         .flatMap(eTag -> finalizeScoreUpload(scoreFileSpec, md5, eTag))
         .log();
@@ -131,10 +144,12 @@ public class SongScoreClient {
         format(
             "/upload/%s/parts?uploadId=%s&etag=%s&md5=%s&partNumber=1",
             objectId, uploadId, etag, md5);
-    val finalizeUploadPart = scoreClient.post().uri(finalizePartUri).retrieve().toBodilessEntity();
+    val finalizeUploadPart =
+        scoreClient.post().uri(finalizePartUri).exchangeToMono(ofBodilessEntityAndHandleError());
 
     val finalizeUploadUri = format("/upload/%s?uploadId=%s", objectId, uploadId);
-    val finalizeUpload = scoreClient.post().uri(finalizeUploadUri).retrieve().toBodilessEntity();
+    val finalizeUpload =
+        scoreClient.post().uri(finalizeUploadUri).exchangeToMono(ofBodilessEntityAndHandleError());
 
     // The finalize step in score requires finalizing each file part and then the whole upload
     // we only have one file part, so we finalize the part and upload one after the other
@@ -146,23 +161,21 @@ public class SongScoreClient {
         .put()
         .uri(
             format("/studies/%s/analysis/publish/%s?ignoreUndefinedMd5=false", studyId, analysisId))
-        .retrieve()
-        .toBodilessEntity()
+        .exchangeToMono(ofBodilessEntityAndHandleError())
         .map(Objects::toString)
         .log();
   }
 
   public Mono<DataBuffer> downloadObject(String objectId) {
-    return getFileLink(objectId)
-        .flatMap(this::downloadFromS3);
+    return getFileLink(objectId).flatMap(this::downloadFromS3);
   }
 
   private Mono<String> getFileLink(String objectId) {
     return scoreClient
         .get()
         .uri(format("/download/%s?offset=0&length=-1&external=true", objectId))
-        .retrieve()
-        .bodyToMono(ScoreFileSpec.class)
+        .exchangeToMono(ofMonoTypeOrHandleError(ScoreFileSpec.class))
+        .map(HttpEntity::getBody)
         // we request length = -1 which returns one file part
         .map(spec -> spec.getParts().get(0).getUrl());
   }
@@ -170,8 +183,8 @@ public class SongScoreClient {
   private Mono<DataBuffer> downloadFromS3(String presignedUrl) {
     return WebClient.create(decodeUrl(presignedUrl))
         .get()
-        .retrieve()
-        .bodyToMono(DataBuffer.class)
+        .exchangeToMono(ofMonoTypeOrHandleError(DataBuffer.class))
+        .map(HttpEntity::getBody)
         .log();
   }
 
@@ -179,17 +192,38 @@ public class SongScoreClient {
     return URLDecoder.decode(str, StandardCharsets.UTF_8);
   }
 
-  private static <V> Function<ClientResponse, Mono<V>> withClassTypeAndDefaultErrorHandle(Class<V> classType) {
+  private static Function<ClientResponse, Mono<ResponseEntity<Void>>>
+      ofBodilessEntityAndHandleError() {
+    return ofMonoTypeOrHandleError(Void.class);
+  }
+
+  private static <V> Function<ClientResponse, Flux<V>> ofFluxTypeOrHandleError(Class<V> classType) {
     return clientResponse -> {
       val status = clientResponse.statusCode();
       if (clientResponse.statusCode().isError()) {
         return clientResponse
-                       .bodyToMono(ServerErrorResponse.class)
-                       .flatMap(res -> Mono.error(new SongScoreClientException(status, res.getMessage())));
+            .bodyToMono(ServerErrorResponse.class)
+            .flux()
+            .flatMap(res -> Flux.error(new SongScoreClientException(status, res.getMessage())));
       }
-      // TODO - connection refused
 
-      return clientResponse.bodyToMono(classType);
+      return clientResponse.bodyToFlux(classType);
+    };
+  }
+
+  private static <V> Function<ClientResponse, Mono<ResponseEntity<V>>> ofMonoTypeOrHandleError(
+      Class<V> classType) {
+    return clientResponse -> {
+      if (clientResponse.statusCode().isError()) {
+        return clientResponse
+            .bodyToMono(ServerErrorResponse.class)
+            .flatMap(
+                res ->
+                    Mono.error(
+                        new SongScoreClientException(
+                            clientResponse.statusCode(), res.getMessage())));
+      }
+      return clientResponse.toEntity(classType);
     };
   }
 
