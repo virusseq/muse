@@ -148,7 +148,8 @@ public class SubmissionService {
             fileTypeMap -> {
               // validate that we have exactly one .tsv and one or more fasta files
               if (fileTypeMap.getOrDefault("tsv", Collections.emptyList()).size() == 1
-                  && fileTypeMap.getOrDefault("fasta", Collections.emptyList()).size() >= 1) {
+                  && fileTypeMap.getOrDefault("fasta", Collections.emptyList()).size() >= 1
+                  && fileTypeMap.keySet().equals(Set.of("tsv", "fasta"))) {
                 return Mono.just(fileTypeMap);
               } else {
                 return Mono.error(
