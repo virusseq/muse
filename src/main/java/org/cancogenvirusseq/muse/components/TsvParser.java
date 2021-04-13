@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.apache.commons.lang.StringUtils.isNumeric;
 import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.EXPECTING_NUMBER_TYPE;
 
+import com.google.common.collect.ImmutableList;
 import java.util.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -14,20 +15,36 @@ import org.cancogenvirusseq.muse.exceptions.submission.InvalidFieldsException;
 import org.cancogenvirusseq.muse.exceptions.submission.MissingHeadersException;
 import org.cancogenvirusseq.muse.model.tsv_parser.InvalidField;
 import org.cancogenvirusseq.muse.model.tsv_parser.TsvFieldSchema;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class TsvParser {
-  private final MuseAppConfig config;
+  private final ImmutableList<TsvFieldSchema> tsvFieldSchemas;
+  private final ImmutableList<String> expectedTsvHeaders;
+
+  @Autowired
+  public TsvParser(MuseAppConfig config) {
+    this.tsvFieldSchemas = config.getTsvFieldSchemas();
+    this.expectedTsvHeaders =
+        ImmutableList.copyOf(
+            tsvFieldSchemas.stream().map(TsvFieldSchema::getName).collect(toUnmodifiableList()));
+  }
+
+  public TsvParser(List<TsvFieldSchema> tsvFieldSchemas) {
+    this.tsvFieldSchemas = ImmutableList.copyOf(tsvFieldSchemas);
+    this.expectedTsvHeaders =
+        ImmutableList.copyOf(
+            tsvFieldSchemas.stream().map(TsvFieldSchema::getName).collect(toUnmodifiableList()));
+  }
 
   @SneakyThrows
   public Stream<Map<String, String>> parseAndValidateTsvStrToFlatRecords(String s) {
     val lines = s.split("\n");
     val strTsvHeaders = List.of(lines[0].trim().split("\t"));
 
-    val headerChkResult = checkHeaders(config.getExpectedTsvHeaders(), strTsvHeaders);
+    val headerChkResult = checkHeaders(expectedTsvHeaders, strTsvHeaders);
     if (headerChkResult.isInvalid()) {
       throw new MissingHeadersException(headerChkResult.missing, headerChkResult.unknown);
     }
@@ -87,7 +104,7 @@ public class TsvParser {
   }
 
   private List<InvalidField> checkValueTypes(Map<String, String> record, Integer index) {
-    return config.getTsvFieldSchemas().stream()
+    return tsvFieldSchemas.stream()
         .map(
             s -> {
               val expectedValueType = s.getValueType();
