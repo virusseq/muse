@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
@@ -16,10 +18,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
 import org.cancogenvirusseq.muse.exceptions.submission.PayloadFileMapperException;
+import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
+import org.cancogenvirusseq.muse.model.SubmissionRequest;
 import org.springframework.stereotype.Component;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 @Slf4j
 @Component
@@ -28,23 +30,20 @@ public class PayloadFileMapper {
   private final MuseAppConfig config;
 
   @SneakyThrows
-  public List<Tuple2<ObjectNode, SubmissionFile>> mapAllPayloadToSubmissionFile(
-      Tuple2<ArrayList<Map<String, String>>, ConcurrentHashMap<String, SubmissionFile>> tuple2) {
-    val records = tuple2.getT1();
-    val filesMap = tuple2.getT2();
-
+  public List<SubmissionRequest> submissionBundleToSubmissionRequests(
+      SubmissionBundle submissionBundle) {
     val result =
-        records.stream()
+        submissionBundle.getRecords().stream()
             .reduce(
                 new MapperReduceResult(),
-                accumulator(filesMap, config.getPayloadJsonTemplate()),
+                accumulator(submissionBundle.getFiles(), config.getPayloadJsonTemplate()),
                 combiner());
 
     val usedSampleIds = result.getUsedSampleIds();
     val sampleIdInRecordMissingFile = result.getSampleIdInRecordMissingFile();
 
     val sampleIdInFileMissingInTsv =
-        filesMap.keySet().stream()
+        submissionBundle.getFiles().keySet().stream()
             .filter(s -> !usedSampleIds.contains(s))
             .collect(toUnmodifiableList());
 
@@ -71,7 +70,7 @@ public class PayloadFileMapper {
       acc.getUsedSampleIds().add(sampleId);
       val filesNode = createFilesObject(submissionFile);
       payload.set("files", filesNode);
-      acc.getRecordsMapped().add(Tuples.of(payload, submissionFile));
+      acc.getRecordsMapped().add(new SubmissionRequest(payload, submissionFile));
 
       return acc;
     };
@@ -119,6 +118,6 @@ public class PayloadFileMapper {
   static class MapperReduceResult {
     List<String> usedSampleIds = new ArrayList<>();
     List<String> sampleIdInRecordMissingFile = new ArrayList<>();
-    List<Tuple2<ObjectNode, SubmissionFile>> recordsMapped = new ArrayList<>();
+    List<SubmissionRequest> recordsMapped = new ArrayList<>();
   }
 }

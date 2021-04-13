@@ -56,32 +56,26 @@ public class SongScoreService {
 
   public Flux<Tuple3<String, Upload, SubmissionFile>> toStreamOfPayloadUploadAndSubFile(
       SubmissionEvent submissionEvent) {
-    val records = submissionEvent.getPayloadFileTuples();
+    val submissionRequests = submissionEvent.getSubmissionRequests();
 
     return Flux.fromStream(
-        records
+        submissionRequests
             .parallelStream()
             .map(
                 r -> {
-                  val payload = r.getT1();
-                  val submissionFile = r.getT2();
-
-                  val sampleId = getFirstSubmitterSampleId(payload);
-                  val studyId = getStudyId(payload);
-
                   val upload =
                       Upload.builder()
-                          .studyId(studyId)
-                          .submitterSampleId(sampleId)
+                          .studyId(getStudyId(r.getPayload()))
+                          .submitterSampleId(getFirstSubmitterSampleId(r.getPayload()))
                           .submissionId(submissionEvent.getSubmissionId())
                           .userId(submissionEvent.getUserId())
                           .status(UploadStatus.QUEUED)
-                          .originalFilePair(List.of(submissionFile.getFileName()))
+                          .originalFilePair(List.of(r.getSubmissionFile().getFileName()))
                           .build();
 
-                  log.debug(payload.toPrettyString());
+                  log.debug(r.getPayload().toPrettyString());
 
-                  return Tuples.of(payload.toString(), upload, submissionFile);
+                  return Tuples.of(r.getPayload().toString(), upload, r.getSubmissionFile());
                 }));
   }
 
