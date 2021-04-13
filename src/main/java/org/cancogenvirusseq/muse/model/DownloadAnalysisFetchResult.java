@@ -50,11 +50,11 @@ public class DownloadAnalysisFetchResult {
   }
 
   public Optional<AnalysisFile> getFileInfo() {
-    return Optional.ofNullable(analysis).map(a -> a.getFiles().get(0));
+    return getAnalysis().map(a -> a.getFiles().get(0));
   }
 
   private Boolean isExceptionStatus404Or400() {
-    return Optional.ofNullable(this.exception)
+    return getException()
         .map(SongScoreServerException::getStatus)
         .map(status -> status.equals(HttpStatus.BAD_REQUEST) || status.equals(HttpStatus.NOT_FOUND))
         .orElse(false);
