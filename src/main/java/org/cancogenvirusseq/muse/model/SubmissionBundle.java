@@ -18,11 +18,10 @@
 
 package org.cancogenvirusseq.muse.model;
 
-import lombok.Getter;
-
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 
 @Getter
 public class SubmissionBundle {

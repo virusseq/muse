@@ -18,6 +18,16 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import static java.util.stream.Collectors.groupingByConcurrent;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
+import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
+
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -42,16 +52,6 @@ import reactor.core.publisher.Sinks;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
-import java.util.*;
-import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.groupingByConcurrent;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
-import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -62,20 +62,37 @@ public class SubmissionService {
   private final TsvParser tsvParser;
   private final PayloadFileMapper payloadFileMapper;
 
-  public Flux<Submission> getSubmissions(Pageable page, SecurityContext securityContext) {
+  /**
+   * Retrieves submission entities from the database
+   *
+   * @param page - Pageable specification for response
+   * @param securityContext - userId is extracted from the security context and used in the
+   *     repository query
+   * @return flux of submissions for the given user adhering to the pageable specification
+   */
+  public Flux<Submission> getSubmissions(
+      @NonNull Pageable page, @NonNull SecurityContext securityContext) {
     return submissionRepository.findAllByUserId(
         UUID.fromString(securityContext.getAuthentication().getName()), page);
   }
 
+  /**
+   * Creates a new submission for Muse to queue and eventually process
+   *
+   * @param fileParts - files uploaded (should be exactly 1 .tsv and 1 or more .fasta)
+   * @param securityContext - userId is extracted from the security context for submission
+   * @return on success a SubmissionCreateResponse is returned, otherwise one of the exceptions that
+   *     extend MuseBaseException is returned and eventually handled in the ApiController
+   */
   public Mono<SubmissionCreateResponse> submit(
-      Flux<FilePart> fileParts, SecurityContext securityContext) {
+      @NonNull Flux<FilePart> fileParts, @NonNull SecurityContext securityContext) {
     return validateSubmission(fileParts)
         // extract to entry set
         .flatMapIterable(Map::entrySet)
-        // flatten entry set lists to pair of filetype and filepart
-        .flatMap(this::expandToFileTypeFilePartTuple)
+        // flatten entry set lists to pair of filetype and FilePart
+        .flatMap(SubmissionService::expandToFileTypeFilePartTuple)
         // read each file in as String
-        .transform(this::readFileContentToString)
+        .transform(SubmissionService::readFileContentToString)
         // reduce flux of Tuples(fileType, fileString) into a SubmissionRequest
         .reduce(new SubmissionBundle(), this::reduceToSubmissionBundle)
         // validate submission records has fasta file map!
@@ -117,7 +134,8 @@ public class SubmissionService {
    * @return a Mono of Map containing files (value) grouped by type (key) that meet the validation
    *     requirements
    */
-  Mono<ConcurrentMap<String, List<FilePart>>> validateSubmission(Flux<FilePart> fileParts) {
+  public static Mono<ConcurrentMap<String, List<FilePart>>> validateSubmission(
+      Flux<FilePart> fileParts) {
     return fileParts
         .collect(
             groupingByConcurrent(
@@ -143,13 +161,13 @@ public class SubmissionService {
             });
   }
 
-  private Flux<Tuple2<String, FilePart>> expandToFileTypeFilePartTuple(
+  private static Flux<Tuple2<String, FilePart>> expandToFileTypeFilePartTuple(
       Map.Entry<String, List<FilePart>> mapEntry) {
     return Flux.fromIterable(mapEntry.getValue())
         .map(filePart -> Tuples.of(mapEntry.getKey(), filePart));
   }
 
-  private Flux<Tuple2<String, String>> readFileContentToString(
+  private static Flux<Tuple2<String, String>> readFileContentToString(
       Flux<Tuple2<String, FilePart>> fileTypeFilePartTupleFlux) {
     return fileTypeFilePartTupleFlux.flatMap(
         fileTypeFilePart ->
@@ -157,7 +175,7 @@ public class SubmissionService {
                 .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)));
   }
 
-  private Mono<String> fileContentToString(Flux<DataBuffer> content) {
+  private static Mono<String> fileContentToString(Flux<DataBuffer> content) {
     return content
         .map(
             dataBuffer -> {
@@ -168,6 +186,14 @@ public class SubmissionService {
               return new String(bytes, StandardCharsets.UTF_8);
             })
         .reduce(String::concat);
+  }
+
+  private static Mono<Tuple2<List<SubmissionRequest>, List<String>>> attachOriginalFiles(
+      List<SubmissionRequest> submissionRequests, Flux<FilePart> fileParts) {
+    return fileParts
+        .map(FilePart::filename)
+        .collectList()
+        .map(fileList -> Tuples.of(submissionRequests, fileList));
   }
 
   private SubmissionBundle reduceToSubmissionBundle(
@@ -183,13 +209,5 @@ public class SubmissionService {
         break;
     }
     return submissionBundle;
-  }
-
-  private Mono<Tuple2<List<SubmissionRequest>, List<String>>> attachOriginalFiles(
-      List<SubmissionRequest> submissionRequests, Flux<FilePart> fileParts) {
-    return fileParts
-        .map(FilePart::filename)
-        .collectList()
-        .map(fileList -> Tuples.of(submissionRequests, fileList));
   }
 }

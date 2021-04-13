@@ -25,6 +25,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class SubmissionRequest {
-    private final ObjectNode payload;
-    private final SubmissionFile submissionFile;
+  private final ObjectNode payload;
+  private final SubmissionFile submissionFile;
 }
