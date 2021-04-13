@@ -10,7 +10,6 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class AnalysisPayloadUtils {
   public static String getFirstSubmitterSampleId(JsonNode analysisJson) {
-
     return analysisJson.get("samples").get(0).get("submitterSampleId").asText();
   }
 

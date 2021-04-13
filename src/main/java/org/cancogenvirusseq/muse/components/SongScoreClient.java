@@ -130,7 +130,7 @@ public class SongScoreClient {
         .contentType(MediaType.TEXT_PLAIN)
         .contentLength(fileContent.length())
         .body(BodyInserters.fromValue(fileContent))
-        .exchangeToMono(ofBodilessEntityAndHandleError())
+        .exchangeToMono(ofBodilessTypeOrHandleError())
         .map(res -> res.getHeaders().getETag().replace("\"", ""))
         .flatMap(eTag -> finalizeScoreUpload(scoreFileSpec, md5, eTag))
         .log();
@@ -145,11 +145,11 @@ public class SongScoreClient {
             "/upload/%s/parts?uploadId=%s&etag=%s&md5=%s&partNumber=1",
             objectId, uploadId, etag, md5);
     val finalizeUploadPart =
-        scoreClient.post().uri(finalizePartUri).exchangeToMono(ofBodilessEntityAndHandleError());
+        scoreClient.post().uri(finalizePartUri).exchangeToMono(ofBodilessTypeOrHandleError());
 
     val finalizeUploadUri = format("/upload/%s?uploadId=%s", objectId, uploadId);
     val finalizeUpload =
-        scoreClient.post().uri(finalizeUploadUri).exchangeToMono(ofBodilessEntityAndHandleError());
+        scoreClient.post().uri(finalizeUploadUri).exchangeToMono(ofBodilessTypeOrHandleError());
 
     // The finalize step in score requires finalizing each file part and then the whole upload
     // we only have one file part, so we finalize the part and upload one after the other
@@ -161,7 +161,7 @@ public class SongScoreClient {
         .put()
         .uri(
             format("/studies/%s/analysis/publish/%s?ignoreUndefinedMd5=false", studyId, analysisId))
-        .exchangeToMono(ofBodilessEntityAndHandleError())
+        .exchangeToMono(ofBodilessTypeOrHandleError())
         .map(Objects::toString)
         .log();
   }
@@ -193,7 +193,7 @@ public class SongScoreClient {
   }
 
   private static Function<ClientResponse, Mono<ResponseEntity<Void>>>
-      ofBodilessEntityAndHandleError() {
+      ofBodilessTypeOrHandleError() {
     return ofMonoTypeOrHandleError(Void.class);
   }
 

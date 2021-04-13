@@ -76,7 +76,8 @@ public class DownloadsService {
   // Result isNotOk if analysis is missing, is not published or has no file objects
   private Boolean isFetchResultNotOk(DownloadAnalysisFetchResult fetchResult) {
     return fetchResult.getException().isPresent()
-        || fetchResult.getAnalysis()
+        || fetchResult
+            .getAnalysis()
             .map(a -> !a.isPublished() || !a.hasFiles())
             // analysis doesn't exist so return true
             .orElse(true);

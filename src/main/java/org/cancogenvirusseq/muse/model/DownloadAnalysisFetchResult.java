@@ -2,7 +2,6 @@ package org.cancogenvirusseq.muse.model;
 
 import java.util.Optional;
 import java.util.UUID;
-
 import lombok.Getter;
 import org.cancogenvirusseq.muse.model.song_score.Analysis;
 import org.cancogenvirusseq.muse.model.song_score.AnalysisFile;

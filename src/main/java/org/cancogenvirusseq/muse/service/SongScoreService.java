@@ -5,7 +5,6 @@ import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
 import javax.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -120,19 +119,11 @@ public class SongScoreService {
               log.error(t.getLocalizedMessage(), t);
               upload.setStatus(UploadStatus.ERROR);
               if (t instanceof SongScoreClientException) {
-                upload.setError(((SongScoreClientException) t).getSongScoreErrorMsg());
+                upload.setError(t.toString());
               } else {
                 upload.setError(t.getLocalizedMessage());
               }
               return repo.save(upload);
             });
-  }
-
-  // TODO: consider handling webclient errors here?
-  private static Function<Throwable, Throwable> logAndMapWithMsg(String msg) {
-    return t -> {
-      log.error("SongScoreClient Error - {}", t.getLocalizedMessage(), t);
-      return new Error(msg);
-    };
   }
 }

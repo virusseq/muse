@@ -16,8 +16,15 @@ public class DownloadAnalysisFetchException extends Throwable implements MuseBas
     this.analysisWithErrors =
         analysisErrors.stream()
             .map(
-                ae -> Map.of("analysisId", ae.getAnalysisId().toString(), "msg", ae.getResultMsg()))
+                fetchResult ->
+                    Map.of(
+                        "analysisId",
+                        fetchResult.getAnalysisId().toString(),
+                        "msg",
+                        fetchResult.getResultMsg()))
             .collect(Collectors.toUnmodifiableList());
+
+    // We take the max status code of any songscore exception or else tea pot
     this.statusCode =
         analysisErrors.stream()
             .filter(fetchResult -> fetchResult.getException().isPresent())
