@@ -72,9 +72,10 @@ public class AuthConfig {
 
   private static final List<String> ALLOWED_HEADERS = List.of("*");
 
-  /** State */
+  /** Dependencies */
   private final AuthProperties authProperties;
 
+  private final CorsProperties corsProperties;
   private final ResourceLoader resourceLoader;
 
   @Bean
@@ -130,9 +131,11 @@ public class AuthConfig {
   @Bean
   CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(ALLOWED_ORIGINS);
+    configuration.setAllowCredentials(true);
+    configuration.setAllowedOriginPatterns(corsProperties.getDomainPatterns());
     configuration.setAllowedMethods(ALLOWED_METHODS);
     configuration.setAllowedHeaders(ALLOWED_HEADERS);
+    configuration.setMaxAge(corsProperties.getMaxAge());
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;

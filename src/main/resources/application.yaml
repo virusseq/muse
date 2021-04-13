@@ -7,6 +7,14 @@ spring:
 server:
   port: 8080
 
+cors:
+  domainPatterns:
+    - "https://*.virusseq-dataportal.ca"
+    - "http://*.virusseq-dataportal.ca"
+    - "http://virusseq-dataportal.ca"
+    - "https://virusseq-dataportal.ca"
+  maxAge: 3600
+
 postgres:
   host: localhost
   port: 5432
