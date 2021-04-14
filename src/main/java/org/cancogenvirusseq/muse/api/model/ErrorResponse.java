@@ -43,7 +43,7 @@ public class ErrorResponse {
 
   public static ResponseEntity<ErrorResponse> errorResponseEntity(MuseBaseException ex) {
     return new ResponseEntity<>(
-        new ErrorResponse(ex.getStatusCode(), ex.getErrorMessage(), ex.getErrorInfo()),
+        new ErrorResponse(ex.getStatusCode(), ex.getMessage(), ex.getErrorInfo()),
         ex.getStatusCode());
   }
 }

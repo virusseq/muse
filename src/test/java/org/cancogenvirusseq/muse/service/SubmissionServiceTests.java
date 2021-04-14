@@ -96,6 +96,15 @@ public class SubmissionServiceTests {
   }
 
   @Test
+  void validateSubmissionMissingAllFilesTest() {
+    Flux<FilePart> submission = Flux.empty();
+
+    StepVerifier.create(SubmissionService.validateSubmission(submission))
+        .expectError(SubmissionFilesException.class)
+        .verify();
+  }
+
+  @Test
   void validateSubmissionTooManyTsvTest() {
     val submission = Flux.just(tsv, tsv, fasta, fasta);
 
