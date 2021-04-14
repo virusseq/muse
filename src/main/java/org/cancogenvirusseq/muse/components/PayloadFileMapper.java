@@ -1,9 +1,17 @@
 package org.cancogenvirusseq.muse.components;
 
+import static java.util.stream.Collectors.toUnmodifiableList;
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
@@ -13,15 +21,6 @@ import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.cancogenvirusseq.muse.model.SubmissionRequest;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
-
-import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
 
 @Slf4j
 @Component
