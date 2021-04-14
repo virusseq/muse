@@ -13,7 +13,7 @@ public class InvalidFieldsException extends Throwable implements MuseBaseExcepti
   List<InvalidField> invalidFields;
 
   @Override
-  public String getErrorMessage() {
+  public String getMessage() {
     return "Found records with invalid fields";
   }
 

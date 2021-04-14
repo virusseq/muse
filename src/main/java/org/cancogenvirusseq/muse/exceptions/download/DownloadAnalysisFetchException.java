@@ -39,7 +39,7 @@ public class DownloadAnalysisFetchException extends Throwable implements MuseBas
   }
 
   @Override
-  public String getErrorMessage() {
+  public String getMessage() {
     return "Failed to download, with given analysisIds";
   }
 

@@ -9,7 +9,7 @@ public interface MuseBaseException {
     return HttpStatus.BAD_REQUEST;
   }
 
-  String getErrorMessage();
+  String getMessage();
 
   default Map<String, Object> getErrorInfo() {
     return new HashMap<>();
