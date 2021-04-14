@@ -18,12 +18,16 @@
 
 package org.cancogenvirusseq.muse.repository.model;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
+
+import java.time.OffsetDateTime;
+import java.util.Set;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -33,6 +37,6 @@ public class Submission {
   @Id private UUID submissionId;
   @NonNull private UUID userId;
   private OffsetDateTime createdAt;
-  @NonNull private List<String> originalFileNames;
+  @NonNull private Set<String> originalFileNames;
   @NonNull private Integer totalRecords;
 }

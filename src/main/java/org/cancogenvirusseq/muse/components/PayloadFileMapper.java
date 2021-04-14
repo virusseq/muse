@@ -1,18 +1,9 @@
 package org.cancogenvirusseq.muse.components;
 
-import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
@@ -22,6 +13,15 @@ import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.cancogenvirusseq.muse.model.SubmissionRequest;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
+
+import static java.util.stream.Collectors.toUnmodifiableList;
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
 
 @Slf4j
 @Component
@@ -36,7 +36,7 @@ public class PayloadFileMapper {
         submissionBundle.getRecords().stream()
             .reduce(
                 new MapperReduceResult(),
-                accumulator(submissionBundle.getFiles(), config.getPayloadJsonTemplate()),
+                accumulator(submissionBundle, config.getPayloadJsonTemplate()),
                 combiner());
 
     val usedSampleIds = result.getUsedSampleIds();
@@ -55,13 +55,13 @@ public class PayloadFileMapper {
   }
 
   private static BiFunction<MapperReduceResult, Map<String, String>, MapperReduceResult>
-      accumulator(ConcurrentHashMap<String, SubmissionFile> filesMap, String payloadTemplate) {
+      accumulator(SubmissionBundle submissionBundle, String payloadTemplate) {
     return (acc, r) -> {
       val partialPayloadStr = convertRecordToPayload(r, payloadTemplate);
       val payload = fromJsonStr(partialPayloadStr);
       val sampleId = getFirstSubmitterSampleId(payload);
 
-      val submissionFile = filesMap.get(sampleId);
+      val submissionFile = submissionBundle.getFiles().get(sampleId);
       if (submissionFile == null) {
         acc.getSampleIdInRecordMissingFile().add(sampleId);
         return acc;
@@ -70,7 +70,10 @@ public class PayloadFileMapper {
       acc.getUsedSampleIds().add(sampleId);
       val filesNode = createFilesObject(submissionFile);
       payload.set("files", filesNode);
-      acc.getRecordsMapped().add(new SubmissionRequest(payload, submissionFile));
+      acc.getRecordsMapped()
+          .add(
+              new SubmissionRequest(
+                  payload, submissionBundle.getRecordsFileName(), submissionFile));
 
       return acc;
     };
