@@ -14,7 +14,7 @@ public class UnknownException extends Throwable implements MuseBaseException {
   }
 
   @Override
-  public String getErrorMessage() {
+  public String getMessage() {
     return "Internal Server Error, please try again later";
   }
 }

@@ -13,7 +13,7 @@ public class PayloadFileMapperException extends Throwable implements MuseBaseExc
   List<String> sampleIdInRecordMissingInFile;
 
   @Override
-  public String getErrorMessage() {
+  public String getMessage() {
     return "Found records that are missing samples and/or samples that are missing records";
   }
 

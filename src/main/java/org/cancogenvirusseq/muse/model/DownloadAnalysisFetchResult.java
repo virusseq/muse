@@ -1,12 +1,13 @@
 package org.cancogenvirusseq.muse.model;
 
-import java.util.Optional;
-import java.util.UUID;
 import lombok.Getter;
 import org.cancogenvirusseq.muse.model.song_score.Analysis;
 import org.cancogenvirusseq.muse.model.song_score.AnalysisFile;
 import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.springframework.http.HttpStatus;
+
+import java.util.Optional;
+import java.util.UUID;
 
 public class DownloadAnalysisFetchResult {
   @Getter final UUID analysisId;
@@ -27,7 +28,10 @@ public class DownloadAnalysisFetchResult {
 
   public String getResultMsg() {
     if (isExceptionStatus404Or400()) {
-      return exception.getSongScoreErrorMsg();
+      return Optional.ofNullable(exception)
+          .map(SongScoreServerException::getMessage)
+          .orElse(
+              "Detailed error information unavailable, please consult server logs or contact support");
     }
     if (analysis == null) {
       return "Analysis was not found";
