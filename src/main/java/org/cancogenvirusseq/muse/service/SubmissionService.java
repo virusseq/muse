@@ -164,14 +164,14 @@ public class SubmissionService {
         .map(filePart -> Tuples.of(mapEntry.getKey(), filePart));
   }
 
-  private static Flux<SubmissionFile> readFileContentToString(
+  private static Flux<SubmissionUpload> readFileContentToString(
       Flux<Tuple2<String, FilePart>> fileTypeFilePartTupleFlux) {
     return fileTypeFilePartTupleFlux.flatMap(
         fileTypeFilePart ->
             fileContentToString(fileTypeFilePart.getT2().content())
                 .map(
                     fileStr ->
-                        new SubmissionFile(
+                        new SubmissionUpload(
                             fileTypeFilePart.getT2().filename(),
                             fileTypeFilePart.getT1(),
                             fileStr)));
@@ -202,18 +202,18 @@ public class SubmissionService {
   }
 
   private SubmissionBundle reduceToSubmissionBundle(
-      SubmissionBundle submissionBundle, SubmissionFile submissionFile) {
-    switch (submissionFile.getType()) {
+      SubmissionBundle submissionBundle, SubmissionUpload submissionUpload) {
+    switch (submissionUpload.getType()) {
       case "tsv":
         // save the tsv filename to the bundle
-        submissionBundle.setRecordsFileName(submissionFile.getFilename());
+        submissionBundle.setRecordsFileName(submissionUpload.getFilename());
         // parse and validate records
         tsvParser
-            .parseAndValidateTsvStrToFlatRecords(submissionFile.getContent())
+            .parseAndValidateTsvStrToFlatRecords(submissionUpload.getContent())
             .forEach(record -> submissionBundle.getRecords().add(record));
         break;
       case "fasta":
-        submissionBundle.getFiles().putAll(processFileStrContent(submissionFile.getContent()));
+        submissionBundle.getFiles().putAll(processFileStrContent(submissionUpload.getContent()));
         break;
     }
     return submissionBundle;
@@ -221,7 +221,7 @@ public class SubmissionService {
 
   @Getter
   @AllArgsConstructor
-  private static class SubmissionFile {
+  private static class SubmissionUpload {
     private final String filename;
     private final String type;
     private final String content;
