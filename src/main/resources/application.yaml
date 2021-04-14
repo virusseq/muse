@@ -9,10 +9,8 @@ server:
 
 cors:
   domainPatterns:
-    - "https://*.virusseq-dataportal.ca"
-    - "http://*.virusseq-dataportal.ca"
-    - "http://virusseq-dataportal.ca"
-    - "https://virusseq-dataportal.ca"
+    - "http://localhost:3000"
+    - "https://localhost:3000"
   maxAge: 3600
 
 postgres:
