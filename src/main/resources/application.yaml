@@ -7,6 +7,12 @@ spring:
 server:
   port: 8080
 
+cors:
+  domainPatterns:
+    - "http://localhost:3000"
+    - "https://localhost:3000"
+  maxAge: 3600
+
 postgres:
   host: localhost
   port: 5432
