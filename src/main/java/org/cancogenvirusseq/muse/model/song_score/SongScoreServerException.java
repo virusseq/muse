@@ -10,9 +10,9 @@ import org.springframework.http.HttpStatus;
 @EqualsAndHashCode(callSuper = true)
 public class SongScoreServerException extends Throwable {
   HttpStatus status;
-  String songScoreErrorMsg;
+  String message;
 
   public String toString() {
-    return format("%s - %s", status.toString(), songScoreErrorMsg);
+    return format("%s - %s", status.toString(), message);
   }
 }
