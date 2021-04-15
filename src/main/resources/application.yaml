@@ -6,6 +6,10 @@ spring:
 
 server:
   port: 8080
+  compression:
+    enabled: true
+    mime-types: application/octet-stream
+    min-response-size: 1024
 
 cors:
   domainPatterns:
