@@ -21,6 +21,7 @@ package org.cancogenvirusseq.muse.api;
 import static java.lang.String.format;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import javax.validation.Valid;
@@ -95,7 +96,7 @@ public class ApiController implements ApiDefinition {
     return ResponseEntity.ok()
         .header(
             CONTENT_DISPOSITION_HEADER,
-            format("attachment; filename=%s", downloadRequest.getStudyId() + FASTA_FILE_EXTENSION))
+            format("attachment; filename=%s", Instant.now().toString() + FASTA_FILE_EXTENSION))
         .body(downloadsService.download(downloadRequest));
   }
 

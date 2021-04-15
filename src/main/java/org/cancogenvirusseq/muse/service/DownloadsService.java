@@ -41,16 +41,23 @@ public class DownloadsService {
   final SongScoreClient songScoreClient;
 
   public Flux<DataBuffer> download(DownloadRequest downloadRequest) {
-    return Flux.fromIterable(downloadRequest.getAnalysisIds())
+    return Flux.fromIterable(downloadRequest.getAnalysisIdStudyIdPairs())
         .flatMap(
-            id ->
+            analysisIdStudyIdPair ->
                 // get analysis from song and map to fetch result
                 songScoreClient
-                    .getAnalysis(downloadRequest.getStudyId(), id)
-                    .map(analysis -> new DownloadAnalysisFetchResult(id, analysis))
+                    .getAnalysis(
+                        analysisIdStudyIdPair.getStudyId(), analysisIdStudyIdPair.getAnalysisId())
+                    .map(
+                        analysis ->
+                            new DownloadAnalysisFetchResult(
+                                analysisIdStudyIdPair.getAnalysisId(), analysis))
                     .onErrorResume(
                         SongScoreServerException.class,
-                        t -> Mono.just(new DownloadAnalysisFetchResult(id, t))))
+                        t ->
+                            Mono.just(
+                                new DownloadAnalysisFetchResult(
+                                    analysisIdStudyIdPair.getAnalysisId(), t))))
         .collectList()
         .flatMap(
             results -> {
