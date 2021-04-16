@@ -22,9 +22,16 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 
 @Getter
 public class SubmissionBundle {
+  @Setter private String recordsFileName;
   private final ArrayList<Map<String, String>> records = new ArrayList<>();
   private final ConcurrentHashMap<String, SubmissionFile> files = new ConcurrentHashMap<>();
+
+  public SubmissionBundle(@NonNull String recordsFileName) {
+    this.recordsFileName = recordsFileName;
+  }
 }
