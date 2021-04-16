@@ -85,9 +85,7 @@ public class UploadService {
         .getNotifications() // returns 🔥🔥🔥 HOT Flux 🔥🔥🔥
         .map(Notification::getParameter)
         .filter(Objects::nonNull)
-        .doOnNext(log::info) // todo: remove or change to debug
         .map(this::uploadFromString)
-        .doOnNext(upload -> log.info(upload.toString())) // todo: remove or change to debug
         // filter for the JWT UUID from the security context
         .filter(
             upload ->
@@ -95,18 +93,18 @@ public class UploadService {
         .doOnNext(
             upload ->
                 log.info(
-                    "Filtered for userId: {}",
+                    "Filtered by userId, uploadId == {}",
                     upload.getUploadId())) // todo: remove or change to debug
         // filter for the submissionID if provided otherwise ignore (filter always == true)
         .filter(
             upload ->
                 Optional.ofNullable(submissionId)
-                    .map(submissionIdVal -> submissionIdVal == upload.getSubmissionId())
+                    .map(submissionIdVal -> submissionIdVal.equals(upload.getSubmissionId()))
                     .orElse(true))
         .doOnNext(
             upload ->
                 log.info(
-                    "Filtered for submissionId: {}",
+                    "Filtered by submissionId, uploadId == {}",
                     upload.getUploadId())) // todo: remove or change to debug
         .log("UploadService::getUploadStream");
   }
