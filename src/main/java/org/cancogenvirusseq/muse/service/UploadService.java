@@ -93,7 +93,8 @@ public class UploadService {
             upload ->
                 Optional.ofNullable(submissionId)
                     .map(submissionIdVal -> submissionIdVal == upload.getSubmissionId())
-                    .orElse(true));
+                    .orElse(true))
+        .log("UploadService::getUploadStream");
   }
 
   @SneakyThrows
