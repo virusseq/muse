@@ -30,6 +30,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class UploadService {
   private final UploadRepository uploadRepository;
@@ -83,6 +85,7 @@ public class UploadService {
         .getNotifications() // returns 🔥🔥🔥 HOT Flux 🔥🔥🔥
         .map(Notification::getParameter)
         .filter(Objects::nonNull)
+        .doOnNext(log::info) // todo: remove or change to debug
         .map(this::uploadFromString)
         // filter for the JWT UUID from the security context
         .filter(
