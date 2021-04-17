@@ -23,11 +23,6 @@ import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlResult;
 import io.r2dbc.spi.ConnectionFactory;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +34,13 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
 
 @Slf4j
 @Service
@@ -83,30 +85,32 @@ public class UploadService {
   public Flux<Upload> getUploadStream(UUID submissionId, SecurityContext securityContext) {
     return connection
         .getNotifications() // returns 🔥🔥🔥 HOT Flux 🔥🔥🔥
+        .transform(this::transformToUploads)
+        .transform(
+            filterForUserAndMaybeSubmissionId(
+                submissionId, securityContext.getAuthentication().getName()))
+        .log("UploadService::getUploadStream");
+  }
+
+  public static Function<Flux<Upload>, Flux<Upload>> filterForUserAndMaybeSubmissionId(
+      UUID submissionId, String userId) {
+    return (Flux<Upload> uploads) ->
+        uploads
+            // filter for the JWT UUID from the security context
+            .filter(upload -> upload.getUserId().toString().equals(userId))
+            // filter for the submissionID if provided otherwise ignore (filter always == true)
+            .filter(
+                upload ->
+                    Optional.ofNullable(submissionId)
+                        .map(submissionIdVal -> submissionIdVal.equals(upload.getSubmissionId()))
+                        .orElse(true));
+  }
+
+  private Flux<Upload> transformToUploads(Flux<Notification> notifications) {
+    return notifications
         .map(Notification::getParameter)
         .filter(Objects::nonNull)
-        .map(this::uploadFromString)
-        // filter for the JWT UUID from the security context
-        .filter(
-            upload ->
-                upload.getUserId().toString().equals(securityContext.getAuthentication().getName()))
-        .doOnNext(
-            upload ->
-                log.info(
-                    "Filtered by userId, uploadId == {}",
-                    upload.getUploadId())) // todo: remove or change to debug
-        // filter for the submissionID if provided otherwise ignore (filter always == true)
-        .filter(
-            upload ->
-                Optional.ofNullable(submissionId)
-                    .map(submissionIdVal -> submissionIdVal.equals(upload.getSubmissionId()))
-                    .orElse(true))
-        .doOnNext(
-            upload ->
-                log.info(
-                    "Filtered by submissionId, uploadId == {}",
-                    upload.getUploadId())) // todo: remove or change to debug
-        .log("UploadService::getUploadStream");
+        .map(this::uploadFromString);
   }
 
   @SneakyThrows
