@@ -15,7 +15,7 @@ public class TsvParserTests {
 
   @Test
   @SneakyThrows
-  void testTsvStrParsedToPayload() {
+  void testTsvStrParsedToRecords() {
     val fields =
         ImmutableList.of(
             new TsvFieldSchema("submitterId", TsvFieldSchema.ValueType.string),

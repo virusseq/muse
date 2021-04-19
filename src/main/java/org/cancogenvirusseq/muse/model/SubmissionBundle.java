@@ -21,17 +21,22 @@ package org.cancogenvirusseq.muse.model;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
+@AllArgsConstructor
 public class SubmissionBundle {
   @Setter private String recordsFileName;
-  private final ArrayList<Map<String, String>> records = new ArrayList<>();
-  private final ConcurrentHashMap<String, SubmissionFile> files = new ConcurrentHashMap<>();
+  private final ArrayList<Map<String, String>> records;
+  private final ConcurrentHashMap<String, SubmissionFile> files;
 
   public SubmissionBundle(@NonNull String recordsFileName) {
     this.recordsFileName = recordsFileName;
+    this.records = new ArrayList<>();
+    this.files = new ConcurrentHashMap<>();
   }
 }

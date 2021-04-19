@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
+
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
@@ -20,13 +21,22 @@ import org.cancogenvirusseq.muse.exceptions.submission.PayloadFileMapperExceptio
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.cancogenvirusseq.muse.model.SubmissionRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class PayloadFileMapper {
-  private final MuseAppConfig config;
+  private final String payloadJsonTemplate;
+
+  @Autowired
+  public PayloadFileMapper(MuseAppConfig config) {
+    this.payloadJsonTemplate = config.getPayloadJsonTemplate();
+  }
+
+  public PayloadFileMapper(String payloadJsonTemplate) {
+    this.payloadJsonTemplate = payloadJsonTemplate;
+  }
 
   @SneakyThrows
   public List<SubmissionRequest> submissionBundleToSubmissionRequests(
@@ -35,7 +45,7 @@ public class PayloadFileMapper {
         submissionBundle.getRecords().stream()
             .reduce(
                 new MapperReduceResult(),
-                accumulator(submissionBundle, config.getPayloadJsonTemplate()),
+                accumulator(submissionBundle, payloadJsonTemplate),
                 combiner());
 
     val usedSampleIds = result.getUsedSampleIds();
