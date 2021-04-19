@@ -32,9 +32,11 @@ public class UploadServiceTest {
 
   final UUID userOne = UUID.randomUUID();
   final UUID submissionOne = UUID.randomUUID();
+  final UUID userTwo = UUID.randomUUID();
+  final UUID submissionTwo = UUID.randomUUID();
 
   @Test
-  void filterUserAndSubmissionId() {
+  void filterUserAndSubmissionIdPass() {
     val uploadEvent = makeTestUploadFor(userOne, submissionOne);
 
     val uploadEvents = Flux.just(uploadEvent);
@@ -47,15 +49,30 @@ public class UploadServiceTest {
   }
 
   @Test
-  void filterUserOnly() {
-    val uploadEvent = makeTestUploadFor(userOne, submissionOne);
+  void filterUserAndSubmissionIdOnUserAndSubmission() {
+    val uploadEventOne = makeTestUploadFor(userOne, submissionOne);
+    val uploadEventTwo = makeTestUploadFor(userTwo, submissionTwo);
 
-    val uploadEvents = Flux.just(uploadEvent);
+    val uploadEvents = Flux.just(uploadEventOne, uploadEventTwo);
 
     StepVerifier.create(
-            UploadService.filterForUserAndMaybeSubmissionId(null, userOne.toString())
+            UploadService.filterForUserAndMaybeSubmissionId(submissionTwo, userTwo.toString())
                 .apply(uploadEvents))
-        .expectNext(uploadEvent)
+        .expectNext(uploadEventTwo)
+        .verifyComplete();
+  }
+
+  @Test
+  void filterUserAndSubmissionIdOnUserOnly() {
+    val uploadEventOne = makeTestUploadFor(userOne, submissionOne);
+    val uploadEventTwo = makeTestUploadFor(userTwo, submissionTwo);
+
+    val uploadEvents = Flux.just(uploadEventOne, uploadEventTwo);
+
+    StepVerifier.create(
+            UploadService.filterForUserAndMaybeSubmissionId(null, userTwo.toString())
+                .apply(uploadEvents))
+        .expectNext(uploadEventTwo)
         .verifyComplete();
   }
 
