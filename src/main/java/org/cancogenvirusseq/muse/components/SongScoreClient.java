@@ -166,8 +166,8 @@ public class SongScoreClient {
         .log();
   }
 
-  public Mono<DataBuffer> downloadObject(String objectId) {
-    return getFileLink(objectId).flatMap(this::downloadFromS3);
+  public Flux<DataBuffer> downloadObject(String objectId) {
+    return getFileLink(objectId).flatMapMany(this::downloadFromS3);
   }
 
   private Mono<String> getFileLink(String objectId) {
@@ -180,11 +180,10 @@ public class SongScoreClient {
         .map(spec -> spec.getParts().get(0).getUrl());
   }
 
-  private Mono<DataBuffer> downloadFromS3(String presignedUrl) {
+  private Flux<DataBuffer> downloadFromS3(String presignedUrl) {
     return WebClient.create(decodeUrl(presignedUrl))
         .get()
-        .exchangeToMono(ofMonoTypeOrHandleError(DataBuffer.class))
-        .map(HttpEntity::getBody)
+        .exchangeToFlux(ofFluxTypeOrHandleError(DataBuffer.class))
         .log();
   }
 
