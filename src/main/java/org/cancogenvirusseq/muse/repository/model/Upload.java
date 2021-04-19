@@ -44,13 +44,13 @@ public class Upload {
 
   @NonNull private UUID userId;
 
-  private OffsetDateTime createdAt;
+  @NonNull private OffsetDateTime createdAt;
 
   @NonNull private UploadStatus status;
+
+  @NonNull private List<String> originalFilePair;
 
   private UUID analysisId;
 
   private String error;
-
-  private List<String> originalFilePair;
 }
