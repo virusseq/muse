@@ -16,27 +16,22 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.api.model;
+package org.cancogenvirusseq.muse.model;
 
-import java.time.OffsetDateTime;
-import java.util.Set;
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.Value;
-import org.cancogenvirusseq.muse.repository.model.Submission;
+import lombok.Setter;
 
-@Value
-public class SubmissionDTO {
-  @NonNull UUID submissionId;
-  @NonNull OffsetDateTime createdAt;
-  @NonNull Set<String> originalFileNames;
-  @NonNull Integer totalRecords;
+@Getter
+public class SubmissionBundle {
+  @Setter private String recordsFileName;
+  private final ArrayList<Map<String, String>> records = new ArrayList<>();
+  private final ConcurrentHashMap<String, SubmissionFile> files = new ConcurrentHashMap<>();
 
-  public static SubmissionDTO fromDAO(Submission submission) {
-    return new SubmissionDTO(
-        submission.getSubmissionId(),
-        submission.getCreatedAt(),
-        submission.getOriginalFileNames(),
-        submission.getTotalRecords());
+  public SubmissionBundle(@NonNull String recordsFileName) {
+    this.recordsFileName = recordsFileName;
   }
 }

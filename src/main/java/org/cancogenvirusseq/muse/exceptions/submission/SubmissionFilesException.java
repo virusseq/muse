@@ -12,7 +12,7 @@ public class SubmissionFilesException extends Throwable implements MuseBaseExcep
   List<String> filesSubmitted;
 
   @Override
-  public String getErrorMessage() {
+  public String getMessage() {
     return "Submission must contain exactly one .tsv file and one or more .fasta files";
   }
 

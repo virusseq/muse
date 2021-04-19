@@ -27,7 +27,10 @@ public class DownloadAnalysisFetchResult {
 
   public String getResultMsg() {
     if (isExceptionStatus404Or400()) {
-      return exception.getSongScoreErrorMsg();
+      return Optional.ofNullable(exception)
+          .map(SongScoreServerException::getMessage)
+          .orElse(
+              "Detailed error information unavailable, please consult server logs or contact support");
     }
     if (analysis == null) {
       return "Analysis was not found";

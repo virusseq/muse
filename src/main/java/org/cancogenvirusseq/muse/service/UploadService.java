@@ -30,6 +30,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class UploadService {
   private final UploadRepository uploadRepository;
@@ -88,12 +90,23 @@ public class UploadService {
         .filter(
             upload ->
                 upload.getUserId().toString().equals(securityContext.getAuthentication().getName()))
+        .doOnNext(
+            upload ->
+                log.info(
+                    "Filtered by userId, uploadId == {}",
+                    upload.getUploadId())) // todo: remove or change to debug
         // filter for the submissionID if provided otherwise ignore (filter always == true)
         .filter(
             upload ->
                 Optional.ofNullable(submissionId)
-                    .map(submissionIdVal -> submissionIdVal == upload.getSubmissionId())
-                    .orElse(true));
+                    .map(submissionIdVal -> submissionIdVal.equals(upload.getSubmissionId()))
+                    .orElse(true))
+        .doOnNext(
+            upload ->
+                log.info(
+                    "Filtered by submissionId, uploadId == {}",
+                    upload.getUploadId())) // todo: remove or change to debug
+        .log("UploadService::getUploadStream");
   }
 
   @SneakyThrows

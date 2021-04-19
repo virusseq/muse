@@ -13,7 +13,7 @@ public class MissingHeadersException extends Throwable implements MuseBaseExcept
   List<String> unknownHeaders;
 
   @Override
-  public String getErrorMessage() {
+  public String getMessage() {
     return "Headers are incorrect!";
   }
 

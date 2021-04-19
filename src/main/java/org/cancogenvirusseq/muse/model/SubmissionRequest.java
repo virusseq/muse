@@ -16,27 +16,16 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.api.model;
+package org.cancogenvirusseq.muse.model;
 
-import java.time.OffsetDateTime;
-import java.util.Set;
-import java.util.UUID;
-import lombok.NonNull;
-import lombok.Value;
-import org.cancogenvirusseq.muse.repository.model.Submission;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-@Value
-public class SubmissionDTO {
-  @NonNull UUID submissionId;
-  @NonNull OffsetDateTime createdAt;
-  @NonNull Set<String> originalFileNames;
-  @NonNull Integer totalRecords;
-
-  public static SubmissionDTO fromDAO(Submission submission) {
-    return new SubmissionDTO(
-        submission.getSubmissionId(),
-        submission.getCreatedAt(),
-        submission.getOriginalFileNames(),
-        submission.getTotalRecords());
-  }
+@Getter
+@AllArgsConstructor
+public class SubmissionRequest {
+  private final ObjectNode record;
+  private final String recordFilename;
+  private final SubmissionFile submissionFile;
 }
