@@ -19,8 +19,6 @@
 package org.cancogenvirusseq.muse.model;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.Value;
 
 @Value

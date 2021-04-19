@@ -21,7 +21,6 @@ package org.cancogenvirusseq.muse.model;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;

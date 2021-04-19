@@ -1,13 +1,13 @@
- package org.cancogenvirusseq.muse.components;
+package org.cancogenvirusseq.muse.components;
 
- import static org.cancogenvirusseq.muse.components.ComponentTestStubs.sampleIdToFileMeta;
- import static org.cancogenvirusseq.muse.components.FastaFileProcessor.*;
- import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.cancogenvirusseq.muse.components.ComponentTestStubs.STUB_FILE_SAMPLE_MAP;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
- import lombok.val;
- import org.junit.jupiter.api.Test;
+import lombok.val;
+import org.junit.jupiter.api.Test;
 
- public class FastaFileProcessorTests {
+public class FastaFileProcessorTests {
 
   @Test
   void testFileParsedCorrectly() {
@@ -15,6 +15,6 @@
 
     val fileMetaToSampleIdMap = processFileStrContent(fastaFile);
 
-    assertEquals(sampleIdToFileMeta, fileMetaToSampleIdMap);
+    assertEquals(STUB_FILE_SAMPLE_MAP, fileMetaToSampleIdMap);
   }
- }
+}
