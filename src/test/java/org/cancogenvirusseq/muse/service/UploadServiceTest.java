@@ -18,6 +18,8 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import lombok.val;
 import org.assertj.core.util.Lists;
 import org.cancogenvirusseq.muse.repository.model.Upload;
@@ -25,9 +27,6 @@ import org.cancogenvirusseq.muse.repository.model.UploadStatus;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
-
-import java.time.OffsetDateTime;
-import java.util.UUID;
 
 public class UploadServiceTest {
 
@@ -55,9 +54,9 @@ public class UploadServiceTest {
 
     StepVerifier.create(
             UploadService.filterForUserAndMaybeSubmissionId(null, userOne.toString())
-                    .apply(uploadEvents))
-            .expectNext(uploadEvent)
-            .verifyComplete();
+                .apply(uploadEvents))
+        .expectNext(uploadEvent)
+        .verifyComplete();
   }
 
   private Upload makeTestUploadFor(UUID userId, UUID submissionId) {
