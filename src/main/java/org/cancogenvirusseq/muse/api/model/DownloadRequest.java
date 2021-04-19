@@ -28,6 +28,5 @@ import lombok.NonNull;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DownloadRequest {
-  //  @NonNull private String requestedFileName; // TBD
   @NonNull private List<AnalysisIdStudyIdPair> analysisIdStudyIdPairs;
 }
