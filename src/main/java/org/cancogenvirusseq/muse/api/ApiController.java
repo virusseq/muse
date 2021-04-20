@@ -21,13 +21,12 @@ package org.cancogenvirusseq.muse.api;
 import static java.lang.String.format;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 
+import com.google.common.io.ByteStreams;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 import javax.validation.Valid;
-
-import com.google.common.io.ByteStreams;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.cancogenvirusseq.muse.api.model.*;
