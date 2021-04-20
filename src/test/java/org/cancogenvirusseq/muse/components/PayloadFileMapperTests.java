@@ -2,12 +2,16 @@ package org.cancogenvirusseq.muse.components;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.cancogenvirusseq.muse.components.ComponentTestStubs.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.cancogenvirusseq.muse.exceptions.submission.PayloadFileMapperException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionRequest;
 import org.junit.jupiter.api.Test;
@@ -42,5 +46,26 @@ public class PayloadFileMapperTests {
     val actual = fileMapper.submissionBundleToSubmissionRequests(submissionBundle);
 
     assertThat(actual).hasSameElementsAs(expected);
+  }
+
+  @Test
+  @SneakyThrows
+  void testErrorOnFailedToMapRecordsAndFile() {
+    val records =
+        List.of(
+            Map.of("submitter id", "sam1", "age", "123"),
+            Map.of("submitter id", "sam2NotHere", "age", "456"));
+
+    val submissionBundle =
+        new SubmissionBundle("asdf.tsv", new ArrayList<>(records), STUB_FILE_SAMPLE_MAP);
+
+    val fileMapper = new PayloadFileMapper(STUB_PAYLOAD_TEMPLATE);
+    val thrown =
+        assertThrows(
+            PayloadFileMapperException.class,
+            () -> fileMapper.submissionBundleToSubmissionRequests(submissionBundle));
+
+    assertThat(thrown.getSampleIdInFileMissingInTsv()).containsExactly(SAMPLE_ID_2);
+    assertThat(thrown.getSampleIdInRecordMissingInFile()).containsExactly("sam2NotHere");
   }
 }

@@ -2,6 +2,8 @@ package org.cancogenvirusseq.muse.components;
 
 import static org.cancogenvirusseq.muse.components.ComponentTestStubs.STUB_FILE_SAMPLE_MAP;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anEmptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import lombok.val;
@@ -16,5 +18,23 @@ public class FastaFileProcessorTests {
     val fileMetaToSampleIdMap = processFileStrContent(fastaFile);
 
     assertEquals(STUB_FILE_SAMPLE_MAP, fileMetaToSampleIdMap);
+  }
+
+  @Test
+  void testBadFormatFileProcessed() {
+    val fastaFile = "\n\thohoho>\tqucik";
+
+    val fileMetaToSampleIdMap = processFileStrContent(fastaFile);
+
+    assertThat(fileMetaToSampleIdMap, anEmptyMap());
+  }
+
+  @Test
+  void testEmptyFileProcessed() {
+    val fastaFile = "";
+
+    val fileMetaToSampleIdMap = processFileStrContent(fastaFile);
+
+    assertThat(fileMetaToSampleIdMap, anEmptyMap());
   }
 }

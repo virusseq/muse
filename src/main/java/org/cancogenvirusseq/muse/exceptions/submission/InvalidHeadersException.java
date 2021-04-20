@@ -8,7 +8,7 @@ import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
-public class MissingHeadersException extends Throwable implements MuseBaseException {
+public class InvalidHeadersException extends Throwable implements MuseBaseException {
   List<String> missingHeaders;
   List<String> unknownHeaders;
 

@@ -12,7 +12,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
 import org.cancogenvirusseq.muse.exceptions.submission.InvalidFieldsException;
-import org.cancogenvirusseq.muse.exceptions.submission.MissingHeadersException;
+import org.cancogenvirusseq.muse.exceptions.submission.InvalidHeadersException;
 import org.cancogenvirusseq.muse.model.tsv_parser.InvalidField;
 import org.cancogenvirusseq.muse.model.tsv_parser.TsvFieldSchema;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +46,7 @@ public class TsvParser {
 
     val headerChkResult = checkHeaders(expectedTsvHeaders, strTsvHeaders);
     if (headerChkResult.isInvalid()) {
-      throw new MissingHeadersException(headerChkResult.missing, headerChkResult.unknown);
+      throw new InvalidHeadersException(headerChkResult.missing, headerChkResult.unknown);
     }
 
     // TODO - don't pass header in lines
