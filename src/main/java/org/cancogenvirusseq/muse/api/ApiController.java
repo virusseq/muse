@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 import javax.validation.Valid;
+
+import com.google.common.io.ByteStreams;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.cancogenvirusseq.muse.api.model.*;
@@ -121,7 +123,8 @@ public class ApiController implements ApiDefinition {
       // Since a spring DataBuffer can be obtained as an OutputStream,
       // we create a GZIPOutputStream around gzipDataBuffer and writes bytes from inputDataBuffer
       val gzip = new GZIPOutputStream(gzipDataBuffer.asOutputStream());
-      gzip.write(inputDataBuffer.asByteBuffer().array());
+      val bytes = ByteStreams.toByteArray(inputDataBuffer.asInputStream());
+      gzip.write(bytes);
       gzip.close();
     } catch (Exception e) {
       e.printStackTrace();
