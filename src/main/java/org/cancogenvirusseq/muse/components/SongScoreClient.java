@@ -96,13 +96,22 @@ public class SongScoreClient {
         .log();
   }
 
-  public Mono<AnalysisFile> getFileSpecFromSong(String studyId, UUID analysisId) {
+  public Mono<AnalysisFile> getFileEntityFromSong(String studyId, UUID analysisId) {
     return songClient
         .get()
         .uri(format("/studies/%s/analysis/%s/files", studyId, analysisId.toString()))
         // endpoint returns array but, we expect only one file to be uploaded in each analysis
         .exchangeToFlux(ofFluxTypeOrHandleError(AnalysisFile.class))
         .next()
+        .log();
+  }
+
+  public Mono<LegacyFileEntity> getFileEntityFromSong(UUID objectId) {
+    return songClient
+        .get()
+        .uri(format("/entities/%s", objectId.toString()))
+        .exchangeToMono(ofMonoTypeOrHandleError(LegacyFileEntity.class))
+        .map(HttpEntity::getBody)
         .log();
   }
 

@@ -21,6 +21,7 @@ package org.cancogenvirusseq.muse.api;
 import static java.lang.String.format;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import java.time.Instant;
 import java.util.List;
@@ -55,6 +56,7 @@ public class ApiController implements ApiDefinition {
   private final SubmissionService submissionService;
   private final UploadService uploadService;
   private final DownloadsService downloadsService;
+  private final ObjectMapper objectMapper;
 
   private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
@@ -102,6 +104,29 @@ public class ApiController implements ApiDefinition {
         .body(downloadsService.download(downloadRequest));
   }
 
+  @GetMapping("/download")
+  public ResponseEntity<Flux<DataBuffer>> downloadWithQueryParams(@RequestParam List<UUID> objectIds) {
+    return ResponseEntity.ok()
+        .header(
+            CONTENT_DISPOSITION_HEADER,
+            format(
+                "attachment; filename=sample-bundle-%s%s",
+                Instant.now().toString(), FASTA_FILE_EXTENSION))
+        .body(downloadsService.download(objectIds));
+  }
+
+  @GetMapping("/download/gzip")
+  public ResponseEntity<Flux<DataBuffer>> downloadGzipWithQueryParams(@RequestParam List<UUID> objectIds) {
+    return ResponseEntity.ok()
+                   .header(
+                           CONTENT_DISPOSITION_HEADER,
+                           // convention for gzip is original file name with `.gz`
+                           format(
+                                   "attachment; filename=sample-bundle-%s%s.gz",
+                                   Instant.now().toString(), FASTA_FILE_EXTENSION))
+                   .body(downloadsService.download(objectIds).flatMap(this::gzipDataBuffer));
+  }
+
   public ResponseEntity<Flux<DataBuffer>> downloadGzip(
       @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
     return ResponseEntity.ok()
@@ -134,6 +159,7 @@ public class ApiController implements ApiDefinition {
 
   @ExceptionHandler
   public ResponseEntity<ErrorResponse> handle(Throwable ex) {
+    ex.printStackTrace();
     log.error("ApiController exception handler", ex);
     if (ex instanceof MuseBaseException) {
       return ErrorResponse.errorResponseEntity((MuseBaseException) ex);

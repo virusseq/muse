@@ -18,15 +18,19 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.cancogenvirusseq.muse.api.model.AnalysisIdStudyIdPair;
 import org.cancogenvirusseq.muse.api.model.DownloadRequest;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.exceptions.download.DownloadAnalysisFetchException;
 import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
 import org.cancogenvirusseq.muse.model.DownloadAnalysisFetchResult;
+import org.cancogenvirusseq.muse.model.song_score.LegacyFileEntity;
 import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
@@ -40,8 +44,19 @@ public class DownloadsService {
 
   final SongScoreClient songScoreClient;
 
+  public Flux<DataBuffer> download(List<UUID> objectIds) {
+    return Flux.fromIterable(objectIds)
+        .flatMap(songScoreClient::getFileEntityFromSong)
+        .map(this::toAnalysisIdStudyIdPair)
+        .transform(this::download);
+  }
+
   public Flux<DataBuffer> download(DownloadRequest downloadRequest) {
-    return Flux.fromIterable(downloadRequest.getAnalysisIdStudyIdPairs())
+    return Flux.fromIterable(downloadRequest.getAnalysisIdStudyIdPairs()).transform(this::download);
+  }
+
+  private Flux<DataBuffer> download(Flux<AnalysisIdStudyIdPair> analysisIdStudyIdPairFlux) {
+    return analysisIdStudyIdPairFlux
         .flatMap(
             analysisIdStudyIdPair ->
                 // get analysis from song and map to fetch result
@@ -88,5 +103,9 @@ public class DownloadsService {
             .map(a -> !a.isPublished() || !a.hasFiles())
             // analysis doesn't exist so return true
             .orElse(true);
+  }
+
+  private AnalysisIdStudyIdPair toAnalysisIdStudyIdPair(LegacyFileEntity fileEntity) {
+    return new AnalysisIdStudyIdPair(fileEntity.getAnalysisId(), fileEntity.getStudyId());
   }
 }
