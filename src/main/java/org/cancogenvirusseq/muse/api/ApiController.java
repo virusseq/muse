@@ -21,7 +21,6 @@ package org.cancogenvirusseq.muse.api;
 import static java.lang.String.format;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import java.time.Instant;
 import java.util.List;
@@ -57,6 +56,12 @@ public class ApiController implements ApiDefinition {
   private final DownloadsService downloadsService;
 
   private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
+
+  public Mono<SubmissionDTO> getSubmissionById(@NonNull UUID submissionId) {
+    return SecurityContextWrapper.forMono(submissionService::getSubmissionById)
+        .apply(submissionId)
+        .map(SubmissionDTO::fromDAO);
+  }
 
   public Mono<EntityListResponse<SubmissionDTO>> getSubmissions(
       Integer page, Integer size, Sort.Direction sortDirection, SubmissionSortField sortField) {

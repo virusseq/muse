@@ -41,6 +41,25 @@ public interface ApiDefinition {
   String UNKNOWN_MSG = "An unexpected error occurred.";
 
   @ApiOperation(
+      value = "Get Submission by submissionId",
+      nickname = "Get Submission by submissionId",
+      response = SubmissionDTO.class,
+      tags = "Muse")
+  @ApiResponses(
+      value = {
+        @ApiResponse(code = 200, message = "", response = SubmissionDTO.class),
+        @ApiResponse(code = 400, message = BAD_REQUEST, response = ErrorResponse.class),
+        @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
+        @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
+        @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
+      })
+  @RequestMapping(
+      value = "/submissions/{submissionId}",
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      method = RequestMethod.GET)
+  Mono<SubmissionDTO> getSubmissionById(@PathVariable("submissionId") UUID submissionId);
+
+  @ApiOperation(
       value = "Get All Submissions",
       nickname = "Get Submissions",
       response = EntityListResponse.class,
