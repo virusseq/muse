@@ -93,7 +93,7 @@ public class SongScoreService {
               upload.setStatus(UploadStatus.PROCESSING);
               return repo.save(upload);
             })
-        .flatMap(u -> songScoreClient.getFileSpecFromSong(u.getStudyId(), u.getAnalysisId()))
+        .flatMap(u -> songScoreClient.getAnalysisFileFromSong(u.getStudyId(), u.getAnalysisId()))
         .flatMap(
             analysisFileResponse ->
                 songScoreClient.initScoreUpload(

@@ -21,28 +21,29 @@ package org.cancogenvirusseq.muse.api;
 import static java.lang.String.format;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.ByteStreams;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import javax.validation.Valid;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import java.util.zip.GZIPOutputStream;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
+import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionService;
 import org.cancogenvirusseq.muse.service.UploadService;
 import org.cancogenvirusseq.muse.utils.SecurityContextWrapper;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -91,13 +92,43 @@ public class ApiController implements ApiDefinition {
         .log("ApiController::streamUploads");
   }
 
-  public ResponseEntity<Flux<DataBuffer>> download(
-      @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
+  public ResponseEntity<Flux<DataBuffer>> download(List<UUID> objectIds) {
     return ResponseEntity.ok()
         .header(
             CONTENT_DISPOSITION_HEADER,
-            format("attachment; filename=%s", downloadRequest.getStudyId() + FASTA_FILE_EXTENSION))
-        .body(downloadsService.download(downloadRequest));
+            format(
+                "attachment; filename=sample-bundle-%s%s",
+                Instant.now().toString(), FASTA_FILE_EXTENSION))
+        .body(downloadsService.download(objectIds));
+  }
+
+  public ResponseEntity<Flux<DataBuffer>> downloadGzip(List<UUID> objectIds) {
+    return ResponseEntity.ok()
+        .header(
+            CONTENT_DISPOSITION_HEADER,
+            // convention for gzip is original file name with `.gz`
+            format(
+                "attachment; filename=sample-bundle-%s%s.gz",
+                Instant.now().toString(), FASTA_FILE_EXTENSION))
+        .body(downloadsService.download(objectIds).flatMap(this::gzipDataBuffer));
+  }
+
+  private Mono<DataBuffer> gzipDataBuffer(DataBuffer inputDataBuffer) {
+    // allocate gzipped data buffer
+    val gzipDataBuffer = new DefaultDataBufferFactory().allocateBuffer();
+    try {
+      // GZIPOutputStream basically decorates an OutputStream and allows writing bytes to it.
+      // Since a spring DataBuffer can be obtained as an OutputStream,
+      // we create a GZIPOutputStream around gzipDataBuffer and writes bytes from inputDataBuffer
+      val gzip = new GZIPOutputStream(gzipDataBuffer.asOutputStream());
+      val bytes = ByteStreams.toByteArray(inputDataBuffer.asInputStream());
+      gzip.write(bytes);
+      gzip.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+      return Mono.error(new UnknownException());
+    }
+    return Mono.just(gzipDataBuffer);
   }
 
   @ExceptionHandler

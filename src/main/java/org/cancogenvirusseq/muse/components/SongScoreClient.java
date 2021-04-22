@@ -96,13 +96,22 @@ public class SongScoreClient {
         .log();
   }
 
-  public Mono<AnalysisFile> getFileSpecFromSong(String studyId, UUID analysisId) {
+  public Mono<AnalysisFile> getAnalysisFileFromSong(String studyId, UUID analysisId) {
     return songClient
         .get()
         .uri(format("/studies/%s/analysis/%s/files", studyId, analysisId.toString()))
         // endpoint returns array but, we expect only one file to be uploaded in each analysis
         .exchangeToFlux(ofFluxTypeOrHandleError(AnalysisFile.class))
         .next()
+        .log();
+  }
+
+  public Mono<LegacyFileEntity> getFileEntityFromSong(UUID objectId) {
+    return songClient
+        .get()
+        .uri(format("/entities/%s", objectId.toString()))
+        .exchangeToMono(ofMonoTypeOrHandleError(LegacyFileEntity.class))
+        .map(HttpEntity::getBody)
         .log();
   }
 
@@ -166,8 +175,8 @@ public class SongScoreClient {
         .log();
   }
 
-  public Mono<DataBuffer> downloadObject(String objectId) {
-    return getFileLink(objectId).flatMap(this::downloadFromS3);
+  public Flux<DataBuffer> downloadObject(String objectId) {
+    return getFileLink(objectId).flatMapMany(this::downloadFromS3);
   }
 
   private Mono<String> getFileLink(String objectId) {
@@ -180,11 +189,10 @@ public class SongScoreClient {
         .map(spec -> spec.getParts().get(0).getUrl());
   }
 
-  private Mono<DataBuffer> downloadFromS3(String presignedUrl) {
+  private Flux<DataBuffer> downloadFromS3(String presignedUrl) {
     return WebClient.create(decodeUrl(presignedUrl))
         .get()
-        .exchangeToMono(ofMonoTypeOrHandleError(DataBuffer.class))
-        .map(HttpEntity::getBody)
+        .exchangeToFlux(ofFluxTypeOrHandleError(DataBuffer.class))
         .log();
   }
 
