@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
-import org.cancogenvirusseq.muse.exceptions.submission.MissingHeadersException;
+import org.cancogenvirusseq.muse.exceptions.submission.InvalidHeadersException;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -23,7 +23,7 @@ public class TsvParser {
 
     val headerChkResult = checkHeaders(config.getExpectedTsvHeaders(), strTsvHeaders);
     if (headerChkResult.isInvalid()) {
-      throw new MissingHeadersException(headerChkResult.missing, headerChkResult.unknown);
+      throw new InvalidHeadersException(headerChkResult.missing, headerChkResult.unknown);
     }
 
     return parse(lines, strTsvHeaders.toArray(String[]::new));
@@ -45,8 +45,7 @@ public class TsvParser {
 
   private Stream<Map<String, String>> parse(String[] lines, String[] headers) {
     return Arrays.stream(lines)
-        .skip(1)
-        .parallel()
+        .skip(1) // skip one because first line is headers
         .filter(line -> line != null && !line.trim().equals(""))
         .map(
             line -> {

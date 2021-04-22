@@ -195,8 +195,7 @@ public class SubmissionService {
         .map(
             submissionRequest ->
                 List.of(
-                    submissionRequest.getRecordFilename(),
-                    submissionRequest.getSampleFilename()))
+                    submissionRequest.getRecordFilename(), submissionRequest.getSampleFilename()))
         .flatMap(Collection::stream)
         .collect(Collectors.toSet());
   }

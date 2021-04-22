@@ -23,6 +23,7 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
@@ -59,8 +60,7 @@ public class SongScoreService {
     val submissionRequests = submissionEvent.getSubmissionRequests();
 
     return Flux.fromStream(
-        submissionRequests
-            .parallelStream()
+        submissionRequests.stream()
             .map(
                 r -> {
                   val upload =
@@ -108,6 +108,9 @@ public class SongScoreService {
               upload.setStatus(UploadStatus.COMPLETE);
               return repo.save(upload);
             })
+       // Schedule on single to ensure the repo connection is controlled.
+       // TcpAlive is also set to false also so it should close.
+        .subscribeOn(Schedulers.single())
         .onErrorResume(
             t -> {
               log.error(t.getLocalizedMessage(), t);
