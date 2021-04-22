@@ -89,7 +89,8 @@ public class ApiController implements ApiDefinition {
   public Flux<UploadDTO> streamUploads(String accessToken, UUID submissionId) {
     return SecurityContextWrapper.forFlux(uploadService::getUploadStream)
         .apply(submissionId)
-        .map(UploadDTO::fromDAO);
+        .map(UploadDTO::fromDAO)
+        .log("ApiController::streamUploads");
   }
 
   public ResponseEntity<Flux<DataBuffer>> download(List<UUID> objectIds) {

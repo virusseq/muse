@@ -27,10 +27,8 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.components.PayloadFileMapper;
 import org.cancogenvirusseq.muse.components.TsvParser;
@@ -94,21 +92,19 @@ public class SubmissionService {
         // read each file in as String
         .transform(SubmissionService::readFileContentToString)
         // reduce flux of Tuples(fileType, fileString) into a SubmissionRequest
-        .reduce(new SubmissionBundle(), this::reduceToSubmissionBundle)
+        .reduce(new SubmissionBundle("to-be-replaced-in-reducer"), this::reduceToSubmissionBundle)
         // validate submission records has fasta file map!
         .map(payloadFileMapper::submissionBundleToSubmissionRequests)
-        // attach original files to submission request for bookkeeping purposes
-        .flatMap(recordsSubmissionFiles -> attachOriginalFiles(recordsSubmissionFiles, fileParts))
         // record submission to database
         .flatMap(
-            submissionData ->
+            submissionRequest ->
                 submissionRepository
                     .save(
                         Submission.builder()
                             .userId(getUserIdFromContext(securityContext))
                             .createdAt(OffsetDateTime.now())
-                            .originalFileNames(submissionData.getT2())
-                            .totalRecords(submissionData.getT1().size())
+                            .originalFileNames(compileOriginalFilenames(submissionRequest))
+                            .totalRecords(submissionRequest.size())
                             .build())
                     // from recorded submission, create submissionEvent
                     .map(
@@ -116,7 +112,7 @@ public class SubmissionService {
                             SubmissionEvent.builder()
                                 .submissionId(submission.getSubmissionId())
                                 .userId(getUserIdFromContext(securityContext))
-                                .submissionRequests(submissionData.getT1())
+                                .submissionRequests(submissionRequest)
                                 .build()))
         // emit submission event to sink for further processing
         .doOnNext(songScoreSubmitUploadSink::tryEmitNext)
@@ -168,12 +164,17 @@ public class SubmissionService {
         .map(filePart -> Tuples.of(mapEntry.getKey(), filePart));
   }
 
-  private static Flux<Tuple2<String, String>> readFileContentToString(
+  private static Flux<SubmissionUpload> readFileContentToString(
       Flux<Tuple2<String, FilePart>> fileTypeFilePartTupleFlux) {
     return fileTypeFilePartTupleFlux.flatMap(
         fileTypeFilePart ->
             fileContentToString(fileTypeFilePart.getT2().content())
-                .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)));
+                .map(
+                    fileStr ->
+                        new SubmissionUpload(
+                            fileTypeFilePart.getT2().filename(),
+                            fileTypeFilePart.getT1(),
+                            fileStr)));
   }
 
   private static Mono<String> fileContentToString(Flux<DataBuffer> content) {
@@ -189,26 +190,40 @@ public class SubmissionService {
         .reduce(String::concat);
   }
 
-  private static Mono<Tuple2<List<SubmissionRequest>, List<String>>> attachOriginalFiles(
-      List<SubmissionRequest> submissionRequests, Flux<FilePart> fileParts) {
-    return fileParts
-        .map(FilePart::filename)
-        .collectList()
-        .map(fileList -> Tuples.of(submissionRequests, fileList));
+  private static Set<String> compileOriginalFilenames(List<SubmissionRequest> submissionRequests) {
+    return submissionRequests.stream()
+        .map(
+            submissionRequest ->
+                List.of(
+                    submissionRequest.getRecordFilename(),
+                    submissionRequest.getSubmissionFile().getFileName()))
+        .flatMap(Collection::stream)
+        .collect(Collectors.toSet());
   }
 
   private SubmissionBundle reduceToSubmissionBundle(
-      SubmissionBundle submissionBundle, Tuple2<String, String> fileTypeFileStringTuple) {
-    switch (fileTypeFileStringTuple.getT1()) {
+      SubmissionBundle submissionBundle, SubmissionUpload submissionUpload) {
+    switch (submissionUpload.getType()) {
       case "tsv":
+        // save the tsv filename to the bundle
+        submissionBundle.setRecordsFileName(submissionUpload.getFilename());
+        // parse and validate records
         tsvParser
-            .parseAndValidateTsvStrToFlatRecords(fileTypeFileStringTuple.getT2())
+            .parseAndValidateTsvStrToFlatRecords(submissionUpload.getContent())
             .forEach(record -> submissionBundle.getRecords().add(record));
         break;
       case "fasta":
-        submissionBundle.getFiles().putAll(processFileStrContent(fileTypeFileStringTuple.getT2()));
+        submissionBundle.getFiles().putAll(processFileStrContent(submissionUpload.getContent()));
         break;
     }
     return submissionBundle;
+  }
+
+  @Getter
+  @AllArgsConstructor
+  private static class SubmissionUpload {
+    private final String filename;
+    private final String type;
+    private final String content;
   }
 }

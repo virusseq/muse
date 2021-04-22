@@ -13,6 +13,9 @@ cors:
     - "https://localhost:3000"
   maxAge: 3600
 
+codeConfig:
+  maxHeadersSize: 16384
+
 postgres:
   host: localhost
   port: 5432

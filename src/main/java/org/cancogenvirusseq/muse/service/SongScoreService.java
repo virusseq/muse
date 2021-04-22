@@ -65,17 +65,18 @@ public class SongScoreService {
                 r -> {
                   val upload =
                       Upload.builder()
-                          .studyId(getStudyId(r.getPayload()))
-                          .submitterSampleId(getFirstSubmitterSampleId(r.getPayload()))
+                          .studyId(getStudyId(r.getRecord()))
+                          .submitterSampleId(getFirstSubmitterSampleId(r.getRecord()))
                           .submissionId(submissionEvent.getSubmissionId())
                           .userId(submissionEvent.getUserId())
                           .status(UploadStatus.QUEUED)
-                          .originalFilePair(List.of(r.getSubmissionFile().getFileName()))
+                          .originalFilePair(
+                              List.of(r.getRecordFilename(), r.getSubmissionFile().getFileName()))
                           .build();
 
-                  log.debug(r.getPayload().toPrettyString());
+                  log.debug(r.getRecord().toPrettyString());
 
-                  return Tuples.of(r.getPayload().toString(), upload, r.getSubmissionFile());
+                  return Tuples.of(r.getRecord().toString(), upload, r.getSubmissionFile());
                 }));
   }
 
