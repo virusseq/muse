@@ -41,11 +41,11 @@
   { "name": "consensus genome length", "valueType": "number" },
   { "name": "Ns per 100 kbp", "valueType": "number" },
   { "name": "reference genome accession", "valueType": "string" },
-  {"name": "bioinformatics protocol", "valueType": "string"},
+  { "name": "bioinformatics protocol", "valueType": "string" },
   { "name": "lineage/clade name", "valueType": "string" },
   { "name": "lineage/clade analysis software name", "valueType": "string" },
   { "name": "lineage/clade analysis software version", "valueType": "string" },
   { "name": "variant designation", "valueType": "string" },
   { "name": "variant evidence", "valueType": "string" },
-  {"name": "variant evidence details", "valueType": "string"}
+  { "name": "variant evidence details", "valueType": "string" }
 ]
