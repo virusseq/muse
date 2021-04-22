@@ -4,6 +4,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -14,33 +15,45 @@ public class FastaFileProcessor {
   public static final String FASTA_FILE_EXTENSION = ".fasta";
 
   public static ConcurrentHashMap<String, SubmissionFile> processFileStrContent(String fastaFile) {
-
-    final ConcurrentHashMap<String, SubmissionFile> repo = new ConcurrentHashMap<>();
+    val isolateToSubmissionFile = new ConcurrentHashMap<String, SubmissionFile>();
 
     Arrays.stream(fastaFile.split("(?=>)"))
         .parallel()
+        .filter(sampleData -> sampleData != null && !sampleData.trim().equals(""))
         .forEach(
             fc -> {
-              if (fc == null || fc.trim().equals("")) return;
-              val sampleId = fc.split("/")[1];
-              if (sampleId == null) return;
-
-              val fileName = sampleId + FASTA_FILE_EXTENSION;
+                val fastaHeaderOpt = extractFastaHeader(fc);
+                if (fastaHeaderOpt.isEmpty())  {
+                    return;
+                }
 
               val submissionFile =
                   SubmissionFile.builder()
-                      .fileName(fileName)
+                      .fileExtension(FASTA_FILE_EXTENSION)
                       .fileSize(fc.length())
                       .fileMd5sum(md5(fc).toString())
                       .content(fc)
                       .dataType(FASTA_TYPE)
                       .fileType(FASTA_TYPE)
                       .build();
-              repo.put(sampleId, submissionFile);
+
+              // fasta header is equal to isolate in record meta
+              isolateToSubmissionFile.put(fastaHeaderOpt.get(), submissionFile);
             });
 
-    return repo;
+    return isolateToSubmissionFile;
   }
+
+    public static Optional<String> extractFastaHeader(String sampleContent) {
+        // get index of first new line
+        val fastaHeaderEndNewlineIndex = sampleContent.indexOf("\n");
+        if (fastaHeaderEndNewlineIndex == -1) {
+            return Optional.empty();
+        }
+
+        // isolate is substring from after ">" char to before new line
+        return Optional.of(sampleContent.substring(1, fastaHeaderEndNewlineIndex));
+    }
 
   @SneakyThrows
   public static HashCode md5(String input) {

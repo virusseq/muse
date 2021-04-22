@@ -1,7 +1,11 @@
 package org.cancogenvirusseq.muse.components;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toUnmodifiableList;
+import static org.apache.commons.lang3.StringUtils.isNumeric;
 import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getIsolate;
+
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +19,7 @@ import java.util.function.BinaryOperator;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
+import org.apache.commons.text.lookup.StringLookup;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
 import org.cancogenvirusseq.muse.exceptions.submission.PayloadFileMapperException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
@@ -38,16 +43,15 @@ public class PayloadFileMapper {
                 accumulator(submissionBundle, config.getPayloadJsonTemplate()),
                 combiner());
 
-    val usedSampleIds = result.getUsedSampleIds();
-    val sampleIdInRecordMissingFile = result.getSampleIdInRecordMissingFile();
+    val isolateInRecordMissingFile = result.getIsolateInRecordMissingFile();
 
-    val sampleIdInFileMissingInTsv =
+    val isolateInFileMissingInTsv =
         submissionBundle.getFiles().keySet().stream()
-            .filter(s -> !usedSampleIds.contains(s))
+            .filter(s -> !result.getUsedIsolates().contains(s))
             .collect(toUnmodifiableList());
 
-    if (sampleIdInFileMissingInTsv.size() > 0 || sampleIdInRecordMissingFile.size() > 0) {
-      throw new PayloadFileMapperException(sampleIdInFileMissingInTsv, sampleIdInRecordMissingFile);
+    if (isolateInFileMissingInTsv.size() > 0 || isolateInRecordMissingFile.size() > 0) {
+      throw new PayloadFileMapperException(isolateInFileMissingInTsv, isolateInRecordMissingFile);
     }
 
     return result.getRecordsMapped();
@@ -56,19 +60,19 @@ public class PayloadFileMapper {
   private static BiFunction<MapperReduceResult, Map<String, String>, MapperReduceResult>
       accumulator(SubmissionBundle submissionBundle, String payloadTemplate) {
     return (acc, r) -> {
-      val partialPayloadStr = convertRecordToPayload(r, payloadTemplate);
-      val payload = fromJsonStr(partialPayloadStr);
+      val payload = fromJsonStr(convertRecordToPayloadStr(r, payloadTemplate));
       val sampleId = getFirstSubmitterSampleId(payload);
+      val isolate = getIsolate(payload);
 
-      val submissionFile = submissionBundle.getFiles().get(sampleId);
+      val submissionFile = submissionBundle.getFiles().get(isolate);
       if (submissionFile == null) {
-        acc.getSampleIdInRecordMissingFile().add(sampleId);
+        acc.getIsolateInRecordMissingFile().add(isolate);
         return acc;
       }
 
-      acc.getUsedSampleIds().add(sampleId);
-      val filesNode = createFilesObject(submissionFile);
-      payload.set("files", filesNode);
+      payload.set("files", createFilesObject(submissionFile, sampleId));
+
+      acc.getUsedIsolates().add(isolate);
       acc.getRecordsMapped()
           .add(
               new SubmissionRequest(
@@ -81,8 +85,8 @@ public class PayloadFileMapper {
   private static BinaryOperator<MapperReduceResult> combiner() {
     return (first, second) -> {
       first.getRecordsMapped().addAll(second.getRecordsMapped());
-      first.getUsedSampleIds().addAll(second.getUsedSampleIds());
-      first.getSampleIdInRecordMissingFile().addAll(second.getSampleIdInRecordMissingFile());
+      first.getUsedIsolates().addAll(second.getUsedIsolates());
+      first.getIsolateInRecordMissingFile().addAll(second.getIsolateInRecordMissingFile());
       return first;
     };
   }
@@ -92,19 +96,34 @@ public class PayloadFileMapper {
     return new ObjectMapper().readValue(jsonStr, ObjectNode.class);
   }
 
-  private static String convertRecordToPayload(
+  private static String convertRecordToPayloadStr(
       Map<String, String> valuesMap, String payloadTemplate) {
-    val sub = new StringSubstitutor(valuesMap);
+    StringLookup lookupFunc = key -> {
+      val value = valuesMap.getOrDefault(key, "");
+      // value is going to be mapped to json
+      if (isNumeric(value)) {
+        // its numeric no need to append quotes
+        return value;
+      } else if (value.trim().equals("")) {
+        // its empty map it to null value
+        return "null";
+      } else {
+        // its string so append quotes, and remove any special chars
+        return format("\"%s\"", value.replace("\r", ""));
+      }
+    };
+
+    val sub = new StringSubstitutor(lookupFunc);
     // throw error if valuesMap is missing template values in payloadTemplate
     sub.setEnableUndefinedVariableException(true);
     return sub.replace(payloadTemplate);
   }
 
-  private static JsonNode createFilesObject(SubmissionFile submissionFile) {
+  private static JsonNode createFilesObject(SubmissionFile submissionFile, String sampleId) {
     val filesArray = JsonNodeFactory.instance.arrayNode(1);
     val fileObj = JsonNodeFactory.instance.objectNode();
 
-    fileObj.put("fileName", submissionFile.getFileName());
+    fileObj.put("fileName", format("%s%s", sampleId, submissionFile.getFileExtension()));
     fileObj.put("fileSize", submissionFile.getFileSize());
     fileObj.put("fileMd5sum", submissionFile.getFileMd5sum());
     fileObj.put("fileAccess", submissionFile.getFileAccess());
@@ -118,8 +137,8 @@ public class PayloadFileMapper {
   @Data
   @NoArgsConstructor
   static class MapperReduceResult {
-    List<String> usedSampleIds = new ArrayList<>();
-    List<String> sampleIdInRecordMissingFile = new ArrayList<>();
+    List<String> usedIsolates = new ArrayList<>();
+    List<String> isolateInRecordMissingFile = new ArrayList<>();
     List<SubmissionRequest> recordsMapped = new ArrayList<>();
   }
 }
