@@ -95,20 +95,18 @@ spec:
             }
         }
 
-//        stage('deploy to cancogen-virus-seq-dev') {
-//            when {
-//                branch "develop"
-//            }
-//            steps {
-//                build(job: "/provision/helm", parameters: [
-//                    [$class: 'StringParameterValue', name: 'AP_RDPC_ENV', value: 'dev' ],
-//                    [$class: 'StringParameterValue', name: 'AP_CHART_NAME', value: 'muse'],
-//                    [$class: 'StringParameterValue', name: 'AP_RELEASE_NAME', value: 'muse'],
-//                    [$class: 'StringParameterValue', name: 'AP_HELM_CHART_VERSION', value: "${chartVersion}"],
-//                    [$class: 'StringParameterValue', name: 'AP_ARGS_LINE', value: "--set-string image.tag=${version}-${commit}" ]
-//                ])
-//            }
-//        }
+       stage('deploy to cancogen-virus-seq-dev') {
+           when {
+               branch "develop"
+           }
+           steps {
+               build(job: "virusseq/update-app-version", parameters: [
+                   [$class: 'StringParameterValue', name: 'CANCOGEN_ENV', value: 'dev' ],
+                   [$class: 'StringParameterValue', name: 'TARGET_RELEASE', value: 'muse'],
+                   [$class: 'StringParameterValue', name: 'NEW_APP_VERSION', value: "${version}-${commit}" ]
+               ])
+           }
+       }
 
         stage('Release & Tag') {
             when {
