@@ -1,4 +1,5 @@
 [
+  { "name": "study_id", "valueType":  "string" },
   { "name": "specimen collector sample ID", "valueType": "string" },
   { "name": "sample collected by", "valueType": "string" },
   { "name": "sequence submitted by", "valueType": "string" },
@@ -34,14 +35,17 @@
   { "name": "raw sequence data processing method", "valueType": "string" },
   { "name": "dehosting method", "valueType": "string" },
   { "name": "consensus sequence software name", "valueType": "string" },
+  { "name": "consensus sequence software version", "valueType": "number" },
   { "name": "breadth of coverage value", "valueType": "string" },
   { "name": "depth of coverage value", "valueType": "string" },
   { "name": "consensus genome length", "valueType": "number" },
   { "name": "Ns per 100 kbp", "valueType": "number" },
   { "name": "reference genome accession", "valueType": "string" },
+  { "name": "bioinformatics protocol", "valueType": "string" },
   { "name": "lineage/clade name", "valueType": "string" },
   { "name": "lineage/clade analysis software name", "valueType": "string" },
   { "name": "lineage/clade analysis software version", "valueType": "string" },
   { "name": "variant designation", "valueType": "string" },
-  { "name": "variant evidence", "valueType": "string" }
+  { "name": "variant evidence", "valueType": "string" },
+  { "name": "variant evidence details", "valueType": "string" }
 ]

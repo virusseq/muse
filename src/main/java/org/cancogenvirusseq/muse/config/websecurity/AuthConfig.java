@@ -90,7 +90,7 @@ public class AuthConfig {
         .authorizeExchange()
         .pathMatchers("/actuator/**")
         .permitAll()
-        .pathMatchers("/submissions/**", "/uploads/**", "/uploads-stream", "/download")
+        .pathMatchers("/submissions/**", "/uploads/**", "/uploads-stream")
         .hasAnyAuthority(authProperties.getScopes().getWrite().toArray(String[]::new))
         .pathMatchers(
             "/v2/api-docs",
@@ -98,7 +98,8 @@ public class AuthConfig {
             "/swagger-resources/**",
             "/configuration/security",
             "/swagger-ui/**",
-            "/webjars/**")
+            "/webjars/**",
+            "/download/**")
         .permitAll()
         .and()
         .authorizeExchange()
