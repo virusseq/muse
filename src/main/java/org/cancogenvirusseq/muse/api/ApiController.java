@@ -27,7 +27,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
-import javax.validation.Valid;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.cancogenvirusseq.muse.api.model.*;
@@ -93,19 +92,7 @@ public class ApiController implements ApiDefinition {
         .map(UploadDTO::fromDAO);
   }
 
-  public ResponseEntity<Flux<DataBuffer>> download(
-      @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
-    return ResponseEntity.ok()
-        .header(
-            CONTENT_DISPOSITION_HEADER,
-            format(
-                "attachment; filename=sample-bundle-%s%s",
-                Instant.now().toString(), FASTA_FILE_EXTENSION))
-        .body(downloadsService.download(downloadRequest));
-  }
-
-  @GetMapping("/download")
-  public ResponseEntity<Flux<DataBuffer>> downloadWithQueryParams(@RequestParam List<UUID> objectIds) {
+  public ResponseEntity<Flux<DataBuffer>> download(List<UUID> objectIds) {
     return ResponseEntity.ok()
         .header(
             CONTENT_DISPOSITION_HEADER,
@@ -115,20 +102,7 @@ public class ApiController implements ApiDefinition {
         .body(downloadsService.download(objectIds));
   }
 
-  @GetMapping("/download/gzip")
-  public ResponseEntity<Flux<DataBuffer>> downloadGzipWithQueryParams(@RequestParam List<UUID> objectIds) {
-    return ResponseEntity.ok()
-                   .header(
-                           CONTENT_DISPOSITION_HEADER,
-                           // convention for gzip is original file name with `.gz`
-                           format(
-                                   "attachment; filename=sample-bundle-%s%s.gz",
-                                   Instant.now().toString(), FASTA_FILE_EXTENSION))
-                   .body(downloadsService.download(objectIds).flatMap(this::gzipDataBuffer));
-  }
-
-  public ResponseEntity<Flux<DataBuffer>> downloadGzip(
-      @NonNull @Valid @RequestBody DownloadRequest downloadRequest) {
+  public ResponseEntity<Flux<DataBuffer>> downloadGzip(@RequestParam List<UUID> objectIds) {
     return ResponseEntity.ok()
         .header(
             CONTENT_DISPOSITION_HEADER,
@@ -136,7 +110,7 @@ public class ApiController implements ApiDefinition {
             format(
                 "attachment; filename=sample-bundle-%s%s.gz",
                 Instant.now().toString(), FASTA_FILE_EXTENSION))
-        .body(downloadsService.download(downloadRequest).flatMap(this::gzipDataBuffer));
+        .body(downloadsService.download(objectIds).flatMap(this::gzipDataBuffer));
   }
 
   private Mono<DataBuffer> gzipDataBuffer(DataBuffer inputDataBuffer) {

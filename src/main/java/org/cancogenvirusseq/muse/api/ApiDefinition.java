@@ -19,6 +19,7 @@
 package org.cancogenvirusseq.muse.api;
 
 import io.swagger.annotations.*;
+import java.util.List;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.cancogenvirusseq.muse.api.model.*;
@@ -188,8 +189,6 @@ public interface ApiDefinition {
   @ApiResponses(
       value = {
         @ApiResponse(code = 200, message = "", response = MultipartFile.class),
-        @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
-        @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
         @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
       })
   @RequestMapping(
@@ -197,7 +196,7 @@ public interface ApiDefinition {
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE,
       consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  ResponseEntity<Flux<DataBuffer>> download(@Valid @RequestBody DownloadRequest downloadRequest);
+  ResponseEntity<Flux<DataBuffer>> download(@Valid @RequestParam List<UUID> objectIds);
 
   @ApiOperation(
       value = "Download molecular data as a single .fasta.gz gzip compressed file",
@@ -207,8 +206,6 @@ public interface ApiDefinition {
   @ApiResponses(
       value = {
         @ApiResponse(code = 200, message = "", response = MultipartFile.class),
-        @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
-        @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
         @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
       })
   @RequestMapping(
@@ -216,6 +213,5 @@ public interface ApiDefinition {
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE,
       consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  ResponseEntity<Flux<DataBuffer>> downloadGzip(
-      @Valid @RequestBody DownloadRequest downloadRequest);
+  ResponseEntity<Flux<DataBuffer>> downloadGzip(@Valid @RequestParam List<UUID> objectIds);
 }

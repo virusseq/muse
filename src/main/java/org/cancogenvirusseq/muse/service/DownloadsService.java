@@ -23,14 +23,11 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.cancogenvirusseq.muse.api.model.AnalysisIdStudyIdPair;
-import org.cancogenvirusseq.muse.api.model.DownloadRequest;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.exceptions.download.DownloadAnalysisFetchException;
 import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
-import org.cancogenvirusseq.muse.model.DownloadAnalysisFetchResult;
-import org.cancogenvirusseq.muse.model.song_score.LegacyFileEntity;
+import org.cancogenvirusseq.muse.model.DownloadInfoFetchResult;
 import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Service;
@@ -47,32 +44,17 @@ public class DownloadsService {
   public Flux<DataBuffer> download(List<UUID> objectIds) {
     return Flux.fromIterable(objectIds)
         .flatMap(songScoreClient::getFileEntityFromSong)
-        .map(this::toAnalysisIdStudyIdPair)
-        .transform(this::download);
-  }
-
-  public Flux<DataBuffer> download(DownloadRequest downloadRequest) {
-    return Flux.fromIterable(downloadRequest.getAnalysisIdStudyIdPairs()).transform(this::download);
-  }
-
-  private Flux<DataBuffer> download(Flux<AnalysisIdStudyIdPair> analysisIdStudyIdPairFlux) {
-    return analysisIdStudyIdPairFlux
         .flatMap(
-            analysisIdStudyIdPair ->
+            fileEntity ->
                 // get analysis from song and map to fetch result
                 songScoreClient
-                    .getAnalysis(
-                        analysisIdStudyIdPair.getStudyId(), analysisIdStudyIdPair.getAnalysisId())
+                    .getAnalysis(fileEntity.getStudyId(), fileEntity.getAnalysisId())
                     .map(
                         analysis ->
-                            new DownloadAnalysisFetchResult(
-                                analysisIdStudyIdPair.getAnalysisId(), analysis))
+                            new DownloadInfoFetchResult(fileEntity.getAnalysisId(), analysis))
                     .onErrorResume(
                         SongScoreServerException.class,
-                        t ->
-                            Mono.just(
-                                new DownloadAnalysisFetchResult(
-                                    analysisIdStudyIdPair.getAnalysisId(), t))))
+                        t -> Mono.just(new DownloadInfoFetchResult(fileEntity.getAnalysisId(), t))))
         .collectList()
         .flatMap(
             results -> {
@@ -84,7 +66,7 @@ public class DownloadsService {
               return Mono.just(results);
             })
         .flatMapMany(Flux::fromIterable)
-        .map(DownloadAnalysisFetchResult::getFileInfo)
+        .map(DownloadInfoFetchResult::getFileInfo)
         // file will exist because we already checked for valid analysis
         .map(Optional::get)
         .flatMap(
@@ -96,16 +78,12 @@ public class DownloadsService {
   }
 
   // Result isNotOk if analysis is missing, is not published or has no file objects
-  private Boolean isFetchResultNotOk(DownloadAnalysisFetchResult fetchResult) {
+  private Boolean isFetchResultNotOk(DownloadInfoFetchResult fetchResult) {
     return fetchResult.getException().isPresent()
         || fetchResult
             .getAnalysis()
             .map(a -> !a.isPublished() || !a.hasFiles())
             // analysis doesn't exist so return true
             .orElse(true);
-  }
-
-  private AnalysisIdStudyIdPair toAnalysisIdStudyIdPair(LegacyFileEntity fileEntity) {
-    return new AnalysisIdStudyIdPair(fileEntity.getAnalysisId(), fileEntity.getStudyId());
   }
 }

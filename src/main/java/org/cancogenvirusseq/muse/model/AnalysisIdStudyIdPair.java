@@ -1,4 +1,4 @@
-package org.cancogenvirusseq.muse.api.model;
+package org.cancogenvirusseq.muse.model;
 
 import java.util.UUID;
 import lombok.*;
