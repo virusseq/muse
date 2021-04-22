@@ -55,7 +55,6 @@ public class ApiController implements ApiDefinition {
   private final SubmissionService submissionService;
   private final UploadService uploadService;
   private final DownloadsService downloadsService;
-  private final ObjectMapper objectMapper;
 
   private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
@@ -103,7 +102,7 @@ public class ApiController implements ApiDefinition {
         .body(downloadsService.download(objectIds));
   }
 
-  public ResponseEntity<Flux<DataBuffer>> downloadGzip(@RequestParam List<UUID> objectIds) {
+  public ResponseEntity<Flux<DataBuffer>> downloadGzip(List<UUID> objectIds) {
     return ResponseEntity.ok()
         .header(
             CONTENT_DISPOSITION_HEADER,
