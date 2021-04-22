@@ -96,7 +96,7 @@ public class SongScoreClient {
         .log();
   }
 
-  public Mono<AnalysisFile> getFileEntityFromSong(String studyId, UUID analysisId) {
+  public Mono<AnalysisFile> getAnalysisFileFromSong(String studyId, UUID analysisId) {
     return songClient
         .get()
         .uri(format("/studies/%s/analysis/%s/files", studyId, analysisId.toString()))

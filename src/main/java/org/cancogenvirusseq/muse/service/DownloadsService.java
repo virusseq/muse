@@ -25,7 +25,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
-import org.cancogenvirusseq.muse.exceptions.download.DownloadAnalysisFetchException;
+import org.cancogenvirusseq.muse.exceptions.download.DownloadInfoFetchException;
 import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
 import org.cancogenvirusseq.muse.model.DownloadInfoFetchResult;
 import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
@@ -43,24 +43,13 @@ public class DownloadsService {
 
   public Flux<DataBuffer> download(List<UUID> objectIds) {
     return Flux.fromIterable(objectIds)
-        .flatMap(songScoreClient::getFileEntityFromSong)
-        .flatMap(
-            fileEntity ->
-                // get analysis from song and map to fetch result
-                songScoreClient
-                    .getAnalysis(fileEntity.getStudyId(), fileEntity.getAnalysisId())
-                    .map(
-                        analysis ->
-                            new DownloadInfoFetchResult(fileEntity.getAnalysisId(), analysis))
-                    .onErrorResume(
-                        SongScoreServerException.class,
-                        t -> Mono.just(new DownloadInfoFetchResult(fileEntity.getAnalysisId(), t))))
+        .flatMap(this::fetchDownloadInfoFromSong)
         .collectList()
         .flatMap(
             results -> {
               // see if any results have error
               if (results.stream().anyMatch(this::isFetchResultNotOk)) {
-                return Mono.error(new DownloadAnalysisFetchException(results));
+                return Mono.error(new DownloadInfoFetchException(results));
               }
               // return if no errors found here
               return Mono.just(results);
@@ -75,6 +64,19 @@ public class DownloadsService {
               return songScoreClient.downloadObject(objectId);
             })
         .onErrorMap(t -> !(t instanceof MuseBaseException), t -> new UnknownException());
+  }
+
+  private Mono<DownloadInfoFetchResult> fetchDownloadInfoFromSong(UUID objectIds) {
+    return songScoreClient
+        .getFileEntityFromSong(objectIds)
+        .flatMap(
+            legacyFileEntity ->
+                songScoreClient.getAnalysis(
+                    legacyFileEntity.getStudyId(), legacyFileEntity.getAnalysisId()))
+        .map(analysis -> new DownloadInfoFetchResult(objectIds, analysis))
+        .onErrorResume(
+            SongScoreServerException.class,
+            t -> Mono.just(new DownloadInfoFetchResult(objectIds, t)));
   }
 
   // Result isNotOk if analysis is missing, is not published or has no file objects

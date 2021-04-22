@@ -7,11 +7,11 @@ import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.model.DownloadInfoFetchResult;
 import org.springframework.http.HttpStatus;
 
-public class DownloadAnalysisFetchException extends Throwable implements MuseBaseException {
+public class DownloadInfoFetchException extends Throwable implements MuseBaseException {
   List<Map<String, String>> analysisInfo;
   Integer statusCode;
 
-  public DownloadAnalysisFetchException(List<DownloadInfoFetchResult> analysisErrors) {
+  public DownloadInfoFetchException(List<DownloadInfoFetchResult> analysisErrors) {
 
     this.analysisInfo =
         analysisErrors.stream()
@@ -19,7 +19,9 @@ public class DownloadAnalysisFetchException extends Throwable implements MuseBas
                 fetchResult ->
                     Map.of(
                         "analysisId",
-                        fetchResult.getAnalysisId().toString(),
+                        fetchResult.getAnalysisId(),
+                        "objectId",
+                        fetchResult.getObjectId().toString(),
                         "msg",
                         fetchResult.getResultMsg()))
             .collect(Collectors.toUnmodifiableList());

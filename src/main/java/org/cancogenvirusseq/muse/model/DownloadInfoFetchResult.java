@@ -9,18 +9,18 @@ import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.springframework.http.HttpStatus;
 
 public class DownloadInfoFetchResult {
-  @Getter final UUID analysisId;
+  @Getter final UUID objectId;
   final Analysis analysis;
   final SongScoreServerException exception;
 
-  public DownloadInfoFetchResult(UUID analysisId, Analysis analysis) {
-    this.analysisId = analysisId;
+  public DownloadInfoFetchResult(UUID objectId, Analysis analysis) {
+    this.objectId = objectId;
     this.analysis = analysis;
     this.exception = null;
   }
 
-  public DownloadInfoFetchResult(UUID analysisId, SongScoreServerException exception) {
-    this.analysisId = analysisId;
+  public DownloadInfoFetchResult(UUID objectId, SongScoreServerException exception) {
+    this.objectId = objectId;
     this.analysis = null;
     this.exception = exception;
   }
@@ -50,6 +50,10 @@ public class DownloadInfoFetchResult {
 
   public Optional<Analysis> getAnalysis() {
     return Optional.ofNullable(analysis);
+  }
+
+  public String getAnalysisId() {
+    return Optional.ofNullable(analysis).map(Analysis::getAnalysisId).orElse("NO ANALYSIS ID");
   }
 
   public Optional<AnalysisFile> getFileInfo() {

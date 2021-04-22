@@ -194,7 +194,6 @@ public interface ApiDefinition {
   @RequestMapping(
       value = "/download",
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE,
-      consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
   ResponseEntity<Flux<DataBuffer>> download(@Valid @RequestParam List<UUID> objectIds);
 
@@ -211,7 +210,6 @@ public interface ApiDefinition {
   @RequestMapping(
       value = "/download/gzip",
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE,
-      consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
   ResponseEntity<Flux<DataBuffer>> downloadGzip(@Valid @RequestParam List<UUID> objectIds);
 }
