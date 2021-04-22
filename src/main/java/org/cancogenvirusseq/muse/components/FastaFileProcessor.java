@@ -22,10 +22,10 @@ public class FastaFileProcessor {
         .filter(sampleData -> sampleData != null && !sampleData.trim().equals(""))
         .forEach(
             fc -> {
-                val fastaHeaderOpt = extractFastaHeader(fc);
-                if (fastaHeaderOpt.isEmpty())  {
-                    return;
-                }
+              val fastaHeaderOpt = extractFastaIsolate(fc);
+              if (fastaHeaderOpt.isEmpty()) {
+                return;
+              }
 
               val submissionFile =
                   SubmissionFile.builder()
@@ -37,23 +37,22 @@ public class FastaFileProcessor {
                       .fileType(FASTA_TYPE)
                       .build();
 
-              // fasta header is equal to isolate in record meta
               isolateToSubmissionFile.put(fastaHeaderOpt.get(), submissionFile);
             });
 
     return isolateToSubmissionFile;
   }
 
-    public static Optional<String> extractFastaHeader(String sampleContent) {
-        // get index of first new line
-        val fastaHeaderEndNewlineIndex = sampleContent.indexOf("\n");
-        if (fastaHeaderEndNewlineIndex == -1) {
-            return Optional.empty();
-        }
-
-        // isolate is substring from after ">" char to before new line
-        return Optional.of(sampleContent.substring(1, fastaHeaderEndNewlineIndex));
+  public static Optional<String> extractFastaIsolate(String sampleContent) {
+    // get index of first new line
+    val fastaHeaderEndNewlineIndex = sampleContent.indexOf("\n");
+    if (fastaHeaderEndNewlineIndex == -1) {
+      return Optional.empty();
     }
+
+    // isolate is substring from after ">" char to new line (not including)
+    return Optional.of(sampleContent.substring(1, fastaHeaderEndNewlineIndex));
+  }
 
   @SneakyThrows
   public static HashCode md5(String input) {

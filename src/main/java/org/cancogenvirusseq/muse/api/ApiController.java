@@ -21,7 +21,6 @@ package org.cancogenvirusseq.muse.api;
 import static java.lang.String.format;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import java.time.Instant;
 import java.util.List;

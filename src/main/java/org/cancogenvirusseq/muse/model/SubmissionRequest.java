@@ -27,5 +27,6 @@ import lombok.Getter;
 public class SubmissionRequest {
   private final ObjectNode record;
   private final String recordFilename;
+  private final String sampleFilename;
   private final SubmissionFile submissionFile;
 }

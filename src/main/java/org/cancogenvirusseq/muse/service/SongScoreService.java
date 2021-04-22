@@ -70,8 +70,7 @@ public class SongScoreService {
                           .submissionId(submissionEvent.getSubmissionId())
                           .userId(submissionEvent.getUserId())
                           .status(UploadStatus.QUEUED)
-                          .originalFilePair(
-                              List.of(r.getRecordFilename(), r.getSubmissionFile().getFileExtension()))
+                          .originalFilePair(List.of(r.getRecordFilename(), r.getSampleFilename()))
                           .build();
 
                   log.debug(r.getRecord().toPrettyString());
