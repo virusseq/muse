@@ -2,7 +2,7 @@
   "analysisType": {
     "name": "consensus_sequence"
   },
-    "studyId": "COVIDPR",
+    "studyId": "${study_id}",
       "samples": [
         {
           "submitterSampleId": "${specimen collector sample ID}",
@@ -61,7 +61,7 @@
         "raw_sequence_data_processing_method": "${raw sequence data processing method}",
         "dehosting_method": "${dehosting method}",
         "consensus_sequence_software_name": "${consensus sequence software name}",
-        "consensus_sequence_software_version": null,
+        "consensus_sequence_software_version": ${consensus sequence software version},
         "metrics": {
           "breadth_of_coverage": "${breadth of coverage value}",
           "depth_of_coverage": "${depth of coverage value}",
@@ -69,7 +69,7 @@
           "Ns_per_100kbp": ${Ns per 100 kbp}
         },
         "reference_genome_accession": "${reference genome accession}",
-        "bioinformatics_protocol": null
+        "bioinformatics_protocol": "${bioinformatics protocol}"
       },
       "lineage_analysis": {
         "lineage_name": "${lineage/clade name}",
@@ -77,6 +77,6 @@
         "lineage_analysis_software_version": "${lineage/clade analysis software version}",
         "variant_designation": "${variant designation}",
         "variant_evidence": "${variant evidence}",
-        "variant_evidence_details": null
+        "variant_evidence_details": "${variant evidence details}"
       }
 }
