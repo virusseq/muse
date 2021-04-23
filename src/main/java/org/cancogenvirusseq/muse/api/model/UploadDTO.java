@@ -18,13 +18,12 @@
 
 package org.cancogenvirusseq.muse.api.model;
 
+import java.util.List;
+import java.util.UUID;
 import lombok.NonNull;
 import lombok.Value;
 import org.cancogenvirusseq.muse.repository.model.Upload;
 import org.cancogenvirusseq.muse.repository.model.UploadStatus;
-
-import java.util.List;
-import java.util.UUID;
 
 @Value
 public class UploadDTO {

@@ -1,12 +1,11 @@
 package org.cancogenvirusseq.muse.exceptions.submission;
 
+import java.util.List;
+import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.model.tsv_parser.InvalidField;
-
-import java.util.List;
-import java.util.Map;
 
 @Value
 @EqualsAndHashCode(callSuper = true)

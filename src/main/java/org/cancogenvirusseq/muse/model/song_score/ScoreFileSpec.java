@@ -1,9 +1,8 @@
 package org.cancogenvirusseq.muse.model.song_score;
 
+import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @NoArgsConstructor

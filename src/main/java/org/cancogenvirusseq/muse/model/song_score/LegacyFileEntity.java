@@ -1,9 +1,8 @@
 package org.cancogenvirusseq.muse.model.song_score;
 
+import java.util.UUID;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.UUID;
 
 @Setter
 @NoArgsConstructor

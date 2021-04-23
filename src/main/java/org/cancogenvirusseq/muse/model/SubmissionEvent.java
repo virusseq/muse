@@ -18,13 +18,12 @@
 
 package org.cancogenvirusseq.muse.model;
 
+import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
-
-import java.util.List;
-import java.util.UUID;
 
 @Data
 @Builder

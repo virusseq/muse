@@ -18,7 +18,15 @@
 
 package org.cancogenvirusseq.muse.api;
 
+import static java.lang.String.format;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
+
 import com.google.common.io.ByteStreams;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+import java.util.zip.GZIPOutputStream;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -41,14 +49,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-import java.util.zip.GZIPOutputStream;
-
-import static java.lang.String.format;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 
 @Slf4j
 @RestController
