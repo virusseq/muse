@@ -61,6 +61,12 @@ public class SubmissionService {
   private final TsvParser tsvParser;
   private final PayloadFileMapper payloadFileMapper;
 
+  public Mono<Submission> getSubmissionById(
+      @NonNull UUID submissionId, @NonNull SecurityContext securityContext) {
+    return submissionRepository.getSubmissionByUserIdAndSubmissionId(
+        UUID.fromString(securityContext.getAuthentication().getName()), submissionId);
+  }
+
   /**
    * Retrieves submission entities from the database
    *

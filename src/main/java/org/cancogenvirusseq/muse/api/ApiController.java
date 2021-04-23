@@ -61,6 +61,12 @@ public class ApiController implements ApiDefinition {
 
   private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
 
+  public Mono<SubmissionDTO> getSubmissionById(@NonNull UUID submissionId) {
+    return SecurityContextWrapper.forMono(submissionService::getSubmissionById)
+        .apply(submissionId)
+        .map(SubmissionDTO::fromDAO);
+  }
+
   public Mono<EntityListResponse<SubmissionDTO>> getSubmissions(
       Integer page, Integer size, Sort.Direction sortDirection, SubmissionSortField sortField) {
     return SecurityContextWrapper.forFlux(submissionService::getSubmissions)
