@@ -117,13 +117,15 @@ public class TsvParser {
 
   private Record checkValueTypes(Record record) {
     tsvFieldSchemas.forEach(
-            s -> {
-              val fieldName = s.getName();
-              val value = record.getStringStringMap().get(fieldName);
-              if (s.getValueType().equals(TsvFieldSchema.ValueType.number) && !NumberUtils.isCreatable(value)) {
-                record.addFieldError(fieldName, EXPECTING_NUMBER_TYPE, record.getIndex());
-              }
-            });
+        s -> {
+          val fieldName = s.getName();
+          val value = record.getStringStringMap().get(fieldName);
+          if (s.getValueType().equals(TsvFieldSchema.ValueType.number)
+              && isNotEmpty(value) // ignore empty because it's checked before
+              && isNotNumber(value)) {
+            record.addFieldError(fieldName, EXPECTING_NUMBER_TYPE, record.getIndex());
+          }
+        });
 
     return record;
   }
@@ -140,7 +142,8 @@ public class TsvParser {
   }
 
   private Boolean recordNotEmpty(Record recordsDto) {
-    return !recordsDto.getStringStringMap().values().stream().allMatch(v -> v.trim().equalsIgnoreCase(""));
+    return !recordsDto.getStringStringMap().values().stream()
+        .allMatch(v -> v.trim().equalsIgnoreCase(""));
   }
 
   private static String cleanup(String rawValue) {
@@ -149,6 +152,14 @@ public class TsvParser {
 
   private static Boolean isEmpty(String value) {
     return value == null || value.trim().equalsIgnoreCase("");
+  }
+
+  private static Boolean isNotEmpty(String value) {
+    return !isEmpty(value);
+  }
+
+  private static Boolean isNotNumber(String value) {
+    return !NumberUtils.isCreatable(value);
   }
 
   @Value

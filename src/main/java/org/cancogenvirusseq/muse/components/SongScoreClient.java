@@ -4,6 +4,7 @@ import static java.lang.String.format;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 import lombok.NonNull;
@@ -30,10 +31,13 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
+import reactor.util.retry.RetryBackoffSpec;
 
 @Slf4j
 @Component
 public class SongScoreClient {
+  final RetryBackoffSpec clientsRetrySpec;
   final WebClient songClient;
   final WebClient scoreClient;
 
@@ -46,7 +50,9 @@ public class SongScoreClient {
       @Value("${songScoreClient.scoreRootUrl}") String scoreRootUrl,
       @Value("${songScoreClient.clientId}") String clientId,
       @Value("${songScoreClient.clientSecret}") String clientSecret,
-      @Value("${songScoreClient.tokenUrl}") String tokenUrl) {
+      @Value("${songScoreClient.tokenUrl}") String tokenUrl,
+      @Value("${songScoreClient.retryMaxAttempts}") Integer retryMaxAttempts,
+      @Value("${songScoreClient.retryBackoffSec}") Integer retryBackoffSec) {
 
     val oauthFilter = createOauthFilter(OUATH_RESOURCE_ID, tokenUrl, clientId, clientSecret);
 
@@ -64,6 +70,8 @@ public class SongScoreClient {
             .defaultHeader(RESOURCE_ID_HEADER, OUATH_RESOURCE_ID)
             .build();
 
+    this.clientsRetrySpec = Retry.backoff(retryMaxAttempts, Duration.ofSeconds(retryBackoffSec));
+
     log.info("Initialized song score client.");
     log.info("songRootUrl - " + songRootUrl);
     log.info("scoreRootUrl - " + scoreRootUrl);
@@ -72,7 +80,7 @@ public class SongScoreClient {
   public SongScoreClient(@NonNull WebClient songClient, @NonNull WebClient scoreClient) {
     this.songClient = songClient;
     this.scoreClient = scoreClient;
-
+    this.clientsRetrySpec = Retry.backoff(2, Duration.ofSeconds(5));
     log.info("Initialized song score client.");
   }
 
@@ -82,7 +90,8 @@ public class SongScoreClient {
         .uri(format("/studies/%s/analysis/%s", studyId, analysisId.toString()))
         .exchangeToMono(ofMonoTypeOrHandleError(Analysis.class))
         .map(HttpEntity::getBody)
-        .log("SongScoreClient::getAnalysis");
+        .log("SongScoreClient::getAnalysis")
+        .retryWhen(clientsRetrySpec);
   }
 
   public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
@@ -93,7 +102,8 @@ public class SongScoreClient {
         .body(BodyInserters.fromValue(payload))
         .exchangeToMono(ofMonoTypeOrHandleError(SubmitResponse.class))
         .map(HttpEntity::getBody)
-        .log("SongScoreClient::submitPayload");
+        .log("SongScoreClient::submitPayload")
+        .retryWhen(clientsRetrySpec);
   }
 
   public Mono<AnalysisFile> getAnalysisFileFromSong(String studyId, UUID analysisId) {
@@ -103,7 +113,8 @@ public class SongScoreClient {
         // endpoint returns array but, we expect only one file to be uploaded in each analysis
         .exchangeToFlux(ofFluxTypeOrHandleError(AnalysisFile.class))
         .next()
-        .log("SongScoreClient::getAnalysisFileFromSong");
+        .log("SongScoreClient::getAnalysisFileFromSong")
+        .retryWhen(clientsRetrySpec);
   }
 
   public Mono<LegacyFileEntity> getFileEntityFromSong(UUID objectId) {
@@ -112,7 +123,8 @@ public class SongScoreClient {
         .uri(format("/entities/%s", objectId.toString()))
         .exchangeToMono(ofMonoTypeOrHandleError(LegacyFileEntity.class))
         .map(HttpEntity::getBody)
-        .log("SongScoreClient::getFileEntityFromSong");
+        .log("SongScoreClient::getFileEntityFromSong")
+        .retryWhen(clientsRetrySpec);
   }
 
   public Mono<ScoreFileSpec> initScoreUpload(AnalysisFile analysisFile, String md5Sum) {
@@ -126,7 +138,8 @@ public class SongScoreClient {
         .uri(uri)
         .exchangeToMono(ofMonoTypeOrHandleError(ScoreFileSpec.class))
         .map(HttpEntity::getBody)
-        .log("SongScoreClient::initScoreUpload");
+        .log("SongScoreClient::initScoreUpload")
+        .retryWhen(clientsRetrySpec);
   }
 
   public Mono<String> uploadAndFinalize(
@@ -142,7 +155,8 @@ public class SongScoreClient {
         .exchangeToMono(ofBodilessTypeOrHandleError())
         .map(res -> res.getHeaders().getETag().replace("\"", ""))
         .flatMap(eTag -> finalizeScoreUpload(scoreFileSpec, md5, eTag))
-        .log("SongScoreClient::uploadAndFinalize");
+        .log("SongScoreClient::uploadAndFinalize")
+        .retryWhen(clientsRetrySpec);
   }
 
   private Mono<String> finalizeScoreUpload(ScoreFileSpec scoreFileSpec, String md5, String etag) {
@@ -154,11 +168,19 @@ public class SongScoreClient {
             "/upload/%s/parts?uploadId=%s&etag=%s&md5=%s&partNumber=1",
             objectId, uploadId, etag, md5);
     val finalizeUploadPart =
-        scoreClient.post().uri(finalizePartUri).exchangeToMono(ofBodilessTypeOrHandleError());
+        scoreClient
+            .post()
+            .uri(finalizePartUri)
+            .exchangeToMono(ofBodilessTypeOrHandleError())
+            .retryWhen(clientsRetrySpec);
 
     val finalizeUploadUri = format("/upload/%s?uploadId=%s", objectId, uploadId);
     val finalizeUpload =
-        scoreClient.post().uri(finalizeUploadUri).exchangeToMono(ofBodilessTypeOrHandleError());
+        scoreClient
+            .post()
+            .uri(finalizeUploadUri)
+            .exchangeToMono(ofBodilessTypeOrHandleError())
+            .retryWhen(clientsRetrySpec);
 
     // The finalize step in score requires finalizing each file part and then the whole upload
     // we only have one file part, so we finalize the part and upload one after the other
@@ -175,10 +197,12 @@ public class SongScoreClient {
             format("/studies/%s/analysis/publish/%s?ignoreUndefinedMd5=false", studyId, analysisId))
         .exchangeToMono(ofBodilessTypeOrHandleError())
         .map(Objects::toString)
-        .log("SongScoreClient::publishAnalysis");
+        .log("SongScoreClient::publishAnalysis")
+        .retryWhen(clientsRetrySpec);
   }
 
   public Flux<DataBuffer> downloadObject(String objectId) {
+    // log and retry for this function is handled by the two chained funcs
     return getFileLink(objectId).flatMapMany(this::downloadFromS3);
   }
 
@@ -189,14 +213,17 @@ public class SongScoreClient {
         .exchangeToMono(ofMonoTypeOrHandleError(ScoreFileSpec.class))
         .map(HttpEntity::getBody)
         // we request length = -1 which returns one file part
-        .map(spec -> spec.getParts().get(0).getUrl());
+        .map(spec -> spec.getParts().get(0).getUrl())
+        .log("SongScoreClient::getFileLink")
+        .retryWhen(clientsRetrySpec);
   }
 
   private Flux<DataBuffer> downloadFromS3(String presignedUrl) {
     return WebClient.create(decodeUrl(presignedUrl))
         .get()
         .exchangeToFlux(ofFluxTypeOrHandleError(DataBuffer.class))
-        .log("SongScoreClient::downloadFromS3");
+        .log("SongScoreClient::downloadFromS3")
+        .retryWhen(clientsRetrySpec);
   }
 
   private static String decodeUrl(String str) {
@@ -249,7 +276,7 @@ public class SongScoreClient {
             .bodyToMono(String.class)
             .flatMap(
                 res -> {
-                  log.info("SongScoreServer 5xx response: {}", res);
+                  log.error("SongScoreServer 5xx response: {}", res);
                   return Mono.error(
                       new SongScoreServerException(
                           clientResponse.statusCode(), "SongScore - Internal Server Error"));

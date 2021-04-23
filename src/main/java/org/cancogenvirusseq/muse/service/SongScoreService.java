@@ -3,7 +3,6 @@ package org.cancogenvirusseq.muse.service;
 import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
 import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
@@ -27,7 +26,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
-import reactor.util.retry.Retry;
 
 @Slf4j
 @Service
@@ -35,6 +33,9 @@ import reactor.util.retry.Retry;
 public class SongScoreService {
   @Value("${upload.backpressure.highTide}")
   private Integer highTide;
+
+  @Value("${upload.backpressure.lowTide}")
+  private Integer lowTide;
 
   final SongScoreClient songScoreClient;
   final UploadRepository repo;
@@ -56,7 +57,9 @@ public class SongScoreService {
   private Disposable createSubmitUploadDisposable() {
     return sink.asFlux()
         .flatMap(this::toStreamOfPayloadUploadAndSubFile)
-        .limitRate(5, 2)
+        // limitRate will limit num of flux elements up to `highTide` and finish processing
+        // until it reaches`lowTide` when it will allow more to flow upto `highTide` again
+        .limitRate(highTide, lowTide)
         .flatMap(this::submitAndUploadToSongScore)
         .subscribe();
   }
@@ -91,38 +94,24 @@ public class SongScoreService {
     val submissionFile = tuples3.getT3();
 
     return repo.save(upload)
-        .flatMap(
-            u ->
-                songScoreClient
-                    .submitPayload(u.getStudyId(), payload)
-                    .retryWhen(Retry.backoff(5, Duration.ofSeconds(5))))
+        .flatMap(u -> songScoreClient.submitPayload(u.getStudyId(), payload))
         .flatMap(
             submitResponse -> {
               upload.setAnalysisId(UUID.fromString(submitResponse.getAnalysisId()));
               upload.setStatus(UploadStatus.PROCESSING);
               return repo.save(upload);
             })
-        .flatMap(
-            u ->
-                songScoreClient
-                    .getAnalysisFileFromSong(u.getStudyId(), u.getAnalysisId())
-                    .retryWhen(Retry.backoff(5, Duration.ofSeconds(5))))
+        .flatMap(u -> songScoreClient.getAnalysisFileFromSong(u.getStudyId(), u.getAnalysisId()))
         .flatMap(
             analysisFileResponse ->
-                songScoreClient
-                    .initScoreUpload(analysisFileResponse, submissionFile.getFileMd5sum())
-                    .retryWhen(Retry.backoff(5, Duration.ofSeconds(5))))
+                songScoreClient.initScoreUpload(
+                    analysisFileResponse, submissionFile.getFileMd5sum()))
         .flatMap(
             scoreFileSpec ->
-                songScoreClient
-                    .uploadAndFinalize(
-                        scoreFileSpec, submissionFile.getContent(), submissionFile.getFileMd5sum())
-                    .retryWhen(Retry.backoff(5, Duration.ofSeconds(5))))
+                songScoreClient.uploadAndFinalize(
+                    scoreFileSpec, submissionFile.getContent(), submissionFile.getFileMd5sum()))
         .flatMap(
-            res ->
-                songScoreClient
-                    .publishAnalysis(upload.getStudyId(), upload.getAnalysisId())
-                    .retryWhen(Retry.backoff(5, Duration.ofSeconds(5))))
+            res -> songScoreClient.publishAnalysis(upload.getStudyId(), upload.getAnalysisId()))
         .flatMap(
             r -> {
               upload.setStatus(UploadStatus.COMPLETE);
