@@ -32,8 +32,10 @@ import lombok.val;
 import org.cancogenvirusseq.muse.repository.model.UploadStatus;
 import org.cancogenvirusseq.muse.repository.model.UploadStatusConverter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.r2dbc.config.AbstractR2dbcConfiguration;
 import org.springframework.data.r2dbc.connectionfactory.init.ConnectionFactoryInitializer;
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
@@ -77,30 +79,10 @@ public class R2DBCConfiguration extends AbstractR2dbcConfiguration {
 
   @Override
   @Bean
+  @Primary
   public ConnectionFactory connectionFactory() {
-    val postgresqlConnectionConfiguration = PostgresqlConnectionConfiguration.builder();
-
-    postgresqlConnectionConfiguration
-        .host(postgresProperties.getHost())
-        .port(postgresProperties.getPort())
-        .database(postgresProperties.getDatabase());
-
-    if (!Strings.isNullOrEmpty(postgresProperties.getUsername())) {
-      postgresqlConnectionConfiguration.username(postgresProperties.getUsername());
-    }
-
-    if (!Strings.isNullOrEmpty(postgresProperties.getPassword())) {
-      postgresqlConnectionConfiguration.password(postgresProperties.getPassword());
-    }
-
-    // register sql enum upload_status to Java enum UploadStatus
-    val codecRegistrar = EnumCodec.builder().withEnum("upload_status", UploadStatus.class).build();
-
-    val connection =
-        new PostgresqlConnectionFactory(
-            postgresqlConnectionConfiguration.codecRegistrar(codecRegistrar).build());
     val configuration =
-        ConnectionPoolConfiguration.builder(connection)
+        ConnectionPoolConfiguration.builder(psqlConnectionFactory())
             .maxIdleTime(Duration.ofMillis(1000))
             .maxSize(20)
             .build();
