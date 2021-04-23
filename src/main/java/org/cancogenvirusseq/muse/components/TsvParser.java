@@ -57,7 +57,12 @@ public class TsvParser {
                 record.put(headers[i], cleanup(value));
               }
               return record;
-            });
+            })
+        .filter(this::recordNotEmpty);
+  }
+
+  private Boolean recordNotEmpty(Map<String, String> records) {
+    return records.values().stream().allMatch(v -> v.trim().equalsIgnoreCase(""));
   }
 
   private static String cleanup(String rawValue) {

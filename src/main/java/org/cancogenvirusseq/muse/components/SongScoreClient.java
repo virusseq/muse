@@ -212,7 +212,16 @@ public class SongScoreClient {
         return clientResponse
             .bodyToMono(ServerErrorResponse.class)
             .flux()
-            .flatMap(res -> Flux.error(new SongScoreServerException(status, res.getMessage())));
+            .flatMap(res -> Mono.error(new SongScoreServerException(status, res.getMessage())));
+      } else if (clientResponse.statusCode().is5xxServerError()) {
+        return clientResponse
+                .bodyToMono(String.class)
+                .flux()
+                .flatMap(
+                        res ->
+                                Mono.error(
+                                        new SongScoreServerException(
+                                                clientResponse.statusCode(), "Internal Server Error")));
       }
 
       return clientResponse.bodyToFlux(classType);
@@ -222,7 +231,7 @@ public class SongScoreClient {
   private static <V> Function<ClientResponse, Mono<ResponseEntity<V>>> ofMonoTypeOrHandleError(
       Class<V> classType) {
     return clientResponse -> {
-      if (clientResponse.statusCode().isError()) {
+      if (clientResponse.statusCode().is4xxClientError()) {
         return clientResponse
             .bodyToMono(ServerErrorResponse.class)
             .flatMap(
@@ -230,6 +239,16 @@ public class SongScoreClient {
                     Mono.error(
                         new SongScoreServerException(
                             clientResponse.statusCode(), res.getMessage())));
+      } else if (clientResponse.statusCode().is5xxServerError()) {
+        return clientResponse
+                .bodyToMono(String.class)
+                .flatMap(
+                        res ->  {
+                          log.info("SongScoreServer 5xx response: {}", res);
+                         return       Mono.error(
+                                        new SongScoreServerException(
+                                                clientResponse.statusCode(), "Internal Server Error"));
+                        });
       }
       return clientResponse.toEntity(classType);
     };
