@@ -14,6 +14,7 @@ public class InvalidField {
   @NonNull Integer index;
 
   public enum Reason {
-    EXPECTING_NUMBER_TYPE
+//    INVALID_VALUE_TYPE,
+    NOT_ALLOWED_TO_BE_EMPTY
   }
 }

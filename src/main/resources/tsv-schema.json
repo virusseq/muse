@@ -1,6 +1,6 @@
 [
-  { "name": "study_id", "valueType":  "string" },
-  { "name": "specimen collector sample ID", "valueType": "string" },
+  { "name": "study_id", "valueType":  "string", "requireNotEmpty": true },
+  { "name": "specimen collector sample ID", "valueType": "string", "requireNotEmpty": true },
   { "name": "sample collected by", "valueType": "string" },
   { "name": "sequence submitted by", "valueType": "string" },
   { "name": "sample collection date", "valueType": "string" },
@@ -9,7 +9,7 @@
   { "name": "geo_loc_name (state/province/territory)", "valueType": "string" },
   { "name": "geo_loc_name (city)", "valueType": "string" },
   { "name": "organism", "valueType": "string" },
-  { "name": "isolate", "valueType": "string" },
+  { "name": "isolate", "valueType": "string", "requireNotEmpty": true },
   { "name": "purpose of sampling", "valueType": "string" },
   { "name": "purpose of sampling details", "valueType": "string" },
   { "name": "NML submitted specimen type", "valueType": "string" },
