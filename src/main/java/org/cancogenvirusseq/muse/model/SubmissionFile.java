@@ -6,7 +6,7 @@ import lombok.Value;
 @Value
 @Builder
 public class SubmissionFile {
-  String fileName;
+  String fileExtension;
   Integer fileSize;
   String fileMd5sum;
   String content;

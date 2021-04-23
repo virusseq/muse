@@ -17,6 +17,7 @@ import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
 import org.cancogenvirusseq.muse.repository.model.UploadStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
@@ -30,6 +31,12 @@ import reactor.util.function.Tuples;
 @Service
 @RequiredArgsConstructor
 public class SongScoreService {
+  @Value("${upload.backpressure.highTide}")
+  private Integer highTide;
+
+  @Value("${upload.backpressure.lowTide}")
+  private Integer lowTide;
+
   final SongScoreClient songScoreClient;
   final UploadRepository repo;
 
@@ -50,6 +57,9 @@ public class SongScoreService {
   private Disposable createSubmitUploadDisposable() {
     return sink.asFlux()
         .flatMap(this::toStreamOfPayloadUploadAndSubFile)
+        // limitRate will limit num of flux elements up to `highTide` and finish processing
+        // until it reaches`lowTide` when it will allow more to flow upto `highTide` again
+        .limitRate(highTide, lowTide)
         .flatMap(this::submitAndUploadToSongScore)
         .subscribe();
   }
@@ -59,8 +69,7 @@ public class SongScoreService {
     val submissionRequests = submissionEvent.getSubmissionRequests();
 
     return Flux.fromStream(
-        submissionRequests
-            .parallelStream()
+        submissionRequests.stream()
             .map(
                 r -> {
                   val upload =
@@ -70,8 +79,7 @@ public class SongScoreService {
                           .submissionId(submissionEvent.getSubmissionId())
                           .userId(submissionEvent.getUserId())
                           .status(UploadStatus.QUEUED)
-                          .originalFilePair(
-                              List.of(r.getRecordFilename(), r.getSubmissionFile().getFileName()))
+                          .originalFilePair(List.of(r.getRecordFilename(), r.getSampleFilename()))
                           .build();
 
                   log.debug(r.getRecord().toPrettyString());
@@ -109,6 +117,7 @@ public class SongScoreService {
               upload.setStatus(UploadStatus.COMPLETE);
               return repo.save(upload);
             })
+        .log("SongScoreService::submitAndUploadToSongScore")
         .onErrorResume(
             t -> {
               log.error(t.getLocalizedMessage(), t);
@@ -116,7 +125,7 @@ public class SongScoreService {
               if (t instanceof SongScoreServerException) {
                 upload.setError(t.toString());
               } else {
-                upload.setError(t.getLocalizedMessage());
+                upload.setError("Internal server error - unrelated to SongScore!");
               }
               return repo.save(upload);
             });

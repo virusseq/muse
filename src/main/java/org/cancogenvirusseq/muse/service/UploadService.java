@@ -19,10 +19,10 @@
 package org.cancogenvirusseq.muse.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlResult;
-import io.r2dbc.spi.ConnectionFactory;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,13 +50,12 @@ public class UploadService {
 
   public UploadService(
       @NonNull UploadRepository uploadRepository,
-      @NonNull ConnectionFactory connectionFactory,
+      @NonNull PostgresqlConnectionFactory connectionFactory,
       @NonNull ObjectMapper objectMapper) {
     this.uploadRepository = uploadRepository;
     this.objectMapper = objectMapper;
     // no need for .toFuture().get() here as constructors are allowed to block
-    this.connection =
-        Mono.from(connectionFactory.create()).cast(PostgresqlConnection.class).block();
+    this.connection = Mono.from(connectionFactory.create()).block();
   }
 
   @PostConstruct
