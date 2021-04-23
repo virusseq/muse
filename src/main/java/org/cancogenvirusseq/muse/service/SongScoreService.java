@@ -25,16 +25,16 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
+import reactor.util.retry.Retry;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class SongScoreService {
-  @Value("${codeConfig.uploadPipelineDelaySec}")
-  private Integer uploadPipelineDelaySec;
+  @Value("${upload.backpressure.highTide}")
+  private Integer highTide;
 
   final SongScoreClient songScoreClient;
   final UploadRepository repo;
@@ -56,6 +56,7 @@ public class SongScoreService {
   private Disposable createSubmitUploadDisposable() {
     return sink.asFlux()
         .flatMap(this::toStreamOfPayloadUploadAndSubFile)
+        .limitRate(5, 2)
         .flatMap(this::submitAndUploadToSongScore)
         .subscribe();
   }
@@ -89,44 +90,45 @@ public class SongScoreService {
     val upload = tuples3.getT2();
     val submissionFile = tuples3.getT3();
 
-    // add delay between each step in pipeline to give SONG/score/postgres some breathing room
-    // e.g. prevents potential 500s from SONG because it can't get a connection to its db
     return repo.save(upload)
-        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
-        .flatMap(u -> songScoreClient.submitPayload(u.getStudyId(), payload))
-        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
+        .flatMap(
+            u ->
+                songScoreClient
+                    .submitPayload(u.getStudyId(), payload)
+                    .retryWhen(Retry.backoff(5, Duration.ofSeconds(5))))
         .flatMap(
             submitResponse -> {
               upload.setAnalysisId(UUID.fromString(submitResponse.getAnalysisId()));
               upload.setStatus(UploadStatus.PROCESSING);
               return repo.save(upload);
             })
-        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
-        .flatMap(u -> songScoreClient.getAnalysisFileFromSong(u.getStudyId(), u.getAnalysisId()))
-        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
+        .flatMap(
+            u ->
+                songScoreClient
+                    .getAnalysisFileFromSong(u.getStudyId(), u.getAnalysisId())
+                    .retryWhen(Retry.backoff(5, Duration.ofSeconds(5))))
         .flatMap(
             analysisFileResponse ->
-                songScoreClient.initScoreUpload(
-                    analysisFileResponse, submissionFile.getFileMd5sum()))
-        .delayElement(Duration.ofSeconds(3))
+                songScoreClient
+                    .initScoreUpload(analysisFileResponse, submissionFile.getFileMd5sum())
+                    .retryWhen(Retry.backoff(5, Duration.ofSeconds(5))))
         .flatMap(
             scoreFileSpec ->
-                songScoreClient.uploadAndFinalize(
-                    scoreFileSpec, submissionFile.getContent(), submissionFile.getFileMd5sum()))
-        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
+                songScoreClient
+                    .uploadAndFinalize(
+                        scoreFileSpec, submissionFile.getContent(), submissionFile.getFileMd5sum())
+                    .retryWhen(Retry.backoff(5, Duration.ofSeconds(5))))
         .flatMap(
-            res -> songScoreClient.publishAnalysis(upload.getStudyId(), upload.getAnalysisId()))
-        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
+            res ->
+                songScoreClient
+                    .publishAnalysis(upload.getStudyId(), upload.getAnalysisId())
+                    .retryWhen(Retry.backoff(5, Duration.ofSeconds(5))))
         .flatMap(
             r -> {
               upload.setStatus(UploadStatus.COMPLETE);
               return repo.save(upload);
             })
-        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
-        // Using Schedulers.single per upload to ensure the repo connection is controlled.
-        // Other wise default scheduler spawns many connections to db, and postgres will
-        // complain about too many clients connected.
-        .subscribeOn(Schedulers.single())
+        .log("SongScoreService::submitAndUploadToSongScore")
         .onErrorResume(
             t -> {
               log.error(t.getLocalizedMessage(), t);

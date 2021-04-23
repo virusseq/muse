@@ -16,7 +16,7 @@
           },
          "donor": {
            "submitterDonorId": ${specimen collector sample ID},
-           "gender": ${host gender}
+           "gender": "Other"
          }
         }
       ],

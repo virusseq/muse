@@ -29,7 +29,7 @@ import org.springframework.web.reactive.config.WebFluxConfigurer;
 @Slf4j
 @Configuration
 public class CodecConfig implements WebFluxConfigurer {
-  @Value("${codeConfig.maxHeadersSize}")
+  @Value("${codecConfig.maxHeadersSize}")
   private Integer maxHeadersSize;
 
   @Override

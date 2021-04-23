@@ -19,10 +19,13 @@
 package org.cancogenvirusseq.muse.config.db;
 
 import com.google.common.base.Strings;
+import io.r2dbc.pool.ConnectionPool;
+import io.r2dbc.pool.ConnectionPoolConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.codec.EnumCodec;
 import io.r2dbc.spi.ConnectionFactory;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import lombok.val;
@@ -48,6 +51,30 @@ public class R2DBCConfiguration extends AbstractR2dbcConfiguration {
     return initializer;
   }
 
+  @Bean
+  public PostgresqlConnectionFactory psqlConnectionFactory() {
+    val postgresqlConnectionConfiguration = PostgresqlConnectionConfiguration.builder();
+
+    postgresqlConnectionConfiguration
+        .host(postgresProperties.getHost())
+        .port(postgresProperties.getPort())
+        .database(postgresProperties.getDatabase());
+
+    if (!Strings.isNullOrEmpty(postgresProperties.getUsername())) {
+      postgresqlConnectionConfiguration.username(postgresProperties.getUsername());
+    }
+
+    if (!Strings.isNullOrEmpty(postgresProperties.getPassword())) {
+      postgresqlConnectionConfiguration.password(postgresProperties.getPassword());
+    }
+
+    // register sql enum upload_status to Java enum UploadStatus
+    val codecRegistrar = EnumCodec.builder().withEnum("upload_status", UploadStatus.class).build();
+
+    return new PostgresqlConnectionFactory(
+        postgresqlConnectionConfiguration.codecRegistrar(codecRegistrar).build());
+  }
+
   @Override
   @Bean
   public ConnectionFactory connectionFactory() {
@@ -69,8 +96,16 @@ public class R2DBCConfiguration extends AbstractR2dbcConfiguration {
     // register sql enum upload_status to Java enum UploadStatus
     val codecRegistrar = EnumCodec.builder().withEnum("upload_status", UploadStatus.class).build();
 
-    return new PostgresqlConnectionFactory(
-        postgresqlConnectionConfiguration.codecRegistrar(codecRegistrar).build());
+    val connection =
+        new PostgresqlConnectionFactory(
+            postgresqlConnectionConfiguration.codecRegistrar(codecRegistrar).build());
+    val configuration =
+        ConnectionPoolConfiguration.builder(connection)
+            .maxIdleTime(Duration.ofMillis(1000))
+            .maxSize(20)
+            .build();
+
+    return new ConnectionPool(configuration);
   }
 
   @Override

@@ -3,12 +3,10 @@ package org.cancogenvirusseq.muse.components;
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.NOT_ALLOWED_TO_BE_EMPTY;
 
+import com.google.common.collect.ImmutableList;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import com.google.common.collect.ImmutableList;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
@@ -30,15 +28,15 @@ public class TsvParser {
   public TsvParser(MuseAppConfig config) {
     this.tsvFieldSchemas = config.getTsvFieldSchemas();
     this.expectedTsvHeaders =
-            ImmutableList.copyOf(
-                    tsvFieldSchemas.stream().map(TsvFieldSchema::getName).collect(toUnmodifiableList()));
+        ImmutableList.copyOf(
+            tsvFieldSchemas.stream().map(TsvFieldSchema::getName).collect(toUnmodifiableList()));
   }
 
   public TsvParser(List<TsvFieldSchema> tsvFieldSchemas) {
     this.tsvFieldSchemas = ImmutableList.copyOf(tsvFieldSchemas);
     this.expectedTsvHeaders =
-            ImmutableList.copyOf(
-                    tsvFieldSchemas.stream().map(TsvFieldSchema::getName).collect(toUnmodifiableList()));
+        ImmutableList.copyOf(
+            tsvFieldSchemas.stream().map(TsvFieldSchema::getName).collect(toUnmodifiableList()));
   }
 
   @SneakyThrows
@@ -50,16 +48,17 @@ public class TsvParser {
     if (headerChkResult.isInvalid()) {
       throw new InvalidHeadersException(headerChkResult.missing, headerChkResult.unknown);
     }
-    val result = parse(lines)
-                         .map(this::checkRequireNotEmptyFields)
-//                        .map(this::convertRecordValueTypes);
-                         .collect(toUnmodifiableList());
+    val result =
+        parse(lines)
+            .map(this::checkRequireNotEmptyFields)
+            //                        .map(this::convertRecordValueTypes);
+            .collect(toUnmodifiableList());
 
     if (hasAnyInvalidRecord(result)) {
       throw new InvalidFieldsException(getAllInvalidFieldErrors(result));
     }
 
-    return result.stream().map(RecordDTO::getRecord);
+    return result.stream().map(Record::getRecord);
   }
 
   private HeaderCheckResult checkHeaders(List<String> expectedHeaders, List<String> actualHeaders) {
@@ -76,17 +75,17 @@ public class TsvParser {
     return new HeaderCheckResult(missingHeaders, unknownHeaders);
   }
 
-  private Stream<RecordDTO> parse(String[] lines) {
+  private Stream<Record> parse(String[] lines) {
     val headers = lines[0].trim().split("\t");
     return IntStream.range(1, lines.length)
-          .filter(
-               j -> {
-                 val line = lines[j];
-                 return line != null && !line.trim().equals("");
-               })
-         .mapToObj(
-                 j -> {
-                   val line = lines[j];
+        .filter(
+            j -> {
+              val line = lines[j];
+              return line != null && !line.trim().equals("");
+            })
+        .mapToObj(
+            j -> {
+              val line = lines[j];
               val data = line.split("\t");
 
               Map<String, String> record = new HashMap<>();
@@ -94,36 +93,36 @@ public class TsvParser {
                 val value = i >= data.length ? "" : data[i];
                 record.put(headers[i], cleanup(value));
               }
-              return new RecordDTO(j, record, new ArrayList<>());
+              return new Record(j, record, new ArrayList<>());
             })
         .filter(this::recordNotEmpty);
   }
 
-  private RecordDTO checkRequireNotEmptyFields(RecordDTO recordDTO) {
-    tsvFieldSchemas
-             .forEach(s -> {
-                 val fieldName = s.getName();
-                 val value = recordDTO.getRecord().get(fieldName);
-                 if (s.getRequireNotEmpty() && isEmpty(value)) {
-                   recordDTO.addFieldError(fieldName, NOT_ALLOWED_TO_BE_EMPTY, recordDTO.getIndex());
-                 }
-             });
+  private Record checkRequireNotEmptyFields(Record record) {
+    tsvFieldSchemas.forEach(
+        s -> {
+          val fieldName = s.getName();
+          val value = record.getRecord().get(fieldName);
+          if (s.isRequireNotEmpty() && isEmpty(value)) {
+            record.addFieldError(fieldName, NOT_ALLOWED_TO_BE_EMPTY, record.getIndex());
+          }
+        });
 
-    return recordDTO;
+    return record;
   }
 
-  private Boolean hasAnyInvalidRecord(List<RecordDTO> recordDTOs) {
-    return recordDTOs.stream().anyMatch(RecordDTO::hasFieldErrors);
+  private Boolean hasAnyInvalidRecord(List<Record> records) {
+    return records.stream().anyMatch(Record::hasFieldErrors);
   }
 
-  private List<InvalidField> getAllInvalidFieldErrors(List<RecordDTO> recordDTOS) {
-    return recordDTOS.stream()
-                   .map(RecordDTO::getFieldErrors)
-                   .flatMap(List::stream)
-                   .collect(toUnmodifiableList());
+  private List<InvalidField> getAllInvalidFieldErrors(List<Record> records) {
+    return records.stream()
+        .map(Record::getFieldErrors)
+        .flatMap(List::stream)
+        .collect(toUnmodifiableList());
   }
 
-  private Boolean recordNotEmpty(RecordDTO recordsDto) {
+  private Boolean recordNotEmpty(Record recordsDto) {
     return !recordsDto.getRecord().values().stream().allMatch(v -> v.trim().equalsIgnoreCase(""));
   }
 
@@ -146,7 +145,7 @@ public class TsvParser {
   }
 
   @Value
-  static class RecordDTO {
+  static class Record {
     Integer index;
     Map<String, String> record;
     List<InvalidField> fieldErrors;

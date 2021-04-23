@@ -13,9 +13,12 @@ cors:
     - "https://localhost:3000"
   maxAge: 3600
 
-codeConfig:
+codecConfig:
   maxHeadersSize: 16384
-  uploadPipelineDelaySec: 5
+
+upload.backpressure:
+  highTide: 10
+  lowTide: 2
 
 postgres:
   host: localhost

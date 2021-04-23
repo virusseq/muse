@@ -82,7 +82,7 @@ public class SongScoreClient {
         .uri(format("/studies/%s/analysis/%s", studyId, analysisId.toString()))
         .exchangeToMono(ofMonoTypeOrHandleError(Analysis.class))
         .map(HttpEntity::getBody)
-        .log();
+        .log("SongScoreClient::getAnalysis");
   }
 
   public Mono<SubmitResponse> submitPayload(String studyId, String payload) {
@@ -93,7 +93,7 @@ public class SongScoreClient {
         .body(BodyInserters.fromValue(payload))
         .exchangeToMono(ofMonoTypeOrHandleError(SubmitResponse.class))
         .map(HttpEntity::getBody)
-        .log();
+        .log("SongScoreClient::submitPayload");
   }
 
   public Mono<AnalysisFile> getAnalysisFileFromSong(String studyId, UUID analysisId) {
@@ -103,7 +103,7 @@ public class SongScoreClient {
         // endpoint returns array but, we expect only one file to be uploaded in each analysis
         .exchangeToFlux(ofFluxTypeOrHandleError(AnalysisFile.class))
         .next()
-        .log();
+        .log("SongScoreClient::getAnalysisFileFromSong");
   }
 
   public Mono<LegacyFileEntity> getFileEntityFromSong(UUID objectId) {
@@ -112,7 +112,7 @@ public class SongScoreClient {
         .uri(format("/entities/%s", objectId.toString()))
         .exchangeToMono(ofMonoTypeOrHandleError(LegacyFileEntity.class))
         .map(HttpEntity::getBody)
-        .log();
+        .log("SongScoreClient::getFileEntityFromSong");
   }
 
   public Mono<ScoreFileSpec> initScoreUpload(AnalysisFile analysisFile, String md5Sum) {
@@ -126,7 +126,7 @@ public class SongScoreClient {
         .uri(uri)
         .exchangeToMono(ofMonoTypeOrHandleError(ScoreFileSpec.class))
         .map(HttpEntity::getBody)
-        .log();
+        .log("SongScoreClient::initScoreUpload");
   }
 
   public Mono<String> uploadAndFinalize(
@@ -142,7 +142,7 @@ public class SongScoreClient {
         .exchangeToMono(ofBodilessTypeOrHandleError())
         .map(res -> res.getHeaders().getETag().replace("\"", ""))
         .flatMap(eTag -> finalizeScoreUpload(scoreFileSpec, md5, eTag))
-        .log();
+        .log("SongScoreClient::uploadAndFinalize");
   }
 
   private Mono<String> finalizeScoreUpload(ScoreFileSpec scoreFileSpec, String md5, String etag) {
@@ -162,7 +162,10 @@ public class SongScoreClient {
 
     // The finalize step in score requires finalizing each file part and then the whole upload
     // we only have one file part, so we finalize the part and upload one after the other
-    return finalizeUploadPart.then(finalizeUpload).map(Objects::toString).log();
+    return finalizeUploadPart
+        .then(finalizeUpload)
+        .map(Objects::toString)
+        .log("SongScoreClient::finalizeScoreUpload");
   }
 
   public Mono<String> publishAnalysis(String studyId, UUID analysisId) {
@@ -172,7 +175,7 @@ public class SongScoreClient {
             format("/studies/%s/analysis/publish/%s?ignoreUndefinedMd5=false", studyId, analysisId))
         .exchangeToMono(ofBodilessTypeOrHandleError())
         .map(Objects::toString)
-        .log();
+        .log("SongScoreClient::publishAnalysis");
   }
 
   public Flux<DataBuffer> downloadObject(String objectId) {
@@ -193,7 +196,7 @@ public class SongScoreClient {
     return WebClient.create(decodeUrl(presignedUrl))
         .get()
         .exchangeToFlux(ofFluxTypeOrHandleError(DataBuffer.class))
-        .log();
+        .log("SongScoreClient::downloadFromS3");
   }
 
   private static String decodeUrl(String str) {
@@ -214,6 +217,7 @@ public class SongScoreClient {
             .flux()
             .flatMap(res -> Mono.error(new SongScoreServerException(status, res.getMessage())));
       } else if (clientResponse.statusCode().is5xxServerError()) {
+        // 5xx errors return as octet-stream
         return clientResponse
             .bodyToMono(String.class)
             .flux()
@@ -240,6 +244,7 @@ public class SongScoreClient {
                         new SongScoreServerException(
                             clientResponse.statusCode(), res.getMessage())));
       } else if (clientResponse.statusCode().is5xxServerError()) {
+        // 5xx errors return as octet-stream
         return clientResponse
             .bodyToMono(String.class)
             .flatMap(
