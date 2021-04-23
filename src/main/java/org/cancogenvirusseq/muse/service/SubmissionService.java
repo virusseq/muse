@@ -18,17 +18,7 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import static java.util.stream.Collectors.groupingByConcurrent;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
-import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
-
-import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
-import java.util.*;
-import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
@@ -52,6 +42,16 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingByConcurrent;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
+import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
 
 @Service
 @RequiredArgsConstructor
@@ -100,9 +100,11 @@ public class SubmissionService {
         .flatMap(SubmissionService::expandToFileTypeFilePartTuple)
         // read each file in as String
         .transform(SubmissionService::readFileContentToString)
-        // reduce flux of SubmissionUpload to SubmissionBundle
-        .reduce(new SubmissionBundle(), this::reduceToSubmissionBundle)
-        // validate submission records has fasta file map and split to submissionRequests
+        // reduce flux of Tuples(fileType, fileString) into a SubmissionRequest
+        .reduce(
+            new SubmissionBundle(securityContext.getAuthentication(), "to-be-replaced-in-reducer"),
+            this::reduceToSubmissionBundle)
+        // validate submission records has fasta file map!
         .map(payloadFileMapper::submissionBundleToSubmissionRequests)
         // record submission to database
         .flatMap(

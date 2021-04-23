@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
+import lombok.NonNull;
+import org.springframework.security.core.Authentication;
 
 /**
  * A submission bundle contains the validated records to upload to song, the validated files for
@@ -33,6 +35,12 @@ import lombok.Getter;
 @Getter
 public class SubmissionBundle {
   private final Set<String> originalFileNames = new HashSet<>();
+  private final Authentication userAuthentication;
   private final ArrayList<Map<String, String>> records = new ArrayList<>();
   private final ConcurrentHashMap<String, SubmissionFile> files = new ConcurrentHashMap<>();
+
+  public SubmissionBundle(@NonNull Authentication userAuthentication, @NonNull String recordsFileName) {
+    this.userAuthentication = userAuthentication;
+    this.recordsFileName = recordsFileName;
+  }
 }
