@@ -1,15 +1,11 @@
 package org.cancogenvirusseq.muse.components;
 
-import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.EXPECTING_NUMBER_TYPE;
-import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.NOT_ALLOWED_TO_BE_EMPTY;
-
 import com.google.common.collect.ImmutableList;
-import java.util.*;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import lombok.*;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
 import org.cancogenvirusseq.muse.exceptions.submission.InvalidFieldsException;
@@ -18,6 +14,17 @@ import org.cancogenvirusseq.muse.model.tsv_parser.InvalidField;
 import org.cancogenvirusseq.muse.model.tsv_parser.TsvFieldSchema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toUnmodifiableList;
+import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.EXPECTING_NUMBER_TYPE;
+import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.NOT_ALLOWED_TO_BE_EMPTY;
 
 @Slf4j
 @Component

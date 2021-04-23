@@ -1,11 +1,12 @@
 package org.cancogenvirusseq.muse.exceptions.download;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.model.DownloadInfoFetchResult;
 import org.springframework.http.HttpStatus;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class DownloadInfoFetchException extends Throwable implements MuseBaseException {
   List<Map<String, String>> analysisInfo;

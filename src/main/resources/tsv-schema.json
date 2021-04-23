@@ -22,7 +22,7 @@
   { "name": "collection method", "valueType": "string" },
   { "name": "host (scientific name)", "valueType": "string" },
   { "name": "host disease", "valueType": "string" },
-  { "name": "host age", "valueType": "number" },
+  { "name": "host age", "valueType": "string" },
   { "name": "host age unit", "valueType": "string" },
   { "name": "host age bin", "valueType": "string" },
   { "name": "host gender", "valueType": "string" },

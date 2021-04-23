@@ -19,13 +19,14 @@
 package org.cancogenvirusseq.muse.api.model;
 
 import io.swagger.annotations.ApiModel;
-import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import java.util.Map;
 
 @Data
 @NoArgsConstructor

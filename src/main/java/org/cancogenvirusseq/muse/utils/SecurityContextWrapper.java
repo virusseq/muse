@@ -18,13 +18,14 @@
 
 package org.cancogenvirusseq.muse.utils;
 
-import java.util.UUID;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.UUID;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class SecurityContextWrapper {
   public static <T, R> Function<T, Mono<R>> forMono(

@@ -18,12 +18,13 @@
 
 package org.cancogenvirusseq.muse.api.model;
 
-import java.time.OffsetDateTime;
-import java.util.Set;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.Value;
 import org.cancogenvirusseq.muse.repository.model.Submission;
+
+import java.time.OffsetDateTime;
+import java.util.Set;
+import java.util.UUID;
 
 @Value
 public class SubmissionDTO {

@@ -18,15 +18,6 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import static java.util.stream.Collectors.groupingByConcurrent;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
-import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
-
-import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
-import java.util.*;
-import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
@@ -49,6 +40,16 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingByConcurrent;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
+import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
 
 @Service
 @RequiredArgsConstructor
