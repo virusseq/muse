@@ -56,12 +56,7 @@ public class R2DBCConfiguration extends AbstractR2dbcConfiguration {
     postgresqlConnectionConfiguration
         .host(postgresProperties.getHost())
         .port(postgresProperties.getPort())
-        .database(postgresProperties.getDatabase())
-        // If keep alive is true, multiple connections can remain open at the same time and
-        // postgres will complain about too main clients connected.
-        // This occurs most often when a lot of uploads are being made and upload db is updated
-        // frequently.
-        .tcpKeepAlive(false);
+        .database(postgresProperties.getDatabase());
 
     if (!Strings.isNullOrEmpty(postgresProperties.getUsername())) {
       postgresqlConnectionConfiguration.username(postgresProperties.getUsername());

@@ -15,6 +15,7 @@ cors:
 
 codeConfig:
   maxHeadersSize: 16384
+  uploadPipelineDelaySec: 5
 
 postgres:
   host: localhost

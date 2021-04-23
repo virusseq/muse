@@ -3,6 +3,7 @@ package org.cancogenvirusseq.muse.service;
 import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
 import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
@@ -17,6 +18,7 @@ import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
 import org.cancogenvirusseq.muse.repository.model.UploadStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
@@ -31,6 +33,9 @@ import reactor.util.function.Tuples;
 @Service
 @RequiredArgsConstructor
 public class SongScoreService {
+  @Value("${codeConfig.uploadPipelineDelaySec}")
+  private Integer uploadPipelineDelaySec;
+
   final SongScoreClient songScoreClient;
   final UploadRepository repo;
 
@@ -84,32 +89,43 @@ public class SongScoreService {
     val upload = tuples3.getT2();
     val submissionFile = tuples3.getT3();
 
+    // add delay between each step in pipeline to give SONG/score/postgres some breathing room
+    // e.g. prevents potential 500s from SONG because it can't get a connection to its db
     return repo.save(upload)
+        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
         .flatMap(u -> songScoreClient.submitPayload(u.getStudyId(), payload))
+        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
         .flatMap(
             submitResponse -> {
               upload.setAnalysisId(UUID.fromString(submitResponse.getAnalysisId()));
               upload.setStatus(UploadStatus.PROCESSING);
               return repo.save(upload);
             })
+        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
         .flatMap(u -> songScoreClient.getAnalysisFileFromSong(u.getStudyId(), u.getAnalysisId()))
+        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
         .flatMap(
             analysisFileResponse ->
                 songScoreClient.initScoreUpload(
                     analysisFileResponse, submissionFile.getFileMd5sum()))
+        .delayElement(Duration.ofSeconds(3))
         .flatMap(
             scoreFileSpec ->
                 songScoreClient.uploadAndFinalize(
                     scoreFileSpec, submissionFile.getContent(), submissionFile.getFileMd5sum()))
+        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
         .flatMap(
             res -> songScoreClient.publishAnalysis(upload.getStudyId(), upload.getAnalysisId()))
+        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
         .flatMap(
             r -> {
               upload.setStatus(UploadStatus.COMPLETE);
               return repo.save(upload);
             })
-       // Schedule on single to ensure the repo connection is controlled.
-       // TcpAlive is also set to false also so it should close.
+        .delayElement(Duration.ofSeconds(uploadPipelineDelaySec))
+        // Using Schedulers.single per upload to ensure the repo connection is controlled.
+        // Other wise default scheduler spawns many connections to db, and postgres will
+        // complain about too many clients connected.
         .subscribeOn(Schedulers.single())
         .onErrorResume(
             t -> {
@@ -118,7 +134,7 @@ public class SongScoreService {
               if (t instanceof SongScoreServerException) {
                 upload.setError(t.toString());
               } else {
-                upload.setError(t.getLocalizedMessage());
+                upload.setError("Internal server error - unrelated to SongScore!");
               }
               return repo.save(upload);
             });

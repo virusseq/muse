@@ -208,20 +208,20 @@ public class SongScoreClient {
   private static <V> Function<ClientResponse, Flux<V>> ofFluxTypeOrHandleError(Class<V> classType) {
     return clientResponse -> {
       val status = clientResponse.statusCode();
-      if (clientResponse.statusCode().isError()) {
+      if (clientResponse.statusCode().is4xxClientError()) {
         return clientResponse
             .bodyToMono(ServerErrorResponse.class)
             .flux()
             .flatMap(res -> Mono.error(new SongScoreServerException(status, res.getMessage())));
       } else if (clientResponse.statusCode().is5xxServerError()) {
         return clientResponse
-                .bodyToMono(String.class)
-                .flux()
-                .flatMap(
-                        res ->
-                                Mono.error(
-                                        new SongScoreServerException(
-                                                clientResponse.statusCode(), "Internal Server Error")));
+            .bodyToMono(String.class)
+            .flux()
+            .flatMap(
+                res ->
+                    Mono.error(
+                        new SongScoreServerException(
+                            clientResponse.statusCode(), "SongScore - Internal Server Error")));
       }
 
       return clientResponse.bodyToFlux(classType);
@@ -241,14 +241,14 @@ public class SongScoreClient {
                             clientResponse.statusCode(), res.getMessage())));
       } else if (clientResponse.statusCode().is5xxServerError()) {
         return clientResponse
-                .bodyToMono(String.class)
-                .flatMap(
-                        res ->  {
-                          log.info("SongScoreServer 5xx response: {}", res);
-                         return       Mono.error(
-                                        new SongScoreServerException(
-                                                clientResponse.statusCode(), "Internal Server Error"));
-                        });
+            .bodyToMono(String.class)
+            .flatMap(
+                res -> {
+                  log.info("SongScoreServer 5xx response: {}", res);
+                  return Mono.error(
+                      new SongScoreServerException(
+                          clientResponse.statusCode(), "SongScore - Internal Server Error"));
+                });
       }
       return clientResponse.toEntity(classType);
     };

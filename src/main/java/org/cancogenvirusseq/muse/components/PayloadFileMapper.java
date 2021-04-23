@@ -2,7 +2,6 @@ package org.cancogenvirusseq.muse.components;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.apache.commons.lang3.StringUtils.isNumeric;
 import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
 import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getIsolate;
 
@@ -17,6 +16,7 @@ import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookup;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
@@ -100,7 +100,7 @@ public class PayloadFileMapper {
           val value = valuesMap.getOrDefault(key, "");
 
           // value is mapped to json value by these rules
-          if (isNumeric(value)) {
+          if (NumberUtils.isCreatable(value)) {
             // numeric no need to append quotes
             return value;
           } else if (value.trim().equals("")) {

@@ -62,7 +62,7 @@ public class TsvParser {
   }
 
   private Boolean recordNotEmpty(Map<String, String> records) {
-    return records.values().stream().allMatch(v -> v.trim().equalsIgnoreCase(""));
+    return !records.values().stream().allMatch(v -> v.trim().equalsIgnoreCase(""));
   }
 
   private static String cleanup(String rawValue) {
