@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -124,8 +125,11 @@ public class SongScoreService {
               upload.setStatus(UploadStatus.ERROR);
               if (t instanceof SongScoreServerException) {
                 upload.setError(t.toString());
+              } else if (Exceptions.isRetryExhausted(t)
+                  && t.getCause() instanceof SongScoreServerException) {
+                upload.setError(t.getCause().toString());
               } else {
-                upload.setError("Internal server error - unrelated to SongScore!");
+                upload.setError("Internal server error!");
               }
               return repo.save(upload);
             });

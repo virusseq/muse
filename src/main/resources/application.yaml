@@ -33,8 +33,8 @@ songScoreClient:
   clientId: adminId
   clientSecret: adminSecret
   tokenUrl: http://localhost:8081/oauth/token
-  retryMaxAttempts: 5
-  retryBackoffSec: 5
+  retryMaxAttempts: 2
+  retryDelaySec: 5
 
 auth:
   jwtPublicKeyUrl: "http://localhost:8081/oauth/token/public_key"

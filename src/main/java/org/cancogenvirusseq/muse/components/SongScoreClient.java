@@ -53,7 +53,7 @@ public class SongScoreClient {
       @Value("${songScoreClient.clientSecret}") String clientSecret,
       @Value("${songScoreClient.tokenUrl}") String tokenUrl,
       @Value("${songScoreClient.retryMaxAttempts}") Integer retryMaxAttempts,
-      @Value("${songScoreClient.retryBackoffSec}") Integer retryBackoffSec) {
+      @Value("${songScoreClient.retryDelaySec}") Integer retryDelaySec) {
 
     val oauthFilter = createOauthFilter(OUATH_RESOURCE_ID, tokenUrl, clientId, clientSecret);
 
@@ -71,7 +71,14 @@ public class SongScoreClient {
             .defaultHeader(RESOURCE_ID_HEADER, OUATH_RESOURCE_ID)
             .build();
 
-    this.clientsRetrySpec = Retry.backoff(retryMaxAttempts, Duration.ofSeconds(retryBackoffSec));
+    this.clientsRetrySpec =
+        Retry.fixedDelay(retryMaxAttempts, Duration.ofSeconds(retryDelaySec))
+            // Retry on non 5xx errors, 4xx is bad request no point retrying
+            .filter(
+                t ->
+                    t instanceof SongScoreServerException
+                        && ((SongScoreServerException) t).getStatus().is5xxServerError())
+            .onRetryExhaustedThrow(((retryBackoffSpec, retrySignal) -> retrySignal.failure()));
 
     log.info("Initialized song score client.");
     log.info("songRootUrl - " + songRootUrl);
