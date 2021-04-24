@@ -77,7 +77,7 @@ public class PayloadFileMapper {
       acc.getRecordsMapped()
           .add(
               new SubmissionRequest(
-                  payload, submissionBundle.getRecordsFileName(), sampleFileName, submissionFile));
+                  payload, submissionFile, submissionBundle.getOriginalFileNames()));
 
       return acc;
     };

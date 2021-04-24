@@ -19,9 +19,9 @@
 package org.cancogenvirusseq.muse.service;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 import lombok.val;
-import org.assertj.core.util.Lists;
 import org.cancogenvirusseq.muse.repository.model.Upload;
 import org.cancogenvirusseq.muse.repository.model.UploadStatus;
 import org.junit.jupiter.api.Test;
@@ -80,7 +80,7 @@ public class UploadServiceTest {
     return Upload.builder()
         .uploadId(UUID.randomUUID())
         .createdAt(OffsetDateTime.now())
-        .originalFilePair(Lists.emptyList())
+        .originalFilePair(Set.of())
         .status(UploadStatus.QUEUED)
         .studyId("MUSE-TEST")
         .submissionId(submissionId)

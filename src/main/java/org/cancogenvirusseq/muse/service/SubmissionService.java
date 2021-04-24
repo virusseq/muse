@@ -97,9 +97,9 @@ public class SubmissionService {
         .flatMap(SubmissionService::expandToFileTypeFilePartTuple)
         // read each file in as String
         .transform(SubmissionService::readFileContentToString)
-        // reduce flux of Tuples(fileType, fileString) into a SubmissionRequest
-        .reduce(new SubmissionBundle("to-be-replaced-in-reducer"), this::reduceToSubmissionBundle)
-        // validate submission records has fasta file map!
+        // reduce flux of SubmissionUpload to SubmissionBundle
+        .reduce(new SubmissionBundle(), this::reduceToSubmissionBundle)
+        // validate submission records has fasta file map and split to submissionRequests
         .map(payloadFileMapper::submissionBundleToSubmissionRequests)
         // record submission to database
         .flatMap(
@@ -198,26 +198,25 @@ public class SubmissionService {
 
   private static Set<String> compileOriginalFilenames(List<SubmissionRequest> submissionRequests) {
     return submissionRequests.stream()
-        .map(
-            submissionRequest ->
-                List.of(
-                    submissionRequest.getRecordFilename(), submissionRequest.getSampleFilename()))
+        .map(SubmissionRequest::getOriginalFileNames)
         .flatMap(Collection::stream)
         .collect(Collectors.toSet());
   }
 
   private SubmissionBundle reduceToSubmissionBundle(
       SubmissionBundle submissionBundle, SubmissionUpload submissionUpload) {
+    // append original filename
+    submissionBundle.getOriginalFileNames().add(submissionUpload.getFilename());
+
     switch (submissionUpload.getType()) {
       case "tsv":
-        // save the tsv filename to the bundle
-        submissionBundle.setRecordsFileName(submissionUpload.getFilename());
         // parse and validate records
         tsvParser
             .parseAndValidateTsvStrToFlatRecords(submissionUpload.getContent())
             .forEach(record -> submissionBundle.getRecords().add(record));
         break;
       case "fasta":
+        // process the submitted file into upload ready files
         submissionBundle.getFiles().putAll(processFileStrContent(submissionUpload.getContent()));
         break;
     }

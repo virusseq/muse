@@ -14,6 +14,12 @@ public class FastaFileProcessor {
   public static final String FASTA_TYPE = "FASTA";
   public static final String FASTA_FILE_EXTENSION = ".fasta";
 
+  /**
+   * Processing submission files into a map of isolate filename => SubmissionFile
+   *
+   * @param fastaFile
+   * @return concurrent hashmap of isolate filename => SubmissionFile
+   */
   public static ConcurrentHashMap<String, SubmissionFile> processFileStrContent(String fastaFile) {
     val isolateToSubmissionFile = new ConcurrentHashMap<String, SubmissionFile>();
 

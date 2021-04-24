@@ -19,6 +19,7 @@
 package org.cancogenvirusseq.muse.model;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -26,7 +27,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class SubmissionRequest {
   private final ObjectNode record;
-  private final String recordFilename;
-  private final String sampleFilename;
   private final SubmissionFile submissionFile;
+  private final Set<String> originalFileNames;
 }
