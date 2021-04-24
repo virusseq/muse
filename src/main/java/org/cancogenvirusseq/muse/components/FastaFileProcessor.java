@@ -16,9 +16,9 @@ public class FastaFileProcessor {
   public static final String FASTA_FILE_EXTENSION = ".fasta";
 
   /**
-   * Processing submission files into a map of isolate filename => SubmissionFile
+   * Processing submission files into a map of isolateFilename => SubmissionFile
    *
-   * @param fastaFile
+   * @param submissionUpload - submissionUpload to be processed
    * @return concurrent hashmap of isolate filename => SubmissionFile
    */
   public static ConcurrentHashMap<String, SubmissionFile> processFileStrContent(
