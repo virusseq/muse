@@ -23,6 +23,10 @@ import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * A SubmissionRequest represents a pair of record and submission files, plus the filenames from
+ * which they were extracted
+ */
 @Getter
 @AllArgsConstructor
 public class SubmissionRequest {

@@ -25,6 +25,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 
+/**
+ * A submission bundle contains the validated records to upload to song, the validated files for
+ * score, and the original file names. The bundles is then broken up into a series of
+ * SubmissionRequest(s) by the SubmissionService
+ */
 @Getter
 public class SubmissionBundle {
   private final Set<String> originalFileNames = new HashSet<>();

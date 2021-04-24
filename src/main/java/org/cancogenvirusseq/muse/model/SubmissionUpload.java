@@ -21,6 +21,10 @@ package org.cancogenvirusseq.muse.model;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * Class containing the raw upload object from a submission with the content read out into a string,
+ * original filename and type captured here as well
+ */
 @Getter
 @AllArgsConstructor
 public class SubmissionUpload {
