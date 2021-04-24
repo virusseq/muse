@@ -13,4 +13,5 @@ public class SubmissionFile {
   String dataType;
   String fileType;
   String fileAccess = "open";
+  String submittedFileName;
 }

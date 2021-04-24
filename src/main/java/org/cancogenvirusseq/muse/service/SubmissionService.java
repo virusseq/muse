@@ -27,8 +27,10 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
-import lombok.*;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.components.PayloadFileMapper;
 import org.cancogenvirusseq.muse.components.TsvParser;
@@ -36,6 +38,7 @@ import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFilesException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.SubmissionRequest;
+import org.cancogenvirusseq.muse.model.SubmissionUpload;
 import org.cancogenvirusseq.muse.repository.SubmissionRepository;
 import org.cancogenvirusseq.muse.repository.model.Submission;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -217,17 +220,9 @@ public class SubmissionService {
         break;
       case "fasta":
         // process the submitted file into upload ready files
-        submissionBundle.getFiles().putAll(processFileStrContent(submissionUpload.getContent()));
+        submissionBundle.getFiles().putAll(processFileStrContent(submissionUpload));
         break;
     }
     return submissionBundle;
-  }
-
-  @Getter
-  @AllArgsConstructor
-  private static class SubmissionUpload {
-    private final String filename;
-    private final String type;
-    private final String content;
   }
 }
