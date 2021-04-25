@@ -57,10 +57,7 @@ public class SongScoreService {
   private Disposable createSubmitUploadDisposable() {
     return sink.asFlux()
         .flatMap(this::toStreamOfPayloadUploadAndSubFile)
-        // limitRate will limit num of flux elements up to `highTide` and finish processing
-        // until it reaches`lowTide` when it will allow more to flow upto `highTide` again
-        .limitRate(highTide, lowTide)
-        .flatMap(this::submitAndUploadToSongScore)
+        .flatMap(this::submitAndUploadToSongScore, 3, 1)
         .subscribe();
   }
 
