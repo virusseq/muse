@@ -57,7 +57,8 @@ public class SongScoreService {
   private Disposable createSubmitUploadDisposable() {
     return sink.asFlux()
         .flatMap(this::toStreamOfPayloadUploadAndSubFile)
-        .flatMap(this::submitAndUploadToSongScore, 3, 1)
+        .flatMap(this::queueUpload)
+        .flatMap(this::submitAndUploadToSongScore, 5, 1)
         .subscribe();
   }
 
@@ -85,13 +86,18 @@ public class SongScoreService {
                 }));
   }
 
+  public Mono<Tuple3<String, Upload, SubmissionFile>> queueUpload(Tuple3<String, Upload, SubmissionFile> tuple3) {
+    return repo
+               .save(tuple3.getT2())
+               .map(updatedUpload -> Tuples.of(tuple3.getT1(), updatedUpload, tuple3.getT3()));
+  }
+
   public Mono<Upload> submitAndUploadToSongScore(Tuple3<String, Upload, SubmissionFile> tuples3) {
     val payload = tuples3.getT1();
     val upload = tuples3.getT2();
     val submissionFile = tuples3.getT3();
 
-    return repo.save(upload)
-        .flatMap(u -> songScoreClient.submitPayload(u.getStudyId(), payload))
+    return songScoreClient.submitPayload(upload.getStudyId(), payload)
         .flatMap(
             submitResponse -> {
               upload.setAnalysisId(UUID.fromString(submitResponse.getAnalysisId()));
