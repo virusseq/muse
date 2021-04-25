@@ -31,11 +31,12 @@ import reactor.util.function.Tuples;
 @Service
 @RequiredArgsConstructor
 public class SongScoreService {
-  @Value("${upload.backpressure.highTide}")
-  private Integer highTide;
+  @Value("${submitUpload.concurrency}")
+  private Integer concurrency;
 
-  @Value("${upload.backpressure.lowTide}")
-  private Integer lowTide;
+  // Prefetch determines max in-flight elements from inner Publisher sequence
+  // all Publishers in submitAndUploadToSongScore return Mono, so only one element
+  private final static Integer SONG_SCORE_SUBMIT_UPLOAD_PREFETCH = 1;
 
   final SongScoreClient songScoreClient;
   final UploadRepository repo;
@@ -58,7 +59,8 @@ public class SongScoreService {
     return sink.asFlux()
         .flatMap(this::toStreamOfPayloadUploadAndSubFile)
         .flatMap(this::queueUpload)
-        .flatMap(this::submitAndUploadToSongScore, 5, 1)
+        // Concurrency of this flatMap is controlled to not overwhelm SONG/score
+        .flatMap(this::submitAndUploadToSongScore, concurrency, SONG_SCORE_SUBMIT_UPLOAD_PREFETCH)
         .subscribe();
   }
 

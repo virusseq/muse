@@ -16,9 +16,8 @@ cors:
 codecConfig:
   maxHeadersSize: 16384
 
-upload.backpressure:
-  highTide: 5
-  lowTide: 2
+submitUpload:
+  concurrency: 5
 
 postgres:
   host: localhost
