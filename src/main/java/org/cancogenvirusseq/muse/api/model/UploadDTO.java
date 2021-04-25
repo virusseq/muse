@@ -18,7 +18,7 @@
 
 package org.cancogenvirusseq.muse.api.model;
 
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.NonNull;
 import lombok.Value;
@@ -31,7 +31,7 @@ public class UploadDTO {
   @NonNull String studyId;
   @NonNull String submitterSampleId;
   @NonNull UploadStatus status;
-  @NonNull List<String> originalFilePair;
+  @NonNull Set<String> originalFilePair;
   UUID analysisId;
   String error;
 

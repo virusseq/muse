@@ -9,15 +9,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
+import org.cancogenvirusseq.muse.model.SubmissionUpload;
 
 public class FastaFileProcessor {
   public static final String FASTA_TYPE = "FASTA";
   public static final String FASTA_FILE_EXTENSION = ".fasta";
 
-  public static ConcurrentHashMap<String, SubmissionFile> processFileStrContent(String fastaFile) {
+  /**
+   * Processing submission files into a map of isolateFilename => SubmissionFile
+   *
+   * @param submissionUpload - submissionUpload to be processed
+   * @return concurrent hashmap of isolate filename => SubmissionFile
+   */
+  public static ConcurrentHashMap<String, SubmissionFile> processFileStrContent(
+      SubmissionUpload submissionUpload) {
     val isolateToSubmissionFile = new ConcurrentHashMap<String, SubmissionFile>();
 
-    Arrays.stream(fastaFile.split("(?=>)"))
+    Arrays.stream(submissionUpload.getContent().split("(?=>)"))
         .filter(sampleData -> sampleData != null && !sampleData.trim().equals(""))
         .forEach(
             fc -> {
@@ -34,6 +42,7 @@ public class FastaFileProcessor {
                       .content(fc)
                       .dataType(FASTA_TYPE)
                       .fileType(FASTA_TYPE)
+                      .submittedFileName(submissionUpload.getFilename())
                       .build();
 
               isolateToSubmissionFile.put(fastaHeaderOpt.get(), submissionFile);

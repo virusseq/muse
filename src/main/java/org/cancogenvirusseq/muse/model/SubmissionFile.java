@@ -3,6 +3,7 @@ package org.cancogenvirusseq.muse.model;
 import lombok.Builder;
 import lombok.Value;
 
+/** The object type that is ultimately uploaded to SCORE */
 @Value
 @Builder
 public class SubmissionFile {
@@ -13,4 +14,5 @@ public class SubmissionFile {
   String dataType;
   String fileType;
   String fileAccess = "open";
+  String submittedFileName;
 }

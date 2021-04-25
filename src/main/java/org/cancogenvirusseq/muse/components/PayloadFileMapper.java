@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -77,7 +79,13 @@ public class PayloadFileMapper {
       acc.getRecordsMapped()
           .add(
               new SubmissionRequest(
-                  payload, submissionBundle.getRecordsFileName(), sampleFileName, submissionFile));
+                  payload,
+                  submissionFile,
+                  Stream.concat(
+                          submissionBundle.getOriginalFileNames().stream()
+                              .filter(filename -> filename.endsWith(".tsv")),
+                          Stream.of(submissionFile.getSubmittedFileName()))
+                      .collect(Collectors.toSet())));
 
       return acc;
     };
