@@ -17,7 +17,7 @@ codecConfig:
   maxHeadersSize: 16384
 
 submitUpload:
-  concurrency: 5
+  maxInFlight: 5
 
 postgres:
   host: localhost
@@ -25,6 +25,7 @@ postgres:
   database: muse
   username: postgres
   password: password
+  maxPoolSize: 20
 
 songScoreClient:
   songRootUrl: "http://localhost:8089/"
