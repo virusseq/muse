@@ -63,8 +63,7 @@ public class DownloadsService {
         .concatMap(
             analysisFileResponse -> {
               val objectId = analysisFileResponse.getObjectId();
-              return Flux.concat(
-                  newLineBuffer(), songScoreClient.downloadObject(objectId), newLineBuffer());
+              return Flux.concat(songScoreClient.downloadObject(objectId), newLineBuffer());
             })
         .onErrorMap(t -> !(t instanceof MuseBaseException), t -> new UnknownException());
   }
