@@ -25,6 +25,7 @@ postgres:
   database: muse
   username: postgres
   password: password
+  maxPoolIdleTimeMs: 1000
   maxPoolSize: 20
 
 songScoreClient:

@@ -13,5 +13,6 @@ public class PostgresProperties {
   private String database;
   private String username;
   private String password;
+  private Integer maxPoolIdleTimeMs;
   private Integer maxPoolSize;
 }

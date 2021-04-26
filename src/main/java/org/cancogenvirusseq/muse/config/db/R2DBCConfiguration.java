@@ -25,6 +25,7 @@ import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.codec.EnumCodec;
 import io.r2dbc.spi.ConnectionFactory;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import lombok.val;
@@ -81,6 +82,7 @@ public class R2DBCConfiguration extends AbstractR2dbcConfiguration {
   public ConnectionFactory connectionFactory() {
     val configuration =
         ConnectionPoolConfiguration.builder(psqlConnectionFactory())
+            .maxIdleTime(Duration.ofMillis(postgresProperties.getMaxPoolIdleTimeMs()))
             .maxSize(postgresProperties.getMaxPoolSize())
             .build();
 
