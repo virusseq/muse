@@ -1,7 +1,8 @@
 package org.cancogenvirusseq.muse.components;
 
 import static org.cancogenvirusseq.muse.components.ComponentTestStubs.*;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.*;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_TYPE;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anEmptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;

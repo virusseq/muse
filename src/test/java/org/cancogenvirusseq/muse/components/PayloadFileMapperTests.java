@@ -8,11 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import lombok.SneakyThrows;
 import lombok.val;
 import org.cancogenvirusseq.muse.exceptions.submission.FoundInvalidFilesException;
@@ -30,22 +28,21 @@ public class PayloadFileMapperTests {
         "{ \"samples\": [ {\"submitterSampleId\": \"sam1\"}], "
             + "\"age\":123, "
             + "\"sample_collection\": { "
-            +   "\"isolate\": \"ABCD/sam1/ddd/erd\""
-            +  "},"
+            + "\"isolate\": \"ABCD/sam1/ddd/erd\""
+            + "},"
             + "\"files\":[{\"fileName\":\"sam1.fasta\",\"fileSize\":24,\"fileMd5sum\":\"cf20195497cc8c06075a6e201e82dd17\",\"fileAccess\":\"open\",\"fileType\":\"FASTA\",\"dataType\":\"FASTA\"}]"
             + "}";
     val expectedSam2PayloadStr =
         "{ \"samples\": [ {\"submitterSampleId\": \"sam2\"}], "
             + "\"age\":456, "
             + "\"sample_collection\": { "
-            +   "\"isolate\": \"EFG/sam2/ddd/erd\""
-            +  "},"
+            + "\"isolate\": \"EFG/sam2/ddd/erd\""
+            + "},"
             + "\"files\":[{\"fileName\":\"sam2.fasta\",\"fileSize\":23,\"fileMd5sum\":\"eecf3de7e1136d99fffdd781d76bc81a\",\"fileAccess\":\"open\",\"fileType\":\"FASTA\",\"dataType\":\"FASTA\"}]"
             + "}";
     val mapper = new ObjectMapper();
     val expectedSam1Payload = mapper.readValue(expectedSam1PayloadStr, ObjectNode.class);
     val expectedSam2Payload = mapper.readValue(expectedSam2PayloadStr, ObjectNode.class);
-
 
     val submissionBundle = new SubmissionBundle();
     submissionBundle.getFiles().putAll(STUB_FILE_SAMPLE_MAP);
@@ -70,7 +67,7 @@ public class PayloadFileMapperTests {
   void testErrorOnFailedToMapRecordsAndFile() {
     val records =
         List.of(
-                Map.of("submitter id", "sam1", "isolate", "ABCD/sam1/ddd/erd", "age", "123"),
+            Map.of("submitter id", "sam1", "isolate", "ABCD/sam1/ddd/erd", "age", "123"),
             Map.of("submitter id", "sam2NotHere", "isolate", "notHere", "age", "456"));
 
     val submissionBundle = new SubmissionBundle();
@@ -91,20 +88,21 @@ public class PayloadFileMapperTests {
   @Test
   @SneakyThrows
   void testErrorOnFilesWithOnlyHeader() {
-    val emptyFiles = Map.of(
-            "EFG/sam2/ddd/erd", SubmissionFile.builder()
-                               .fileExtension(FASTA_FILE_EXTENSION)
-                               .fileSize(18)
-                               .fileMd5sum("d41d8cd98f00b204e9800998ecf8427e")
-                               .content(">EFG/sam2/ddd/erd\n")
-                               .fileType(FASTA_TYPE)
-                               .dataType(FASTA_TYPE)
-                               .submittedFileName("the.fasta")
-                               .build());
-    
+    val emptyFiles =
+        Map.of(
+            "EFG/sam2/ddd/erd",
+            SubmissionFile.builder()
+                .fileExtension(FASTA_FILE_EXTENSION)
+                .fileSize(18)
+                .fileMd5sum("d41d8cd98f00b204e9800998ecf8427e")
+                .content(">EFG/sam2/ddd/erd\n")
+                .fileType(FASTA_TYPE)
+                .dataType(FASTA_TYPE)
+                .submittedFileName("the.fasta")
+                .build());
+
     val records =
-            List.of(
-                    Map.of("submitter id", "sam2", "isolate", "EFG/sam2/ddd/erd", "age", "123"));
+        List.of(Map.of("submitter id", "sam2", "isolate", "EFG/sam2/ddd/erd", "age", "123"));
 
     val submissionBundle = new SubmissionBundle();
     submissionBundle.getFiles().putAll(emptyFiles);
@@ -113,9 +111,9 @@ public class PayloadFileMapperTests {
 
     val fileMapper = new PayloadFileMapper(STUB_PAYLOAD_TEMPLATE);
     val thrown =
-            assertThrows(
-                    FoundInvalidFilesException.class,
-                    () -> fileMapper.submissionBundleToSubmissionRequests(submissionBundle));
+        assertThrows(
+            FoundInvalidFilesException.class,
+            () -> fileMapper.submissionBundleToSubmissionRequests(submissionBundle));
 
     assertThat(thrown.getIsolateWithEmptyData()).containsExactly("EFG/sam2/ddd/erd");
   }

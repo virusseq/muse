@@ -17,8 +17,11 @@ import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookup;
@@ -52,7 +55,7 @@ public class PayloadFileMapper {
 
     val invalidFiles = findFilesWithHeaderOnly(submissionBundle.getFiles());
     if (invalidFiles.size() > 0) {
-        throw new FoundInvalidFilesException(invalidFiles);
+      throw new FoundInvalidFilesException(invalidFiles);
     }
 
     val result =
@@ -76,13 +79,15 @@ public class PayloadFileMapper {
     return result.getRecordsMapped();
   }
 
-  private static List<String> findFilesWithHeaderOnly(ConcurrentHashMap<String, SubmissionFile> files) {
-  return files.entrySet().stream()
-                 .filter(entry ->
-                   // add two for the ">" and "\n" that exist in header and not in isolate
-                   entry.getKey().length() + 2 == entry.getValue().getFileSize())
-                 .map(Map.Entry::getKey)
-                 .collect(Collectors.toUnmodifiableList());
+  private static List<String> findFilesWithHeaderOnly(
+      ConcurrentHashMap<String, SubmissionFile> files) {
+    return files.entrySet().stream()
+        .filter(
+            entry ->
+                // add two for the ">" and "\n" that exist in header and not in isolate
+                entry.getKey().length() + 2 == entry.getValue().getFileSize())
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toUnmodifiableList());
   }
 
   private static BiFunction<MapperReduceResult, Map<String, String>, MapperReduceResult>

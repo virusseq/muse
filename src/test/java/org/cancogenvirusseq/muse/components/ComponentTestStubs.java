@@ -41,13 +41,13 @@ public class ComponentTestStubs {
       new ConcurrentHashMap<>(Map.of(ISOLATE_1, STUB_FILE_1, ISOLATE_2, STUB_FILE_2));
 
   public static final String STUB_PAYLOAD_TEMPLATE =
-      "{" +
-        "\"samples\": [ {\"submitterSampleId\": ${submitter id} }]," +
-        "\"age\": ${age}," +
-        "\"sample_collection\": { " +
-            "\"isolate\": ${isolate}" +
-        "}" +
-      "}";
+      "{"
+          + "\"samples\": [ {\"submitterSampleId\": ${submitter id} }],"
+          + "\"age\": ${age},"
+          + "\"sample_collection\": { "
+          + "\"isolate\": ${isolate}"
+          + "}"
+          + "}";
 
   public static final ArrayList<Map<String, String>> STUB_RECORDS =
       new ArrayList<>(

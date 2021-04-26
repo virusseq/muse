@@ -31,6 +31,7 @@ import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
 import org.cancogenvirusseq.muse.model.DownloadInfoFetchResult;
 import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -41,6 +42,8 @@ import reactor.core.publisher.Mono;
 public class DownloadsService {
 
   final SongScoreClient songScoreClient;
+
+  private static final Flux<DataBuffer> NEW_LINE_BUFFER_FLUX = newLineBuffer();
 
   public Flux<DataBuffer> download(List<UUID> objectIds) {
     return Flux.fromIterable(objectIds)
@@ -59,12 +62,20 @@ public class DownloadsService {
         .map(DownloadInfoFetchResult::getFileInfo)
         // file will exist because we already checked for valid analysis
         .map(Optional::get)
-        .flatMap(
+        .concatMap(
             analysisFileResponse -> {
               val objectId = analysisFileResponse.getObjectId();
-              return songScoreClient.downloadObject(objectId);
+              return Flux.concat(
+                      NEW_LINE_BUFFER_FLUX, songScoreClient.downloadObject(objectId), NEW_LINE_BUFFER_FLUX);
             })
         .onErrorMap(t -> !(t instanceof MuseBaseException), t -> new UnknownException());
+  }
+
+  private static Flux<DataBuffer> newLineBuffer() {
+    val buffer = new DefaultDataBufferFactory().allocateBuffer();
+    val newLIne = "\n";
+    buffer.write(newLIne.getBytes());
+    return Flux.just(buffer);
   }
 
   private Mono<DownloadInfoFetchResult> fetchDownloadInfoFromSong(UUID objectIds) {
