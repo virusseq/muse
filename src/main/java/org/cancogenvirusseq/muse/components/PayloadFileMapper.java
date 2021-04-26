@@ -51,7 +51,7 @@ public class PayloadFileMapper {
   @SneakyThrows
   public List<SubmissionRequest> submissionBundleToSubmissionRequests(
       SubmissionBundle submissionBundle) {
-    log.info("Mapping payload to file");
+    log.info("Mapping payloads to files");
 
     val invalidFiles = findFilesWithHeaderOnly(submissionBundle.getFiles());
     if (invalidFiles.size() > 0) {
@@ -76,6 +76,7 @@ public class PayloadFileMapper {
       throw new MissingDataException(isolateInFileMissingInTsv, isolateInRecordMissingFile);
     }
 
+    log.info("Mapped all payloads to files");
     return result.getRecordsMapped();
   }
 
