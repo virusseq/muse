@@ -60,6 +60,7 @@ public class ApiController implements ApiDefinition {
   private final DownloadsService downloadsService;
 
   private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
+  private static final String FILE_NAME_TEMPLATE = "virusseq-consensus-export-";
 
   public Mono<SubmissionDTO> getSubmissionById(@NonNull UUID submissionId) {
     return SecurityContextWrapper.forMono(submissionService::getSubmissionById)
@@ -106,8 +107,8 @@ public class ApiController implements ApiDefinition {
         .header(
             CONTENT_DISPOSITION_HEADER,
             format(
-                "attachment; filename=sample-bundle-%s%s",
-                Instant.now().toString(), FASTA_FILE_EXTENSION))
+                "attachment; filename=%s%s%s",
+                FILE_NAME_TEMPLATE, Instant.now().toString(), FASTA_FILE_EXTENSION))
         .body(downloadsService.download(objectIds));
   }
 
@@ -117,9 +118,9 @@ public class ApiController implements ApiDefinition {
             CONTENT_DISPOSITION_HEADER,
             // convention for gzip is original file name with `.gz`
             format(
-                "attachment; filename=sample-bundle-%s%s.gz",
-                Instant.now().toString(), FASTA_FILE_EXTENSION))
-        .body(downloadsService.download(objectIds).flatMap(this::gzipDataBuffer));
+                "attachment; filename=%s%s%s.gz",
+                FILE_NAME_TEMPLATE, Instant.now().toString(), FASTA_FILE_EXTENSION))
+        .body(downloadsService.download(objectIds).concatMap(this::gzipDataBuffer));
   }
 
   private Mono<DataBuffer> gzipDataBuffer(DataBuffer inputDataBuffer) {
