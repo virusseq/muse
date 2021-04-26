@@ -1,15 +1,22 @@
 package org.cancogenvirusseq.muse.components;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.apache.commons.lang.StringUtils.isNumeric;
 import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.EXPECTING_NUMBER_TYPE;
+import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.NOT_ALLOWED_TO_BE_EMPTY;
 
 import com.google.common.collect.ImmutableList;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import lombok.*;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
 import org.cancogenvirusseq.muse.exceptions.submission.InvalidFieldsException;
 import org.cancogenvirusseq.muse.exceptions.submission.InvalidHeadersException;
@@ -20,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class TsvParser {
   private final ImmutableList<TsvFieldSchema> tsvFieldSchemas;
   private final ImmutableList<String> expectedTsvHeaders;
@@ -41,6 +49,7 @@ public class TsvParser {
 
   @SneakyThrows
   public Stream<Map<String, String>> parseAndValidateTsvStrToFlatRecords(String s) {
+    log.info("Parsing TSV into flat records");
     val lines = s.split("\n");
     val strTsvHeaders = List.of(lines[0].trim().split("\t"));
 
@@ -49,13 +58,18 @@ public class TsvParser {
       throw new InvalidHeadersException(headerChkResult.missing, headerChkResult.unknown);
     }
 
-    // TODO - don't pass header in lines
-    val result = parseAndValidate(lines, strTsvHeaders.toArray(String[]::new));
-    if (result.getInvalidFields().size() > 0) {
-      throw new InvalidFieldsException(result.getInvalidFields());
+    // parse records and run validation pipeline
+    val records =
+        parse(lines)
+            .map(this::checkRequireNotEmpty)
+            .map(this::checkValueTypes)
+            .collect(toUnmodifiableList());
+
+    if (hasAnyInvalidRecord(records)) {
+      throw new InvalidFieldsException(getAllInvalidFieldErrors(records));
     }
 
-    return result.getRecords().stream();
+    return records.stream().map(Record::getStringStringMap);
   }
 
   private HeaderCheckResult checkHeaders(List<String> expectedHeaders, List<String> actualHeaders) {
@@ -72,58 +86,87 @@ public class TsvParser {
     return new HeaderCheckResult(missingHeaders, unknownHeaders);
   }
 
-  private ParserValidResult parseAndValidate(String[] lines, String[] headers) {
-    val fieldErrors = new ArrayList<InvalidField>();
-    val records =
-        // TODO - start from 0 after lines doesn't have headers in it
-        IntStream.range(1, lines.length)
-            .parallel()
-            .filter(
-                j -> {
-                  val line = lines[j];
-                  return line != null && !line.trim().equals("");
-                })
-            .mapToObj(
-                j -> {
-                  val line = lines[j];
-                  val data = line.split("\t");
+  private Stream<Record> parse(String[] lines) {
+    val headers = lines[0].trim().split("\t");
+    return IntStream.range(1, lines.length)
+        .filter(
+            j -> {
+              val line = lines[j];
+              return line != null && !line.trim().equals("");
+            })
+        .mapToObj(
+            j -> {
+              val line = lines[j];
+              val data = line.split("\t");
 
-                  Map<String, String> record = new HashMap<>();
-                  for (int i = 0; i < headers.length; ++i) {
-                    record.put(headers[i], i >= data.length ? "" : data[i]);
-                  }
-
-                  // collect field errors for record
-                  fieldErrors.addAll(checkValueTypes(record, j));
-
-                  return record;
-                })
-            .collect(toUnmodifiableList());
-
-    return new ParserValidResult(records, fieldErrors);
+              Map<String, String> record = new HashMap<>();
+              for (int i = 0; i < headers.length; ++i) {
+                val value = i >= data.length ? "" : data[i];
+                record.put(headers[i], cleanup(value));
+              }
+              return new Record(j, record, new ArrayList<>());
+            })
+        .filter(this::recordNotEmpty);
   }
 
-  private List<InvalidField> checkValueTypes(Map<String, String> record, Integer index) {
-    return tsvFieldSchemas.stream()
-        .map(
-            s -> {
-              val expectedValueType = s.getValueType();
-              val fieldName = s.getName();
-              val value = record.get(s.getName());
+  private Record checkRequireNotEmpty(Record record) {
+    tsvFieldSchemas.forEach(
+        s -> {
+          val fieldName = s.getName();
+          val value = record.getStringStringMap().get(fieldName);
+          if (s.isRequireNotEmpty() && isEmpty(value)) {
+            record.addFieldError(fieldName, NOT_ALLOWED_TO_BE_EMPTY, record.getIndex());
+          }
+        });
 
-              if (expectedValueType.equals(TsvFieldSchema.ValueType.number) && !isNumeric(value)) {
-                return new InvalidField(fieldName, EXPECTING_NUMBER_TYPE, index);
-              }
-              return null;
-            })
-        .filter(Objects::nonNull)
+    return record;
+  }
+
+  private Record checkValueTypes(Record record) {
+    tsvFieldSchemas.forEach(
+        s -> {
+          val fieldName = s.getName();
+          val value = record.getStringStringMap().get(fieldName);
+          if (s.getValueType().equals(TsvFieldSchema.ValueType.number)
+              && isNotEmpty(value) // ignore empty because it's checked before
+              && isNotNumber(value)) {
+            record.addFieldError(fieldName, EXPECTING_NUMBER_TYPE, record.getIndex());
+          }
+        });
+
+    return record;
+  }
+
+  private Boolean hasAnyInvalidRecord(List<Record> records) {
+    return records.stream().anyMatch(Record::hasFieldErrors);
+  }
+
+  private List<InvalidField> getAllInvalidFieldErrors(List<Record> records) {
+    return records.stream()
+        .map(Record::getFieldErrors)
+        .flatMap(List::stream)
         .collect(toUnmodifiableList());
   }
 
-  @Value
-  static class ParserValidResult {
-    List<Map<String, String>> records;
-    List<InvalidField> invalidFields;
+  private Boolean recordNotEmpty(Record recordsDto) {
+    return !recordsDto.getStringStringMap().values().stream()
+        .allMatch(v -> v.trim().equalsIgnoreCase(""));
+  }
+
+  private static String cleanup(String rawValue) {
+    return rawValue.replace("\r", "").replace("\n", "");
+  }
+
+  private static Boolean isEmpty(String value) {
+    return value == null || value.trim().equalsIgnoreCase("");
+  }
+
+  private static Boolean isNotEmpty(String value) {
+    return !isEmpty(value);
+  }
+
+  private static Boolean isNotNumber(String value) {
+    return !NumberUtils.isCreatable(value);
   }
 
   @Value
@@ -133,6 +176,21 @@ public class TsvParser {
 
     Boolean isInvalid() {
       return !missing.isEmpty() || !unknown.isEmpty();
+    }
+  }
+
+  @Value
+  static class Record {
+    Integer index;
+    Map<String, String> stringStringMap;
+    List<InvalidField> fieldErrors;
+
+    public void addFieldError(String fieldName, InvalidField.Reason reason, Integer index) {
+      fieldErrors.add(new InvalidField(fieldName, reason, index));
+    }
+
+    public Boolean hasFieldErrors() {
+      return fieldErrors.size() > 0;
     }
   }
 }

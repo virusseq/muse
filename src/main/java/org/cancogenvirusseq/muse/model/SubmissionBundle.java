@@ -19,23 +19,23 @@
 package org.cancogenvirusseq.muse.model;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 
+/**
+ * A submission bundle contains the validated records to upload to song, the validated files for
+ * score, and the original file names. The bundles is then broken up into a series of
+ * SubmissionRequest(s) by the SubmissionService
+ */
 @Getter
 @AllArgsConstructor
 public class SubmissionBundle {
-  @Setter private String recordsFileName;
-  private final ArrayList<Map<String, String>> records;
-  private final ConcurrentHashMap<String, SubmissionFile> files;
-
-  public SubmissionBundle(@NonNull String recordsFileName) {
-    this.recordsFileName = recordsFileName;
-    this.records = new ArrayList<>();
-    this.files = new ConcurrentHashMap<>();
-  }
+  private final Set<String> originalFileNames = new HashSet<>();
+  private final ArrayList<Map<String, String>> records = new ArrayList<>();
+  private final ConcurrentHashMap<String, SubmissionFile> files = new ConcurrentHashMap<>();
 }

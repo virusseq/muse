@@ -13,8 +13,11 @@ cors:
     - "https://localhost:3000"
   maxAge: 3600
 
-codeConfig:
+codecConfig:
   maxHeadersSize: 16384
+
+submitUpload:
+  concurrency: 5
 
 postgres:
   host: localhost
@@ -29,6 +32,8 @@ songScoreClient:
   clientId: adminId
   clientSecret: adminSecret
   tokenUrl: http://localhost:8081/oauth/token
+  retryMaxAttempts: 3
+  retryDelaySec: 10
 
 auth:
   jwtPublicKeyUrl: "http://localhost:8081/oauth/token/public_key"

@@ -16,41 +16,19 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.repository.model;
+package org.cancogenvirusseq.muse.model;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import java.time.OffsetDateTime;
-import java.util.Set;
-import java.util.UUID;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-@Data
-@Builder
-@NoArgsConstructor
+/**
+ * Class containing the raw upload object from a submission with the content read out into a string,
+ * original filename and type captured here as well
+ */
+@Getter
 @AllArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-@Table("upload")
-public class Upload {
-  @Id private UUID uploadId;
-
-  @NonNull private String studyId;
-
-  @NonNull private String submitterSampleId;
-
-  @NonNull private UUID submissionId;
-
-  @NonNull private UUID userId;
-
-  private OffsetDateTime createdAt;
-
-  @NonNull private UploadStatus status;
-
-  @NonNull private Set<String> originalFilePair;
-
-  private UUID analysisId;
-
-  private String error;
+public class SubmissionUpload {
+  private final String filename;
+  private final String type;
+  private final String content;
 }

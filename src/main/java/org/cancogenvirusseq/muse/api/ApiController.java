@@ -21,14 +21,15 @@ package org.cancogenvirusseq.muse.api;
 import static java.lang.String.format;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
-import lombok.*;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
@@ -43,7 +44,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -57,6 +60,12 @@ public class ApiController implements ApiDefinition {
   private final DownloadsService downloadsService;
 
   private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
+
+  public Mono<SubmissionDTO> getSubmissionById(@NonNull UUID submissionId) {
+    return SecurityContextWrapper.forMono(submissionService::getSubmissionById)
+        .apply(submissionId)
+        .map(SubmissionDTO::fromDAO);
+  }
 
   public Mono<EntityListResponse<SubmissionDTO>> getSubmissions(
       Integer page, Integer size, Sort.Direction sortDirection, SubmissionSortField sortField) {

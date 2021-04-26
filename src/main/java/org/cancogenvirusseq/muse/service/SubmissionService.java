@@ -27,8 +27,10 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
-import lombok.*;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.components.PayloadFileMapper;
 import org.cancogenvirusseq.muse.components.TsvParser;
@@ -36,6 +38,7 @@ import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFilesException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.SubmissionRequest;
+import org.cancogenvirusseq.muse.model.SubmissionUpload;
 import org.cancogenvirusseq.muse.repository.SubmissionRepository;
 import org.cancogenvirusseq.muse.repository.model.Submission;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -59,6 +62,12 @@ public class SubmissionService {
   private final Sinks.Many<SubmissionEvent> songScoreSubmitUploadSink;
   private final TsvParser tsvParser;
   private final PayloadFileMapper payloadFileMapper;
+
+  public Mono<Submission> getSubmissionById(
+      @NonNull UUID submissionId, @NonNull SecurityContext securityContext) {
+    return submissionRepository.getSubmissionByUserIdAndSubmissionId(
+        UUID.fromString(securityContext.getAuthentication().getName()), submissionId);
+  }
 
   /**
    * Retrieves submission entities from the database
@@ -91,9 +100,9 @@ public class SubmissionService {
         .flatMap(SubmissionService::expandToFileTypeFilePartTuple)
         // read each file in as String
         .transform(SubmissionService::readFileContentToString)
-        // reduce flux of Tuples(fileType, fileString) into a SubmissionRequest
-        .reduce(new SubmissionBundle("to-be-replaced-in-reducer"), this::reduceToSubmissionBundle)
-        // validate submission records has fasta file map!
+        // reduce flux of SubmissionUpload to SubmissionBundle
+        .reduce(new SubmissionBundle(), this::reduceToSubmissionBundle)
+        // validate submission records has fasta file map and split to submissionRequests
         .map(payloadFileMapper::submissionBundleToSubmissionRequests)
         // record submission to database
         .flatMap(
@@ -192,38 +201,28 @@ public class SubmissionService {
 
   private static Set<String> compileOriginalFilenames(List<SubmissionRequest> submissionRequests) {
     return submissionRequests.stream()
-        .map(
-            submissionRequest ->
-                List.of(
-                    submissionRequest.getRecordFilename(),
-                    submissionRequest.getSubmissionFile().getFileName()))
+        .map(SubmissionRequest::getOriginalFileNames)
         .flatMap(Collection::stream)
         .collect(Collectors.toSet());
   }
 
   private SubmissionBundle reduceToSubmissionBundle(
       SubmissionBundle submissionBundle, SubmissionUpload submissionUpload) {
+    // append original filename
+    submissionBundle.getOriginalFileNames().add(submissionUpload.getFilename());
+
     switch (submissionUpload.getType()) {
       case "tsv":
-        // save the tsv filename to the bundle
-        submissionBundle.setRecordsFileName(submissionUpload.getFilename());
         // parse and validate records
         tsvParser
             .parseAndValidateTsvStrToFlatRecords(submissionUpload.getContent())
             .forEach(record -> submissionBundle.getRecords().add(record));
         break;
       case "fasta":
-        submissionBundle.getFiles().putAll(processFileStrContent(submissionUpload.getContent()));
+        // process the submitted file into upload ready files
+        submissionBundle.getFiles().putAll(processFileStrContent(submissionUpload));
         break;
     }
     return submissionBundle;
-  }
-
-  @Getter
-  @AllArgsConstructor
-  private static class SubmissionUpload {
-    private final String filename;
-    private final String type;
-    private final String content;
   }
 }
