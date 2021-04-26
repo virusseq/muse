@@ -33,6 +33,7 @@ public class FastaFileProcessor {
         .filter(
             sampleData ->
                 sampleData != null && !sampleData.trim().equals("") && sampleData.startsWith(">"))
+        .map(String::trim)
         .forEach(
             fc -> {
               val fastaHeaderOpt = extractFastaIsolate(fc);
@@ -54,6 +55,7 @@ public class FastaFileProcessor {
               isolateToSubmissionFile.put(fastaHeaderOpt.get(), submissionFile);
             });
 
+    log.info("Processed fasta file chunk");
     return isolateToSubmissionFile;
   }
 
@@ -65,7 +67,7 @@ public class FastaFileProcessor {
     }
 
     // isolate is substring from after ">" char to new line (not including)
-    return Optional.of(sampleContent.substring(1, fastaHeaderEndNewlineIndex));
+    return Optional.of(sampleContent.substring(1, fastaHeaderEndNewlineIndex).trim());
   }
 
   @SneakyThrows

@@ -69,6 +69,7 @@ public class TsvParser {
       throw new InvalidFieldsException(getAllInvalidFieldErrors(records));
     }
 
+    log.info("Parsed TSV successfully!");
     return records.stream().map(Record::getStringStringMap);
   }
 
