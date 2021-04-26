@@ -31,8 +31,8 @@ import reactor.util.function.Tuples;
 @Service
 @RequiredArgsConstructor
 public class SongScoreService {
-  @Value("${submitUpload.concurrency}")
-  private Integer concurrency;
+  @Value("${submitUpload.maxInFlight}")
+  private Integer maxInFlight;
 
   // Prefetch determines max in-flight elements from inner Publisher sequence
   // all Publishers in submitAndUploadToSongScore return Mono, so only one element
@@ -58,9 +58,10 @@ public class SongScoreService {
   private Disposable createSubmitUploadDisposable() {
     return sink.asFlux()
         .flatMap(this::toStreamOfPayloadUploadAndSubFile)
+        // TODO - consider moving upload queueing to before submission event emit
         .flatMap(this::queueUpload)
         // Concurrency of this flatMap is controlled to not overwhelm SONG/score
-        .flatMap(this::submitAndUploadToSongScore, concurrency, SONG_SCORE_SUBMIT_UPLOAD_PREFETCH)
+        .flatMap(this::submitAndUploadToSongScore, maxInFlight, SONG_SCORE_SUBMIT_UPLOAD_PREFETCH)
         .subscribe();
   }
 
