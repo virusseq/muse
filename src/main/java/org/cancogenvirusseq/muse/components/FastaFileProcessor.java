@@ -7,10 +7,12 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.cancogenvirusseq.muse.model.SubmissionUpload;
 
+@Slf4j
 public class FastaFileProcessor {
   public static final String FASTA_TYPE = "FASTA";
   public static final String FASTA_FILE_EXTENSION = ".fasta";
@@ -23,10 +25,15 @@ public class FastaFileProcessor {
    */
   public static ConcurrentHashMap<String, SubmissionFile> processFileStrContent(
       SubmissionUpload submissionUpload) {
+    log.info("Processing fasta file chunk");
+   
     val isolateToSubmissionFile = new ConcurrentHashMap<String, SubmissionFile>();
 
     Arrays.stream(submissionUpload.getContent().split("(?=>)"))
-        .filter(sampleData -> sampleData != null && !sampleData.trim().equals(""))
+        .parallel()
+        .filter(sampleData -> sampleData != null
+                                      && !sampleData.trim().equals("")
+                                      && sampleData.startsWith(">"))
         .forEach(
             fc -> {
               val fastaHeaderOpt = extractFastaIsolate(fc);
@@ -57,7 +64,9 @@ public class FastaFileProcessor {
     if (fastaHeaderEndNewlineIndex == -1) {
       return Optional.empty();
     }
-
+      if (fastaHeaderEndNewlineIndex == 0) {
+          log.info("I'm zero");
+      }
     // isolate is substring from after ">" char to new line (not including)
     return Optional.of(sampleContent.substring(1, fastaHeaderEndNewlineIndex));
   }

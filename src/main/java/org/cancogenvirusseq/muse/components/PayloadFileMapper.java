@@ -37,6 +37,7 @@ public class PayloadFileMapper {
   @SneakyThrows
   public List<SubmissionRequest> submissionBundleToSubmissionRequests(
       SubmissionBundle submissionBundle) {
+    log.info("Mapping payload to file");
     val result =
         submissionBundle.getRecords().stream()
             .reduce(
