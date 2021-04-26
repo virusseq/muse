@@ -70,7 +70,7 @@ public class DownloadsService {
 
   private static Flux<DataBuffer> newLineBuffer() {
     val buffer = new DefaultDataBufferFactory().allocateBuffer(4);
-    val newLIne = "\r\n";
+    val newLIne = "\n";
     buffer.write(newLIne.getBytes());
     return Flux.just(buffer);
   }
