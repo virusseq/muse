@@ -30,7 +30,6 @@ public class FastaFileProcessor {
     val isolateToSubmissionFile = new ConcurrentHashMap<String, SubmissionFile>();
 
     Arrays.stream(submissionUpload.getContent().split("(?=>)"))
-        .parallel()
         .filter(
             sampleData ->
                 sampleData != null && !sampleData.trim().equals("") && sampleData.startsWith(">"))
