@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
@@ -22,7 +23,8 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookup;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
-import org.cancogenvirusseq.muse.exceptions.submission.PayloadFileMapperException;
+import org.cancogenvirusseq.muse.exceptions.submission.FoundInvalidFilesException;
+import org.cancogenvirusseq.muse.exceptions.submission.MissingDataException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.cancogenvirusseq.muse.model.SubmissionRequest;
@@ -47,6 +49,12 @@ public class PayloadFileMapper {
   public List<SubmissionRequest> submissionBundleToSubmissionRequests(
       SubmissionBundle submissionBundle) {
     log.info("Mapping payload to file");
+
+    val invalidFiles = findFilesWithHeaderOnly(submissionBundle.getFiles());
+    if (invalidFiles.size() > 0) {
+        throw new FoundInvalidFilesException(invalidFiles);
+    }
+
     val result =
         submissionBundle.getRecords().stream()
             .reduce(
@@ -62,10 +70,19 @@ public class PayloadFileMapper {
             .collect(toUnmodifiableList());
 
     if (isolateInFileMissingInTsv.size() > 0 || isolateInRecordMissingFile.size() > 0) {
-      throw new PayloadFileMapperException(isolateInFileMissingInTsv, isolateInRecordMissingFile);
+      throw new MissingDataException(isolateInFileMissingInTsv, isolateInRecordMissingFile);
     }
 
     return result.getRecordsMapped();
+  }
+
+  private static List<String> findFilesWithHeaderOnly(ConcurrentHashMap<String, SubmissionFile> files) {
+  return files.entrySet().stream()
+                 .filter(entry ->
+                   // add two for the ">" and "\n" that exist in header and not in isolate
+                   entry.getKey().length() + 2 == entry.getValue().getFileSize())
+                 .map(Map.Entry::getKey)
+                 .collect(Collectors.toUnmodifiableList());
   }
 
   private static BiFunction<MapperReduceResult, Map<String, String>, MapperReduceResult>

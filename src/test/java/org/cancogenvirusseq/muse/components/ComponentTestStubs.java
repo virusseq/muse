@@ -18,9 +18,9 @@ public class ComponentTestStubs {
   public static final SubmissionFile STUB_FILE_1 =
       SubmissionFile.builder()
           .fileExtension(FASTA_FILE_EXTENSION)
-          .fileSize(26)
-          .fileMd5sum("f433d470a7bacc3bdcdafeb1a4b4d758")
-          .content(">ABCD/sam1/ddd/erd \nCTGA \n")
+          .fileSize(24)
+          .fileMd5sum("cf20195497cc8c06075a6e201e82dd17")
+          .content(">ABCD/sam1/ddd/erd \nCTGA")
           .fileType(FASTA_TYPE)
           .dataType(FASTA_TYPE)
           .submittedFileName("the.fasta")

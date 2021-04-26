@@ -8,7 +8,7 @@ import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
-public class PayloadFileMapperException extends Throwable implements MuseBaseException {
+public class MissingDataException extends Throwable implements MuseBaseException {
   List<String> isolateInFileMissingInTsv;
   List<String> isolateInRecordMissingInFile;
 

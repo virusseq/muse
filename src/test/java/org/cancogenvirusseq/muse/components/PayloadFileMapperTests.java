@@ -2,6 +2,8 @@ package org.cancogenvirusseq.muse.components;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.cancogenvirusseq.muse.components.ComponentTestStubs.*;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_TYPE;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,9 +15,10 @@ import java.util.Set;
 
 import lombok.SneakyThrows;
 import lombok.val;
-import org.cancogenvirusseq.muse.exceptions.submission.PayloadFileMapperException;
+import org.cancogenvirusseq.muse.exceptions.submission.FoundInvalidFilesException;
+import org.cancogenvirusseq.muse.exceptions.submission.MissingDataException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
-import org.cancogenvirusseq.muse.model.SubmissionRequest;
+import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.junit.jupiter.api.Test;
 
 public class PayloadFileMapperTests {
@@ -29,7 +32,7 @@ public class PayloadFileMapperTests {
             + "\"sample_collection\": { "
             +   "\"isolate\": \"ABCD/sam1/ddd/erd\""
             +  "},"
-            + "\"files\":[{\"fileName\":\"sam1.fasta\",\"fileSize\":26,\"fileMd5sum\":\"f433d470a7bacc3bdcdafeb1a4b4d758\",\"fileAccess\":\"open\",\"fileType\":\"FASTA\",\"dataType\":\"FASTA\"}]"
+            + "\"files\":[{\"fileName\":\"sam1.fasta\",\"fileSize\":24,\"fileMd5sum\":\"cf20195497cc8c06075a6e201e82dd17\",\"fileAccess\":\"open\",\"fileType\":\"FASTA\",\"dataType\":\"FASTA\"}]"
             + "}";
     val expectedSam2PayloadStr =
         "{ \"samples\": [ {\"submitterSampleId\": \"sam2\"}], "
@@ -78,10 +81,42 @@ public class PayloadFileMapperTests {
     val fileMapper = new PayloadFileMapper(STUB_PAYLOAD_TEMPLATE);
     val thrown =
         assertThrows(
-            PayloadFileMapperException.class,
+            MissingDataException.class,
             () -> fileMapper.submissionBundleToSubmissionRequests(submissionBundle));
 
     assertThat(thrown.getIsolateInFileMissingInTsv()).containsExactly(ISOLATE_2);
     assertThat(thrown.getIsolateInRecordMissingInFile()).containsExactly("notHere");
+  }
+
+  @Test
+  @SneakyThrows
+  void testErrorOnFilesWithOnlyHeader() {
+    val emptyFiles = Map.of(
+            "EFG/sam2/ddd/erd", SubmissionFile.builder()
+                               .fileExtension(FASTA_FILE_EXTENSION)
+                               .fileSize(18)
+                               .fileMd5sum("d41d8cd98f00b204e9800998ecf8427e")
+                               .content(">EFG/sam2/ddd/erd\n")
+                               .fileType(FASTA_TYPE)
+                               .dataType(FASTA_TYPE)
+                               .submittedFileName("the.fasta")
+                               .build());
+    
+    val records =
+            List.of(
+                    Map.of("submitter id", "sam2", "isolate", "EFG/sam2/ddd/erd", "age", "123"));
+
+    val submissionBundle = new SubmissionBundle();
+    submissionBundle.getFiles().putAll(emptyFiles);
+    submissionBundle.getRecords().addAll(records);
+    submissionBundle.getOriginalFileNames().addAll(Set.of("asdf.tsv", "the2.fasta"));
+
+    val fileMapper = new PayloadFileMapper(STUB_PAYLOAD_TEMPLATE);
+    val thrown =
+            assertThrows(
+                    FoundInvalidFilesException.class,
+                    () -> fileMapper.submissionBundleToSubmissionRequests(submissionBundle));
+
+    assertThat(thrown.getIsolateWithEmptyData()).containsExactly("EFG/sam2/ddd/erd");
   }
 }
