@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
+import org.cancogenvirusseq.muse.config.db.PostgresProperties;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
@@ -40,6 +41,7 @@ public class SongScoreService {
 
   final SongScoreClient songScoreClient;
   final UploadRepository repo;
+  final PostgresProperties props;
 
   private final Sinks.Many<SubmissionEvent> sink = Sinks.many().unicast().onBackpressureBuffer();
 
@@ -59,7 +61,7 @@ public class SongScoreService {
     return sink.asFlux()
         .flatMap(this::toStreamOfPayloadUploadAndSubFile)
         // TODO - consider moving upload queueing to before submission event emit
-        .flatMap(this::queueUpload)
+        .flatMap(this::queueUpload, props.getMaxPoolSize())
         // Concurrency of this flatMap is controlled to not overwhelm SONG/score
         .flatMap(this::submitAndUploadToSongScore, maxInFlight, SONG_SCORE_SUBMIT_UPLOAD_PREFETCH)
         .subscribe();
