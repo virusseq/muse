@@ -64,7 +64,7 @@ public class SongScoreService {
         .flatMap(this::queueUpload, props.getMaxPoolSize())
         // Concurrency of this flatMap is controlled to not overwhelm SONG/score
         .flatMap(this::submitAndUploadToSongScore, maxInFlight, SONG_SCORE_SUBMIT_UPLOAD_PREFETCH)
-        .subscribe();                                                
+        .subscribe();
   }
 
   public Flux<Tuple3<String, Upload, SubmissionFile>> toStreamOfPayloadUploadAndSubFile(
