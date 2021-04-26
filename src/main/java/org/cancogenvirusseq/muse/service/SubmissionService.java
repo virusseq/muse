@@ -196,7 +196,8 @@ public class SubmissionService {
 
               return new String(bytes, StandardCharsets.UTF_8);
             })
-        .reduce(String::concat);
+        .reduce(new StringBuilder(), StringBuilder::append)
+        .map(StringBuilder::toString);
   }
 
   private static Set<String> compileOriginalFilenames(List<SubmissionRequest> submissionRequests) {
