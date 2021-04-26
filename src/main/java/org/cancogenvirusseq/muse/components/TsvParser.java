@@ -49,6 +49,7 @@ public class TsvParser {
 
   @SneakyThrows
   public Stream<Map<String, String>> parseAndValidateTsvStrToFlatRecords(String s) {
+    log.info("Parsing TSV into flat records");
     val lines = s.split("\n");
     val strTsvHeaders = List.of(lines[0].trim().split("\t"));
 
