@@ -82,8 +82,8 @@ public class R2DBCConfiguration extends AbstractR2dbcConfiguration {
   public ConnectionFactory connectionFactory() {
     val configuration =
         ConnectionPoolConfiguration.builder(psqlConnectionFactory())
-            .maxIdleTime(Duration.ofMillis(1000))
-            .maxSize(20)
+            .maxIdleTime(Duration.ofMillis(postgresProperties.getMaxPoolIdleTimeMs()))
+            .maxSize(postgresProperties.getMaxPoolSize())
             .build();
 
     return new ConnectionPool(configuration);
