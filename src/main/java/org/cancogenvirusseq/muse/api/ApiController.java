@@ -120,7 +120,7 @@ public class ApiController implements ApiDefinition {
             format(
                 "attachment; filename=%s%s%s.gz",
                 FILE_NAME_TEMPLATE, Instant.now().toString(), FASTA_FILE_EXTENSION))
-        .body(downloadsService.download(objectIds).flatMap(this::gzipDataBuffer));
+        .body(downloadsService.download(objectIds).concatMap(this::gzipDataBuffer));
   }
 
   private Mono<DataBuffer> gzipDataBuffer(DataBuffer inputDataBuffer) {
