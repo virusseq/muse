@@ -19,9 +19,9 @@ public class TsvParserTests {
 
   private static final ImmutableList<TsvFieldSchema> TSV_SCHEMA =
       ImmutableList.of(
-          new TsvFieldSchema("submitterId", TsvFieldSchema.ValueType.string),
-          new TsvFieldSchema("name", TsvFieldSchema.ValueType.string),
-          new TsvFieldSchema("age", TsvFieldSchema.ValueType.number));
+          new TsvFieldSchema("submitterId", TsvFieldSchema.ValueType.string, true),
+          new TsvFieldSchema("name", TsvFieldSchema.ValueType.string, false),
+          new TsvFieldSchema("age", TsvFieldSchema.ValueType.number, true));
 
   @Test
   @SneakyThrows

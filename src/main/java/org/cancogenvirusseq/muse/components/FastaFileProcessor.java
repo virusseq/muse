@@ -66,7 +66,7 @@ public class FastaFileProcessor {
     }
 
     // isolate is substring from after ">" char to new line (not including)
-    return Optional.of(sampleContent.substring(1, fastaHeaderEndNewlineIndex));
+    return Optional.of(sampleContent.substring(1, fastaHeaderEndNewlineIndex).trim());
   }
 
   @SneakyThrows
