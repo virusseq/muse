@@ -33,7 +33,6 @@ import lombok.NonNull;
  * SubmissionRequest(s) by the SubmissionService
  */
 @Getter
-@AllArgsConstructor
 public class SubmissionBundle {
   private final Set<String> originalFileNames = new HashSet<>();
   private final ArrayList<Map<String, String>> records = new ArrayList<>();
