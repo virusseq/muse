@@ -38,6 +38,7 @@ import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFilesException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.SubmissionRequest;
+import org.cancogenvirusseq.muse.model.SubmissionUpload;
 import org.cancogenvirusseq.muse.repository.SubmissionRepository;
 import org.cancogenvirusseq.muse.repository.model.Submission;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -61,6 +62,12 @@ public class SubmissionService {
   private final Sinks.Many<SubmissionEvent> songScoreSubmitUploadSink;
   private final TsvParser tsvParser;
   private final PayloadFileMapper payloadFileMapper;
+
+  public Mono<Submission> getSubmissionById(
+      @NonNull UUID submissionId, @NonNull SecurityContext securityContext) {
+    return submissionRepository.getSubmissionByUserIdAndSubmissionId(
+        UUID.fromString(securityContext.getAuthentication().getName()), submissionId);
+  }
 
   /**
    * Retrieves submission entities from the database
@@ -93,22 +100,20 @@ public class SubmissionService {
         .flatMap(SubmissionService::expandToFileTypeFilePartTuple)
         // read each file in as String
         .transform(SubmissionService::readFileContentToString)
-        // reduce flux of Tuples(fileType, fileString) into a SubmissionRequest
+        // reduce flux of SubmissionUpload to SubmissionBundle
         .reduce(new SubmissionBundle(), this::reduceToSubmissionBundle)
-        // validate submission records has fasta file map!
+        // validate submission records has fasta file map and split to submissionRequests
         .map(payloadFileMapper::submissionBundleToSubmissionRequests)
-        // attach original files to submission request for bookkeeping purposes
-        .flatMap(recordsSubmissionFiles -> attachOriginalFiles(recordsSubmissionFiles, fileParts))
         // record submission to database
         .flatMap(
-            submissionData ->
+            submissionRequest ->
                 submissionRepository
                     .save(
                         Submission.builder()
                             .userId(getUserIdFromContext(securityContext))
                             .createdAt(OffsetDateTime.now())
-                            .originalFileNames(submissionData.getT2())
-                            .totalRecords(submissionData.getT1().size())
+                            .originalFileNames(compileOriginalFilenames(submissionRequest))
+                            .totalRecords(submissionRequest.size())
                             .build())
                     // from recorded submission, create submissionEvent
                     .map(
@@ -116,7 +121,7 @@ public class SubmissionService {
                             SubmissionEvent.builder()
                                 .submissionId(submission.getSubmissionId())
                                 .userId(getUserIdFromContext(securityContext))
-                                .submissionRequests(submissionData.getT1())
+                                .submissionRequests(submissionRequest)
                                 .build()))
         // emit submission event to sink for further processing
         .doOnNext(songScoreSubmitUploadSink::tryEmitNext)
@@ -168,12 +173,17 @@ public class SubmissionService {
         .map(filePart -> Tuples.of(mapEntry.getKey(), filePart));
   }
 
-  private static Flux<Tuple2<String, String>> readFileContentToString(
+  private static Flux<SubmissionUpload> readFileContentToString(
       Flux<Tuple2<String, FilePart>> fileTypeFilePartTupleFlux) {
     return fileTypeFilePartTupleFlux.flatMap(
         fileTypeFilePart ->
             fileContentToString(fileTypeFilePart.getT2().content())
-                .map(fileStr -> Tuples.of(fileTypeFilePart.getT1(), fileStr)));
+                .map(
+                    fileStr ->
+                        new SubmissionUpload(
+                            fileTypeFilePart.getT2().filename(),
+                            fileTypeFilePart.getT1(),
+                            fileStr)));
   }
 
   private static Mono<String> fileContentToString(Flux<DataBuffer> content) {
@@ -186,27 +196,32 @@ public class SubmissionService {
 
               return new String(bytes, StandardCharsets.UTF_8);
             })
-        .reduce(String::concat);
+        .reduce(new StringBuilder(), StringBuilder::append)
+        .map(StringBuilder::toString);
   }
 
-  private static Mono<Tuple2<List<SubmissionRequest>, List<String>>> attachOriginalFiles(
-      List<SubmissionRequest> submissionRequests, Flux<FilePart> fileParts) {
-    return fileParts
-        .map(FilePart::filename)
-        .collectList()
-        .map(fileList -> Tuples.of(submissionRequests, fileList));
+  private static Set<String> compileOriginalFilenames(List<SubmissionRequest> submissionRequests) {
+    return submissionRequests.stream()
+        .map(SubmissionRequest::getOriginalFileNames)
+        .flatMap(Collection::stream)
+        .collect(Collectors.toSet());
   }
 
   private SubmissionBundle reduceToSubmissionBundle(
-      SubmissionBundle submissionBundle, Tuple2<String, String> fileTypeFileStringTuple) {
-    switch (fileTypeFileStringTuple.getT1()) {
+      SubmissionBundle submissionBundle, SubmissionUpload submissionUpload) {
+    // append original filename
+    submissionBundle.getOriginalFileNames().add(submissionUpload.getFilename());
+
+    switch (submissionUpload.getType()) {
       case "tsv":
+        // parse and validate records
         tsvParser
-            .parseAndValidateTsvStrToFlatRecords(fileTypeFileStringTuple.getT2())
+            .parseAndValidateTsvStrToFlatRecords(submissionUpload.getContent())
             .forEach(record -> submissionBundle.getRecords().add(record));
         break;
       case "fasta":
-        submissionBundle.getFiles().putAll(processFileStrContent(fileTypeFileStringTuple.getT2()));
+        // process the submitted file into upload ready files
+        submissionBundle.getFiles().putAll(processFileStrContent(submissionUpload));
         break;
     }
     return submissionBundle;

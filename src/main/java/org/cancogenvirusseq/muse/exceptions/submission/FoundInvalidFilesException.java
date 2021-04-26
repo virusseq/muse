@@ -8,18 +8,15 @@ import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
-public class MissingHeadersException extends Throwable implements MuseBaseException {
-  List<String> missingHeaders;
-  List<String> unknownHeaders;
+public class FoundInvalidFilesException extends Throwable implements MuseBaseException {
+  List<String> isolateWithEmptyData;
 
   @Override
   public String getMessage() {
-    return "Headers are incorrect!";
+    return "Found samples with no data (only headers)!";
   }
 
   public Map<String, Object> getErrorInfo() {
-    return Map.of(
-        "missingHeaders", missingHeaders,
-        "unknownHeaders", unknownHeaders);
+    return Map.of("isolateWithEmptyData", isolateWithEmptyData);
   }
 }

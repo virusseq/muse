@@ -16,4 +16,8 @@ public class AnalysisPayloadUtils {
   public static String getStudyId(JsonNode analysisJson) {
     return analysisJson.get("studyId").asText();
   }
+
+  public static String getIsolate(JsonNode analysisJson) {
+    return analysisJson.get("sample_collection").get("isolate").asText();
+  }
 }

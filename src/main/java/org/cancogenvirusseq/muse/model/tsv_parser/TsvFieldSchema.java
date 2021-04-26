@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class TsvFieldSchema {
   String name;
   ValueType valueType;
+  boolean requireNotEmpty = false;
 
   public enum ValueType {
     string,

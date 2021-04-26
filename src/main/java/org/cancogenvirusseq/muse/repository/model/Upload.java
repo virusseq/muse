@@ -21,7 +21,7 @@ package org.cancogenvirusseq.muse.repository.model;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import java.time.OffsetDateTime;
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -48,9 +48,9 @@ public class Upload {
 
   @NonNull private UploadStatus status;
 
+  @NonNull private Set<String> originalFilePair;
+
   private UUID analysisId;
 
   private String error;
-
-  private List<String> originalFilePair;
 }

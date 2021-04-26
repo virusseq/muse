@@ -19,6 +19,7 @@
 package org.cancogenvirusseq.muse.api;
 
 import io.swagger.annotations.*;
+import java.util.List;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.cancogenvirusseq.muse.api.model.*;
@@ -38,6 +39,25 @@ public interface ApiDefinition {
   String UNAUTHORIZED_MSG = "Request requires authorization.";
   String FORBIDDEN_MSG = "The requester is not authorized to perform this action.";
   String UNKNOWN_MSG = "An unexpected error occurred.";
+
+  @ApiOperation(
+      value = "Get Submission by submissionId",
+      nickname = "Get Submission by submissionId",
+      response = SubmissionDTO.class,
+      tags = "Muse")
+  @ApiResponses(
+      value = {
+        @ApiResponse(code = 200, message = "", response = SubmissionDTO.class),
+        @ApiResponse(code = 400, message = BAD_REQUEST, response = ErrorResponse.class),
+        @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
+        @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
+        @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
+      })
+  @RequestMapping(
+      value = "/submissions/{submissionId}",
+      produces = MediaType.APPLICATION_JSON_VALUE,
+      method = RequestMethod.GET)
+  Mono<SubmissionDTO> getSubmissionById(@PathVariable("submissionId") UUID submissionId);
 
   @ApiOperation(
       value = "Get All Submissions",
@@ -188,14 +208,27 @@ public interface ApiDefinition {
   @ApiResponses(
       value = {
         @ApiResponse(code = 200, message = "", response = MultipartFile.class),
-        @ApiResponse(code = 401, message = UNAUTHORIZED_MSG, response = ErrorResponse.class),
-        @ApiResponse(code = 403, message = FORBIDDEN_MSG, response = ErrorResponse.class),
         @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
       })
   @RequestMapping(
       value = "/download",
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE,
-      consumes = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  ResponseEntity<Flux<DataBuffer>> download(@Valid @RequestBody DownloadRequest downloadRequest);
+  ResponseEntity<Flux<DataBuffer>> download(@Valid @RequestParam List<UUID> objectIds);
+
+  @ApiOperation(
+      value = "Download molecular data as a single .fasta.gz gzip compressed file",
+      nickname = "Download Gzip",
+      response = MultipartFile.class,
+      tags = "Muse")
+  @ApiResponses(
+      value = {
+        @ApiResponse(code = 200, message = "", response = MultipartFile.class),
+        @ApiResponse(code = 500, message = UNKNOWN_MSG, response = ErrorResponse.class)
+      })
+  @RequestMapping(
+      value = "/download/gzip",
+      produces = MediaType.APPLICATION_OCTET_STREAM_VALUE,
+      method = RequestMethod.GET)
+  ResponseEntity<Flux<DataBuffer>> downloadGzip(@Valid @RequestParam List<UUID> objectIds);
 }

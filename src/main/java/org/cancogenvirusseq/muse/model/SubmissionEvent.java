@@ -25,6 +25,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 
+/** Event type used to emit from the SubmissionService to the SongScoreService */
 @Data
 @Builder
 @AllArgsConstructor

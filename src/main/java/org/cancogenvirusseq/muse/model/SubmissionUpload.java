@@ -16,19 +16,19 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.api.model;
+package org.cancogenvirusseq.muse.model;
 
-import java.util.List;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.Getter;
 
-@Data
+/**
+ * Class containing the raw upload object from a submission with the content read out into a string,
+ * original filename and type captured here as well
+ */
+@Getter
 @AllArgsConstructor
-@NoArgsConstructor
-public class DownloadRequest {
-  @NonNull private String studyId;
-  @NonNull private List<UUID> analysisIds;
+public class SubmissionUpload {
+  private final String filename;
+  private final String type;
+  private final String content;
 }

@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.cancogen-virus-seq</groupId>
     <artifactId>muse</artifactId>
-    <version>0.1.3</version>
+    <version>0.2.0</version>
     <name>muse</name>
     <description>Service to submit, validate, and download virus-seq data</description>
     <properties>
@@ -46,6 +46,12 @@
             <artifactId>r2dbc-postgresql</artifactId>
             <version>0.8.7.RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>io.r2dbc</groupId>
+            <artifactId>r2dbc-pool</artifactId>
+            <version>0.8.6.RELEASE</version>
+        </dependency>
+
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
@@ -87,9 +93,9 @@
             <version>29.0-jre</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.velocity</groupId>
-            <artifactId>velocity</artifactId>
-            <version>1.7</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.12.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

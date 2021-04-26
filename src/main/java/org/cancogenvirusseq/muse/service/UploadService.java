@@ -19,17 +19,19 @@
 package org.cancogenvirusseq.muse.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlResult;
-import io.r2dbc.spi.ConnectionFactory;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
@@ -39,6 +41,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class UploadService {
   private final UploadRepository uploadRepository;
@@ -47,13 +50,12 @@ public class UploadService {
 
   public UploadService(
       @NonNull UploadRepository uploadRepository,
-      @NonNull ConnectionFactory connectionFactory,
+      @NonNull PostgresqlConnectionFactory connectionFactory,
       @NonNull ObjectMapper objectMapper) {
     this.uploadRepository = uploadRepository;
     this.objectMapper = objectMapper;
     // no need for .toFuture().get() here as constructors are allowed to block
-    this.connection =
-        Mono.from(connectionFactory.create()).cast(PostgresqlConnection.class).block();
+    this.connection = Mono.from(connectionFactory.create()).block();
   }
 
   @PostConstruct
@@ -81,19 +83,34 @@ public class UploadService {
   public Flux<Upload> getUploadStream(UUID submissionId, SecurityContext securityContext) {
     return connection
         .getNotifications() // returns 🔥🔥🔥 HOT Flux 🔥🔥🔥
+        .transform(this::transformToUploads)
+        .transform(
+            filterForUserAndMaybeSubmissionId(
+                submissionId, securityContext.getAuthentication().getName()))
+        .log("UploadService::getUploadStream");
+  }
+
+  public static Function<Flux<Upload>, Flux<Upload>> filterForUserAndMaybeSubmissionId(
+      UUID submissionId, String userId) {
+    return (Flux<Upload> uploads) ->
+        uploads
+            // filter for the JWT UUID from the security context
+            .filter(upload -> upload.getUserId().toString().equals(userId))
+            // filter for the submissionID if provided otherwise ignore (filter always == true)
+            .filter(
+                upload ->
+                    Optional.ofNullable(submissionId)
+                        .map(submissionIdVal -> submissionIdVal.equals(upload.getSubmissionId()))
+                        .orElse(true))
+            .log("UploadService::filterForUserAndMaybeSubmissionId");
+  }
+
+  private Flux<Upload> transformToUploads(Flux<Notification> notifications) {
+    return notifications
         .map(Notification::getParameter)
         .filter(Objects::nonNull)
         .map(this::uploadFromString)
-        // filter for the JWT UUID from the security context
-        .filter(
-            upload ->
-                upload.getUserId().toString().equals(securityContext.getAuthentication().getName()))
-        // filter for the submissionID if provided otherwise ignore (filter always == true)
-        .filter(
-            upload ->
-                Optional.ofNullable(submissionId)
-                    .map(submissionIdVal -> submissionIdVal == upload.getSubmissionId())
-                    .orElse(true));
+        .log("UploadService::transformToUploads");
   }
 
   @SneakyThrows
