@@ -55,6 +55,7 @@ public class FastaFileProcessor {
               isolateToSubmissionFile.put(fastaHeaderOpt.get(), submissionFile);
             });
 
+    log.info("Processed fasta file chunk");
     return isolateToSubmissionFile;
   }
 
