@@ -43,8 +43,6 @@ public class DownloadsService {
 
   final SongScoreClient songScoreClient;
 
-  private static final Flux<DataBuffer> NEW_LINE_BUFFER_FLUX = newLineBuffer();
-
   public Flux<DataBuffer> download(List<UUID> objectIds) {
     return Flux.fromIterable(objectIds)
         .flatMap(this::fetchDownloadInfoFromSong)
@@ -65,16 +63,13 @@ public class DownloadsService {
         .concatMap(
             analysisFileResponse -> {
               val objectId = analysisFileResponse.getObjectId();
-              return Flux.concat(
-                  NEW_LINE_BUFFER_FLUX,
-                  songScoreClient.downloadObject(objectId),
-                  NEW_LINE_BUFFER_FLUX);
+              return Flux.concat(songScoreClient.downloadObject(objectId), newLineBuffer());
             })
         .onErrorMap(t -> !(t instanceof MuseBaseException), t -> new UnknownException());
   }
 
   private static Flux<DataBuffer> newLineBuffer() {
-    val buffer = new DefaultDataBufferFactory().allocateBuffer();
+    val buffer = new DefaultDataBufferFactory().allocateBuffer(4);
     val newLIne = "\n";
     buffer.write(newLIne.getBytes());
     return Flux.just(buffer);
