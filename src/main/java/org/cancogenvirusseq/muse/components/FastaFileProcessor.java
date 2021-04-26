@@ -26,14 +26,14 @@ public class FastaFileProcessor {
   public static ConcurrentHashMap<String, SubmissionFile> processFileStrContent(
       SubmissionUpload submissionUpload) {
     log.info("Processing fasta file chunk");
-   
+
     val isolateToSubmissionFile = new ConcurrentHashMap<String, SubmissionFile>();
 
     Arrays.stream(submissionUpload.getContent().split("(?=>)"))
         .parallel()
-        .filter(sampleData -> sampleData != null
-                                      && !sampleData.trim().equals("")
-                                      && sampleData.startsWith(">"))
+        .filter(
+            sampleData ->
+                sampleData != null && !sampleData.trim().equals("") && sampleData.startsWith(">"))
         .forEach(
             fc -> {
               val fastaHeaderOpt = extractFastaIsolate(fc);
@@ -64,9 +64,7 @@ public class FastaFileProcessor {
     if (fastaHeaderEndNewlineIndex == -1) {
       return Optional.empty();
     }
-      if (fastaHeaderEndNewlineIndex == 0) {
-          log.info("I'm zero");
-      }
+
     // isolate is substring from after ">" char to new line (not including)
     return Optional.of(sampleContent.substring(1, fastaHeaderEndNewlineIndex));
   }

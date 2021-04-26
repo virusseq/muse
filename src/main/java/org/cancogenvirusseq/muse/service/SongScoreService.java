@@ -36,7 +36,7 @@ public class SongScoreService {
 
   // Prefetch determines max in-flight elements from inner Publisher sequence
   // all Publishers in submitAndUploadToSongScore return Mono, so only one element
-  private final static Integer SONG_SCORE_SUBMIT_UPLOAD_PREFETCH = 1;
+  private static final Integer SONG_SCORE_SUBMIT_UPLOAD_PREFETCH = 1;
 
   final SongScoreClient songScoreClient;
   final UploadRepository repo;
@@ -88,10 +88,10 @@ public class SongScoreService {
                 }));
   }
 
-  public Mono<Tuple3<String, Upload, SubmissionFile>> queueUpload(Tuple3<String, Upload, SubmissionFile> tuple3) {
-    return repo
-               .save(tuple3.getT2())
-               .map(updatedUpload -> Tuples.of(tuple3.getT1(), updatedUpload, tuple3.getT3()));
+  public Mono<Tuple3<String, Upload, SubmissionFile>> queueUpload(
+      Tuple3<String, Upload, SubmissionFile> tuple3) {
+    return repo.save(tuple3.getT2())
+        .map(updatedUpload -> Tuples.of(tuple3.getT1(), updatedUpload, tuple3.getT3()));
   }
 
   public Mono<Upload> submitAndUploadToSongScore(Tuple3<String, Upload, SubmissionFile> tuples3) {
@@ -99,7 +99,8 @@ public class SongScoreService {
     val upload = tuples3.getT2();
     val submissionFile = tuples3.getT3();
 
-    return songScoreClient.submitPayload(upload.getStudyId(), payload)
+    return songScoreClient
+        .submitPayload(upload.getStudyId(), payload)
         .flatMap(
             submitResponse -> {
               upload.setAnalysisId(UUID.fromString(submitResponse.getAnalysisId()));
