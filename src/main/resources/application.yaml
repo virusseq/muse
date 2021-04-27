@@ -41,10 +41,10 @@ auth:
   jwtPublicKeyUrl: "http://localhost:8081/oauth/token/public_key"
   jwtPublicKeyStr: "-----BEGIN PUBLIC KEY-----\nSET ME IF YOU DONT HAVE A URL, BUT URL TAKES PRIORITY\n-----END PUBLIC KEY-----"
   scopes:
-    read:
-      - DOMAIN.READ
-    write:
-      - DOMAIN.WRITE
+    study:
+      prefix: "muse."
+      suffix: ".WRITE"
+    system: DOMAIN.WRITE
 
 management:
   endpoint:

@@ -18,46 +18,47 @@
 
 package org.cancogenvirusseq.muse.config.websecurity;
 
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
-import org.springframework.context.annotation.Configuration;
-
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import javax.annotation.PostConstruct;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Component;
 
-@Data
-@Configuration
-@ConfigurationProperties(prefix = "auth")
-public class AuthProperties {
-  String jwtPublicKeyUrl;
+@Component
+@RequiredArgsConstructor
+public class ScopesConfig {
 
-  String jwtPublicKeyStr;
+  private final AuthProperties authProperties;
+  private Predicate<String> isValidScope;
 
-  ScopesConfig scopes = new ScopesConfig();
+  @PostConstruct
+  public void init() {
+    Predicate<String> startsWithStudyPrefix =
+        (String scope) -> scope.startsWith(authProperties.getScopes().getStudy().getPrefix());
 
-  @Getter
-  @Setter
-  public static class ScopesConfig {
-    private String system;
-    private final ScopesConfig.StudyScopeConfig study = new ScopesConfig.StudyScopeConfig();
+    Predicate<String> endsWithStudySuffix =
+        (String scope) -> scope.endsWith(authProperties.getScopes().getStudy().getSuffix());
 
-    @Getter
-    @Setter
-    public static class StudyScopeConfig {
+    Predicate<String> isStudyScope = startsWithStudyPrefix.and(endsWithStudySuffix);
 
-      @NotNull
-      @Pattern(regexp = "^\\w+\\W$")
-      private String prefix;
+    Predicate<String> isSystemScope =
+        (String scope) -> scope.equals(authProperties.getScopes().getSystem());
 
-      @NotNull
-      @Pattern(regexp = "^\\W\\w+$")
-      private String suffix;
-    }
+    this.isValidScope = isSystemScope.or(isStudyScope);
+  }
+
+  @Bean
+  public Function<Authentication, Boolean> readWriteScopeChecker() {
+    return authentication ->
+        authentication.getAuthorities().stream().map(Objects::toString).anyMatch(isValidScope);
   }
 }

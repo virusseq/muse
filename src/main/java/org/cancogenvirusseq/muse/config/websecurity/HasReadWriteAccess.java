@@ -16,30 +16,12 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.config.websecurity;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
-import lombok.NonNull;
-import org.springframework.security.core.Authentication;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import org.springframework.security.access.prepost.PreAuthorize;
 
-/**
- * A submission bundle contains the validated records to upload to song, the validated files for
- * score, and the original file names. The bundles is then broken up into a series of
- * SubmissionRequest(s) by the SubmissionService
- */
-@Getter
-public class SubmissionBundle {
-  private final Authentication userAuthentication;
-  private final Set<String> originalFileNames = new HashSet<>();
-  private final ArrayList<Map<String, String>> records = new ArrayList<>();
-  private final ConcurrentHashMap<String, SubmissionFile> files = new ConcurrentHashMap<>();
-
-  public SubmissionBundle(@NonNull Authentication userAuthentication) {
-    this.userAuthentication = userAuthentication;
-  }
-}
+@Retention(RetentionPolicy.RUNTIME)
+@PreAuthorize("@readWriteScopeChecker.apply(authentication)")
+public @interface HasReadWriteAccess {}
