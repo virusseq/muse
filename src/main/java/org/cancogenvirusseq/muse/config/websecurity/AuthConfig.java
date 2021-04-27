@@ -68,8 +68,6 @@ public class AuthConfig {
   private static final List<String> ALLOWED_METHODS =
       List.of("GET", "PUT", "POST", "DELETE", "OPTIONS");
 
-  private static final List<String> ALLOWED_ORIGINS = List.of("*");
-
   private static final List<String> ALLOWED_HEADERS = List.of("*");
 
   /** Dependencies */
