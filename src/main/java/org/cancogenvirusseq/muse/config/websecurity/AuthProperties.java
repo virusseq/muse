@@ -18,43 +18,41 @@
 
 package org.cancogenvirusseq.muse.config.websecurity;
 
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import javax.annotation.PostConstruct;
-import lombok.NonNull;
-import org.springframework.context.annotation.Bean;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.core.Authentication;
 
+@Data
 @Configuration
-public class ScopesConfig {
+@ConfigurationProperties(prefix = "auth")
+public class AuthProperties {
+  String jwtPublicKeyUrl;
 
-  private final AuthProperties.Scopes scopes;
-  private Predicate<String> isValidScope;
+  String jwtPublicKeyStr;
 
-  public ScopesConfig(@NonNull AuthProperties authProperties) {
-    this.scopes = authProperties.getScopes();
-  }
+  Scopes scopes = new Scopes();
 
-  @PostConstruct
-  private void init() {
-    final Predicate<String> startsWithStudyPrefix =
-        (String scope) -> scope.startsWith(scopes.getStudy().getPrefix());
+  @Getter
+  @Setter
+  public static class Scopes {
+    private String system;
+    private final Scopes.StudyScopeConfig study = new Scopes.StudyScopeConfig();
 
-    final Predicate<String> endsWithStudySuffix =
-        (String scope) -> scope.endsWith(scopes.getStudy().getSuffix());
+    @Getter
+    @Setter
+    public static class StudyScopeConfig {
 
-    final Predicate<String> isStudyScope = startsWithStudyPrefix.and(endsWithStudySuffix);
+      @NotNull
+      @Pattern(regexp = "^\\w+\\W$")
+      private String prefix;
 
-    final Predicate<String> isSystemScope = (String scope) -> scope.equals(scopes.getSystem());
-
-    this.isValidScope = isSystemScope.or(isStudyScope);
-  }
-
-  @Bean
-  public Function<Authentication, Boolean> readWriteScopeChecker() {
-    return authentication ->
-        authentication.getAuthorities().stream().map(Objects::toString).anyMatch(isValidScope);
+      @NotNull
+      @Pattern(regexp = "^\\W\\w+$")
+      private String suffix;
+    }
   }
 }

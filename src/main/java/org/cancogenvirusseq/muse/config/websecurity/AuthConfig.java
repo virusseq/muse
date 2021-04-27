@@ -27,12 +27,10 @@ import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
-
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.ResourceLoader;
@@ -59,7 +57,6 @@ import reactor.core.publisher.Mono;
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
 @RequiredArgsConstructor
-@ConfigurationProperties(prefix = "auth")
 public class AuthConfig {
 
   /** Constants */
@@ -69,9 +66,7 @@ public class AuthConfig {
   private static final List<String> ALLOWED_HEADERS = List.of("*");
 
   /** Dependencies */
-  private final String jwtPublicKeyUrl;
-
-  private final String jwtPublicKeyStr;
+  private final AuthProperties authProperties;
 
   private final CorsProperties corsProperties;
   private final ResourceLoader resourceLoader;
@@ -154,9 +149,9 @@ public class AuthConfig {
   @SneakyThrows
   private ReactiveJwtDecoder jwtDecoder() {
     String publicKeyContent =
-        Optional.ofNullable(jwtPublicKeyUrl)
+        Optional.ofNullable(authProperties.getJwtPublicKeyUrl())
             .map(this::fetchJWTPublicKey)
-            .orElse(jwtPublicKeyStr)
+            .orElse(authProperties.getJwtPublicKeyStr())
             .replaceAll("\\n", "")
             .replace("-----BEGIN PUBLIC KEY-----", "")
             .replace("-----END PUBLIC KEY-----", "");
