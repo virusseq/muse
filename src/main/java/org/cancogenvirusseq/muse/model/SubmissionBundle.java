@@ -34,14 +34,13 @@ import org.springframework.security.core.Authentication;
  */
 @Getter
 public class SubmissionBundle {
-  private final Set<String> originalFileNames = new HashSet<>();
   private final Authentication userAuthentication;
+  private final Set<String> originalFileNames = new HashSet<>();
   private final ArrayList<Map<String, String>> records = new ArrayList<>();
   private final ConcurrentHashMap<String, SubmissionFile> files = new ConcurrentHashMap<>();
 
   public SubmissionBundle(
-      @NonNull Authentication userAuthentication, @NonNull String recordsFileName) {
+      @NonNull Authentication userAuthentication) {
     this.userAuthentication = userAuthentication;
-    this.recordsFileName = recordsFileName;
   }
 }

@@ -102,7 +102,7 @@ public class SubmissionService {
         .transform(SubmissionService::readFileContentToString)
         // reduce flux of Tuples(fileType, fileString) into a SubmissionRequest
         .reduce(
-            new SubmissionBundle(securityContext.getAuthentication(), "to-be-replaced-in-reducer"),
+            new SubmissionBundle(securityContext.getAuthentication()),
             this::reduceToSubmissionBundle)
         // validate submission records has fasta file map!
         .map(payloadFileMapper::submissionBundleToSubmissionRequests)

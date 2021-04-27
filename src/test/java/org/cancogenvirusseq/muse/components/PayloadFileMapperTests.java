@@ -5,6 +5,7 @@ import static org.cancogenvirusseq.muse.components.ComponentTestStubs.*;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_TYPE;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -18,8 +19,11 @@ import org.cancogenvirusseq.muse.exceptions.submission.MissingDataException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.core.Authentication;
 
 public class PayloadFileMapperTests {
+
+  private Authentication authentication = mock(Authentication.class);
 
   @Test
   @SneakyThrows
@@ -44,7 +48,7 @@ public class PayloadFileMapperTests {
     val expectedSam1Payload = mapper.readValue(expectedSam1PayloadStr, ObjectNode.class);
     val expectedSam2Payload = mapper.readValue(expectedSam2PayloadStr, ObjectNode.class);
 
-    val submissionBundle = new SubmissionBundle();
+    val submissionBundle = new SubmissionBundle(authentication);
     submissionBundle.getFiles().putAll(STUB_FILE_SAMPLE_MAP);
     submissionBundle.getRecords().addAll(STUB_RECORDS);
     submissionBundle.getOriginalFileNames().addAll(Set.of("asdf.tsv", "the.fasta"));
@@ -70,7 +74,7 @@ public class PayloadFileMapperTests {
             Map.of("submitter id", "sam1", "isolate", "ABCD/sam1/ddd/erd", "age", "123"),
             Map.of("submitter id", "sam2NotHere", "isolate", "notHere", "age", "456"));
 
-    val submissionBundle = new SubmissionBundle();
+    val submissionBundle = new SubmissionBundle(authentication);
     submissionBundle.getFiles().putAll(STUB_FILE_SAMPLE_MAP);
     submissionBundle.getRecords().addAll(records);
     submissionBundle.getOriginalFileNames().addAll(Set.of("asdf.tsv", "the2.fasta"));
@@ -104,7 +108,7 @@ public class PayloadFileMapperTests {
     val records =
         List.of(Map.of("submitter id", "sam2", "isolate", "EFG/sam2/ddd/erd", "age", "123"));
 
-    val submissionBundle = new SubmissionBundle();
+    val submissionBundle = new SubmissionBundle(authentication);
     submissionBundle.getFiles().putAll(emptyFiles);
     submissionBundle.getRecords().addAll(records);
     submissionBundle.getOriginalFileNames().addAll(Set.of("asdf.tsv", "the2.fasta"));
