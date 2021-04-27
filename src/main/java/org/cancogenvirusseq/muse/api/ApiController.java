@@ -28,11 +28,11 @@ import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
-import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionService;
 import org.cancogenvirusseq.muse.service.UploadService;
@@ -112,7 +112,9 @@ public class ApiController implements ApiDefinition {
         .body(downloadsService.download(objectIds));
   }
 
-  public ResponseEntity<Flux<DataBuffer>> downloadGzip(List<UUID> objectIds) {
+  @SneakyThrows
+  public ResponseEntity<Mono<DataBuffer>> downloadGzip(List<UUID> objectIds) {
+    val gzipDataBuffer = new DefaultDataBufferFactory().allocateBuffer();
     return ResponseEntity.ok()
         .header(
             CONTENT_DISPOSITION_HEADER,
@@ -120,25 +122,26 @@ public class ApiController implements ApiDefinition {
             format(
                 "attachment; filename=%s%s%s.gz",
                 FILE_NAME_TEMPLATE, Instant.now().toString(), FASTA_FILE_EXTENSION))
-        .body(downloadsService.download(objectIds).concatMap(this::gzipDataBuffer));
+        .body(
+            downloadsService
+                .download(objectIds)
+                .reduce(
+                    new GZIPOutputStream(gzipDataBuffer.asOutputStream()), this::addToGzipStream)
+                .map(this::closeStream)
+                .map(gzipOutputStream -> gzipDataBuffer));
   }
 
-  private Mono<DataBuffer> gzipDataBuffer(DataBuffer inputDataBuffer) {
-    // allocate gzipped data buffer
-    val gzipDataBuffer = new DefaultDataBufferFactory().allocateBuffer();
-    try {
-      // GZIPOutputStream basically decorates an OutputStream and allows writing bytes to it.
-      // Since a spring DataBuffer can be obtained as an OutputStream,
-      // we create a GZIPOutputStream around gzipDataBuffer and writes bytes from inputDataBuffer
-      val gzip = new GZIPOutputStream(gzipDataBuffer.asOutputStream());
-      val bytes = ByteStreams.toByteArray(inputDataBuffer.asInputStream());
-      gzip.write(bytes);
-      gzip.close();
-    } catch (Exception e) {
-      e.printStackTrace();
-      return Mono.error(new UnknownException());
-    }
-    return Mono.just(gzipDataBuffer);
+  @SneakyThrows
+  private GZIPOutputStream addToGzipStream(GZIPOutputStream gzip, DataBuffer inputDataBuffer) {
+    val bytes = ByteStreams.toByteArray(inputDataBuffer.asInputStream());
+    gzip.write(bytes);
+    return gzip;
+  }
+
+  @SneakyThrows
+  private GZIPOutputStream closeStream(GZIPOutputStream gzip) {
+    gzip.close();
+    return gzip;
   }
 
   @ExceptionHandler

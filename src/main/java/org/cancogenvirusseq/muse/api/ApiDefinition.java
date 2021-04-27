@@ -230,5 +230,5 @@ public interface ApiDefinition {
       value = "/download/gzip",
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE,
       method = RequestMethod.GET)
-  ResponseEntity<Flux<DataBuffer>> downloadGzip(@Valid @RequestParam List<UUID> objectIds);
+  ResponseEntity<Mono<DataBuffer>> downloadGzip(@Valid @RequestParam List<UUID> objectIds);
 }
