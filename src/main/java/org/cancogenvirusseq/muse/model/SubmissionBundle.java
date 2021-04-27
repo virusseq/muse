@@ -39,7 +39,8 @@ public class SubmissionBundle {
   private final ArrayList<Map<String, String>> records = new ArrayList<>();
   private final ConcurrentHashMap<String, SubmissionFile> files = new ConcurrentHashMap<>();
 
-  public SubmissionBundle(@NonNull Authentication userAuthentication, @NonNull String recordsFileName) {
+  public SubmissionBundle(
+      @NonNull Authentication userAuthentication, @NonNull String recordsFileName) {
     this.userAuthentication = userAuthentication;
     this.recordsFileName = recordsFileName;
   }
