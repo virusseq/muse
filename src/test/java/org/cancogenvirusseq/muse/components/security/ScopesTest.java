@@ -18,11 +18,11 @@
 
 package org.cancogenvirusseq.muse.components.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import lombok.val;
 import org.cancogenvirusseq.muse.config.websecurity.AuthProperties;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class ScopesTest {
   private final Scopes scopes;

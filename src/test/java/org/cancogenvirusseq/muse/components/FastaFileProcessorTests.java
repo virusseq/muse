@@ -18,16 +18,16 @@
 
 package org.cancogenvirusseq.muse.components;
 
-import lombok.val;
-import org.cancogenvirusseq.muse.model.SubmissionUpload;
-import org.junit.jupiter.api.Test;
-
 import static org.cancogenvirusseq.muse.components.ComponentTestStubs.*;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_TYPE;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anEmptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import lombok.val;
+import org.cancogenvirusseq.muse.model.SubmissionUpload;
+import org.junit.jupiter.api.Test;
 
 public class FastaFileProcessorTests {
 

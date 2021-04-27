@@ -18,7 +18,13 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.Maps;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.val;
 import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFilesException;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,13 +33,6 @@ import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import reactor.util.function.Tuples;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class SubmissionServiceTests {
 

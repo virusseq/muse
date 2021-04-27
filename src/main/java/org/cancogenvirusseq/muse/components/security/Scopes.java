@@ -21,7 +21,6 @@ package org.cancogenvirusseq.muse.components.security;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.PostConstruct;
 import lombok.NonNull;
 import org.cancogenvirusseq.muse.config.websecurity.AuthProperties;
 import org.springframework.context.annotation.Bean;

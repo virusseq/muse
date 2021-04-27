@@ -18,8 +18,18 @@
 
 package org.cancogenvirusseq.muse.components;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.cancogenvirusseq.muse.components.ComponentTestStubs.*;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_TYPE;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.cancogenvirusseq.muse.exceptions.submission.FoundInvalidFilesException;
@@ -28,17 +38,6 @@ import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Authentication;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.cancogenvirusseq.muse.components.ComponentTestStubs.*;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_TYPE;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 
 public class PayloadFileMapperTests {
 

@@ -18,16 +18,15 @@
 
 package org.cancogenvirusseq.muse.components;
 
-import lombok.experimental.UtilityClass;
-import org.cancogenvirusseq.muse.model.SubmissionFile;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_TYPE;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_TYPE;
+import lombok.experimental.UtilityClass;
+import org.cancogenvirusseq.muse.model.SubmissionFile;
 
 @UtilityClass
 public class ComponentTestStubs {

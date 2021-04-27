@@ -18,7 +18,13 @@
 
 package org.cancogenvirusseq.muse.components;
 
+import static java.util.stream.Collectors.toUnmodifiableList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.cancogenvirusseq.muse.exceptions.submission.InvalidFieldsException;
@@ -26,13 +32,6 @@ import org.cancogenvirusseq.muse.exceptions.submission.InvalidHeadersException;
 import org.cancogenvirusseq.muse.model.tsv_parser.InvalidField;
 import org.cancogenvirusseq.muse.model.tsv_parser.TsvFieldSchema;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Map;
-
-import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class TsvParserTests {
 
