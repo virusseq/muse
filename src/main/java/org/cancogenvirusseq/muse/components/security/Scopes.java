@@ -16,38 +16,37 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.config.websecurity;
+package org.cancogenvirusseq.muse.components.security;
 
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.PostConstruct;
 import lombok.NonNull;
+import org.cancogenvirusseq.muse.config.websecurity.AuthProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Component;
 
-@Configuration
-public class ScopesConfig {
+@Component
+public class Scopes {
 
-  private final AuthProperties.Scopes scopes;
-  private Predicate<String> isValidScope;
+  private final AuthProperties.ScopesConfig scopesConfig;
+  public Predicate<String> isValidScope;
 
-  public ScopesConfig(@NonNull AuthProperties authProperties) {
-    this.scopes = authProperties.getScopes();
-  }
+  public Scopes(@NonNull AuthProperties authProperties) {
+    this.scopesConfig = authProperties.getScopes();
 
-  @PostConstruct
-  private void init() {
     final Predicate<String> startsWithStudyPrefix =
-        (String scope) -> scope.startsWith(scopes.getStudy().getPrefix());
+        (String scope) -> scope.startsWith(scopesConfig.getStudy().getPrefix());
 
     final Predicate<String> endsWithStudySuffix =
-        (String scope) -> scope.endsWith(scopes.getStudy().getSuffix());
+        (String scope) -> scope.endsWith(scopesConfig.getStudy().getSuffix());
 
     final Predicate<String> isStudyScope = startsWithStudyPrefix.and(endsWithStudySuffix);
 
-    final Predicate<String> isSystemScope = (String scope) -> scope.equals(scopes.getSystem());
+    final Predicate<String> isSystemScope =
+        (String scope) -> scope.equals(scopesConfig.getSystem());
 
     this.isValidScope = isSystemScope.or(isStudyScope);
   }

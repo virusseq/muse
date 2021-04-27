@@ -16,7 +16,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.config.websecurity;
+package org.cancogenvirusseq.muse.components.security;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

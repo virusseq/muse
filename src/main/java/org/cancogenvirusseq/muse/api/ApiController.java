@@ -32,7 +32,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
-import org.cancogenvirusseq.muse.config.websecurity.HasReadWriteAccess;
+import org.cancogenvirusseq.muse.components.security.HasReadWriteAccess;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionService;
@@ -45,6 +45,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -155,6 +156,8 @@ public class ApiController implements ApiDefinition {
     log.error("ApiController exception handler", ex);
     if (ex instanceof MuseBaseException) {
       return ErrorResponse.errorResponseEntity((MuseBaseException) ex);
+    } else if (ex instanceof AccessDeniedException) {
+      return ErrorResponse.errorResponseEntity(HttpStatus.FORBIDDEN, ex.getLocalizedMessage());
     } else {
       return ErrorResponse.errorResponseEntity(
           HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage());

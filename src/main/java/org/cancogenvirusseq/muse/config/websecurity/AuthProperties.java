@@ -34,13 +34,13 @@ public class AuthProperties {
 
   String jwtPublicKeyStr;
 
-  Scopes scopes = new Scopes();
+  ScopesConfig scopes = new ScopesConfig();
 
   @Getter
   @Setter
-  public static class Scopes {
+  public static class ScopesConfig {
     private String system;
-    private final Scopes.StudyScopeConfig study = new Scopes.StudyScopeConfig();
+    private final StudyScopeConfig study = new StudyScopeConfig();
 
     @Getter
     @Setter
