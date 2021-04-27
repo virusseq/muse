@@ -59,6 +59,7 @@ import reactor.core.publisher.Mono;
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
 @RequiredArgsConstructor
+@ConfigurationProperties(prefix = "auth")
 public class AuthConfig {
 
   /** Constants */
@@ -68,7 +69,9 @@ public class AuthConfig {
   private static final List<String> ALLOWED_HEADERS = List.of("*");
 
   /** Dependencies */
-  private final AuthProperties authProperties;
+  private final String jwtPublicKeyUrl;
+
+  private final String jwtPublicKeyStr;
 
   private final CorsProperties corsProperties;
   private final ResourceLoader resourceLoader;
@@ -151,9 +154,9 @@ public class AuthConfig {
   @SneakyThrows
   private ReactiveJwtDecoder jwtDecoder() {
     String publicKeyContent =
-        Optional.ofNullable(authProperties.getJwtPublicKeyUrl())
+        Optional.ofNullable(jwtPublicKeyUrl)
             .map(this::fetchJWTPublicKey)
-            .orElse(authProperties.getJwtPublicKeyStr())
+            .orElse(jwtPublicKeyStr)
             .replaceAll("\\n", "")
             .replace("-----BEGIN PUBLIC KEY-----", "")
             .replace("-----END PUBLIC KEY-----", "");

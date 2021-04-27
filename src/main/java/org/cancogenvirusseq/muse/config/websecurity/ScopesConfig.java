@@ -21,7 +21,6 @@ package org.cancogenvirusseq.muse.config.websecurity;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.PostConstruct;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import lombok.Getter;
@@ -35,25 +34,38 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@ConfigurationProperties(prefix = "auth.scopes")
 public class ScopesConfig {
 
-  private final AuthProperties authProperties;
+  private final String system;
+  private final StudyScopeConfig study = new StudyScopeConfig();
   private Predicate<String> isValidScope;
 
-  @PostConstruct
-  public void init() {
-    Predicate<String> startsWithStudyPrefix =
-        (String scope) -> scope.startsWith(authProperties.getScopes().getStudy().getPrefix());
+  private void init() {
+    final Predicate<String> startsWithStudyPrefix =
+        (String scope) -> scope.startsWith(study.getPrefix());
 
-    Predicate<String> endsWithStudySuffix =
-        (String scope) -> scope.endsWith(authProperties.getScopes().getStudy().getSuffix());
+    final Predicate<String> endsWithStudySuffix =
+        (String scope) -> scope.endsWith(study.getSuffix());
 
-    Predicate<String> isStudyScope = startsWithStudyPrefix.and(endsWithStudySuffix);
+    final Predicate<String> isStudyScope = startsWithStudyPrefix.and(endsWithStudySuffix);
 
-    Predicate<String> isSystemScope =
-        (String scope) -> scope.equals(authProperties.getScopes().getSystem());
+    final Predicate<String> isSystemScope = (String scope) -> scope.equals(system);
 
     this.isValidScope = isSystemScope.or(isStudyScope);
+  }
+
+  @Getter
+  @Setter
+  public static class StudyScopeConfig {
+
+    @NotNull
+    @Pattern(regexp = "^\\w+\\W$")
+    private String prefix;
+
+    @NotNull
+    @Pattern(regexp = "^\\W\\w+$")
+    private String suffix;
   }
 
   @Bean
