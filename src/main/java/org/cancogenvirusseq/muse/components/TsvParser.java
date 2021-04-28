@@ -56,7 +56,7 @@ public class TsvParser {
 
   @SneakyThrows
   public Stream<Map<String, String>> parseAndValidateTsvStrToFlatRecords(
-      String s, Stream<String> userScopes) {
+      String s, List<String> userScopes) {
     log.info("Parsing TSV into flat records");
     val lines = s.split("\n");
     val strTsvHeaders = List.of(lines[0].trim().split("\t"));
@@ -150,9 +150,9 @@ public class TsvParser {
     return record;
   }
 
-  private Record checkStudyScopes(Record record, Stream<String> userScopes) {
+  private Record checkStudyScopes(Record record, List<String> userScopes) {
     val isAuthorized =
-        userScopes
+        userScopes.stream()
             .anyMatch(
                 scopes.isSystemScope.or(
                     userScope ->
@@ -166,7 +166,7 @@ public class TsvParser {
   }
 
   private UnaryOperator<Record> getCheckStudyScopesFunc(
-      BiFunction<Record, Stream<String>, Record> func, Stream<String> userScopes) {
+      BiFunction<Record, List<String>, Record> func, List<String> userScopes) {
     return r -> func.apply(r, userScopes);
   }
 

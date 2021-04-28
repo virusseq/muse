@@ -62,7 +62,7 @@ public class Scopes {
   }
 
   public <T, R> Function<T, R> wrapWithUserScopes(
-      BiFunction<T, Stream<String>, R> func, Authentication authentication) {
+      BiFunction<T, List<String>, R> func, Authentication authentication) {
     return t ->
         func.apply(
             t,
@@ -71,6 +71,7 @@ public class Scopes {
                 .map(Objects::toString)
                 // filter for only valid scopes, in case the JWT has scopes from other apps
                 // ex. song.STUDY-ID.WRITE
-                .filter(isValidScope));
+                .filter(isValidScope)
+                .collect(Collectors.toList()));
   }
 }

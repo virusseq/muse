@@ -85,7 +85,7 @@ public class TsvParserTests {
 
     val actual =
         parser
-            .parseAndValidateTsvStrToFlatRecords(tsvStr, systemScopes.stream())
+            .parseAndValidateTsvStrToFlatRecords(tsvStr, systemScopes)
             .collect(toUnmodifiableList());
 
     assertThat(actual).hasSameElementsAs(expected);
@@ -95,24 +95,24 @@ public class TsvParserTests {
   @SneakyThrows
   void testTsvStrParsedToRecordsWithStudyScope() {
     val tsvStr =
-            "age\tname\tsubmitterId\tstudy_id\n"
-                    + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
+        "age\tname\tsubmitterId\tstudy_id\n"
+            + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
     val expected =
-            List.of(
-                    Map.of(
-                            "submitterId",
-                            "Qc-L00244359",
-                            "name",
-                            "consensus_sequence",
-                            "age",
-                            "123",
-                            "study_id",
-                            "TEST-STUDY"));
+        List.of(
+            Map.of(
+                "submitterId",
+                "Qc-L00244359",
+                "name",
+                "consensus_sequence",
+                "age",
+                "123",
+                "study_id",
+                "TEST-STUDY"));
 
     val actual =
-            parser
-                    .parseAndValidateTsvStrToFlatRecords(tsvStr, Stream.of("muse.TEST-STUDY.WRITE"))
-                    .collect(toUnmodifiableList());
+        parser
+            .parseAndValidateTsvStrToFlatRecords(tsvStr, List.of("muse.TEST-STUDY.WRITE"))
+            .collect(toUnmodifiableList());
 
     assertThat(actual).hasSameElementsAs(expected);
   }
@@ -126,7 +126,7 @@ public class TsvParserTests {
     val thrown =
         assertThrows(
             InvalidHeadersException.class,
-            () -> parser.parseAndValidateTsvStrToFlatRecords(tsvStr, systemScopes.stream()));
+            () -> parser.parseAndValidateTsvStrToFlatRecords(tsvStr, systemScopes));
 
     assertThat(thrown.getMissingHeaders()).contains("age");
     assertThat(thrown.getUnknownHeaders()).contains("agee");
@@ -141,7 +141,7 @@ public class TsvParserTests {
     val thrown =
         assertThrows(
             InvalidFieldsException.class,
-            () -> parser.parseAndValidateTsvStrToFlatRecords(tsvStr, systemScopes.stream()));
+            () -> parser.parseAndValidateTsvStrToFlatRecords(tsvStr, systemScopes));
 
     val expectedInvalidField =
         new InvalidField("age", InvalidField.Reason.EXPECTING_NUMBER_TYPE, 1);
@@ -152,16 +152,18 @@ public class TsvParserTests {
   @Test
   void testErrorOnStudyNotAuthorized() {
     val tsvStr =
-            "age\tname\tsubmitterId\tstudy_id\n"
-                    + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
+        "age\tname\tsubmitterId\tstudy_id\n"
+            + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
 
     val thrown =
-            assertThrows(
-                    InvalidFieldsException.class,
-                    () -> parser.parseAndValidateTsvStrToFlatRecords(tsvStr, Stream.of("muse.NOT-THIS-STUDY.WRITE")));
+        assertThrows(
+            InvalidFieldsException.class,
+            () ->
+                parser.parseAndValidateTsvStrToFlatRecords(
+                    tsvStr, List.of("muse.NOT-THIS-STUDY.WRITE")));
 
     val expectedInvalidField =
-            new InvalidField("study_id", InvalidField.Reason.UNAUTHORIZED_FOR_STUDY_UPLOAD, 1);
+        new InvalidField("study_id", InvalidField.Reason.UNAUTHORIZED_FOR_STUDY_UPLOAD, 1);
 
     assertThat(thrown.getInvalidFields()).contains(expectedInvalidField);
   }
