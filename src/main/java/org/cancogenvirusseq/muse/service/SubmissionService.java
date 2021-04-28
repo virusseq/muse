@@ -34,6 +34,7 @@ import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.components.PayloadFileMapper;
 import org.cancogenvirusseq.muse.components.TsvParser;
+import org.cancogenvirusseq.muse.components.security.Scopes;
 import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFilesException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
@@ -58,6 +59,7 @@ import reactor.util.function.Tuples;
 @Slf4j
 public class SubmissionService {
 
+  private final Scopes scopes;
   private final SubmissionRepository submissionRepository;
   private final Sinks.Many<SubmissionEvent> songScoreSubmitUploadSink;
   private final TsvParser tsvParser;
@@ -100,9 +102,11 @@ public class SubmissionService {
         .flatMap(SubmissionService::expandToFileTypeFilePartTuple)
         // read each file in as String
         .transform(SubmissionService::readFileContentToString)
-        // reduce flux of SubmissionUpload to SubmissionBundle
-        .reduce(new SubmissionBundle(), this::reduceToSubmissionBundle)
-        // validate submission records has fasta file map and split to submissionRequests
+        // reduce flux of Tuples(fileType, fileString) into a SubmissionRequest
+        .reduce(
+            new SubmissionBundle(securityContext.getAuthentication()),
+            this::reduceToSubmissionBundle)
+        // validate submission records has fasta file map!
         .map(payloadFileMapper::submissionBundleToSubmissionRequests)
         // record submission to database
         .flatMap(
@@ -215,8 +219,11 @@ public class SubmissionService {
     switch (submissionUpload.getType()) {
       case "tsv":
         // parse and validate records
-        tsvParser
-            .parseAndValidateTsvStrToFlatRecords(submissionUpload.getContent())
+        scopes
+            .wrapWithUserScopes(
+                tsvParser::parseAndValidateTsvStrToFlatRecords,
+                submissionBundle.getUserAuthentication())
+            .apply(submissionUpload.getContent())
             .forEach(record -> submissionBundle.getRecords().add(record));
         break;
       case "fasta":

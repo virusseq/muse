@@ -32,6 +32,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
+import org.cancogenvirusseq.muse.components.security.HasReadWriteAccess;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionService;
@@ -44,6 +45,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -62,12 +64,14 @@ public class ApiController implements ApiDefinition {
   private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
   private static final String FILE_NAME_TEMPLATE = "virusseq-consensus-export-";
 
+  @HasReadWriteAccess
   public Mono<SubmissionDTO> getSubmissionById(@NonNull UUID submissionId) {
     return SecurityContextWrapper.forMono(submissionService::getSubmissionById)
         .apply(submissionId)
         .map(SubmissionDTO::fromDAO);
   }
 
+  @HasReadWriteAccess
   public Mono<EntityListResponse<SubmissionDTO>> getSubmissions(
       Integer page, Integer size, Sort.Direction sortDirection, SubmissionSortField sortField) {
     return SecurityContextWrapper.forFlux(submissionService::getSubmissions)
@@ -77,10 +81,12 @@ public class ApiController implements ApiDefinition {
         .transform(this::listResponseTransform);
   }
 
+  @HasReadWriteAccess
   public Mono<SubmissionCreateResponse> submit(@RequestPart("files") Flux<FilePart> fileParts) {
     return SecurityContextWrapper.forMono(submissionService::submit).apply(fileParts);
   }
 
+  @HasReadWriteAccess
   public Mono<EntityListResponse<UploadDTO>> getUploads(
       Integer page,
       Integer size,
@@ -95,6 +101,7 @@ public class ApiController implements ApiDefinition {
         .transform(this::listResponseTransform);
   }
 
+  @HasReadWriteAccess
   public Flux<UploadDTO> streamUploads(String accessToken, UUID submissionId) {
     return SecurityContextWrapper.forFlux(uploadService::getUploadStream)
         .apply(submissionId)
@@ -149,6 +156,8 @@ public class ApiController implements ApiDefinition {
     log.error("ApiController exception handler", ex);
     if (ex instanceof MuseBaseException) {
       return ErrorResponse.errorResponseEntity((MuseBaseException) ex);
+    } else if (ex instanceof AccessDeniedException) {
+      return ErrorResponse.errorResponseEntity(HttpStatus.FORBIDDEN, ex.getLocalizedMessage());
     } else {
       return ErrorResponse.errorResponseEntity(
           HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage());
