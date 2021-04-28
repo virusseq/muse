@@ -20,7 +20,6 @@ import lombok.val;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.cancogenvirusseq.muse.components.security.Scopes;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
-import org.cancogenvirusseq.muse.config.websecurity.AuthProperties;
 import org.cancogenvirusseq.muse.exceptions.submission.InvalidFieldsException;
 import org.cancogenvirusseq.muse.exceptions.submission.InvalidHeadersException;
 import org.cancogenvirusseq.muse.model.tsv_parser.InvalidField;

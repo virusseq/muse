@@ -21,21 +21,13 @@ package org.cancogenvirusseq.muse.components.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.val;
-import org.assertj.core.util.Lists;
 import org.cancogenvirusseq.muse.config.websecurity.AuthProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ScopesTest {
   private final Scopes scopes;
@@ -109,9 +101,10 @@ public class ScopesTest {
         .containsExactlyElementsOf(List.of("test.WRITE", "muse.TEST-STUDY.WRITE"));
 
     // assert other scopes removed
-    assertThat(listFunc.apply(List.of("test.WRITE", "muse.TEST-STUDY.WRITE", "song.TEST-STUDY.WRITE")))
-            .containsExactlyElementsOf(List.of("test.WRITE", "muse.TEST-STUDY.WRITE"));
+    assertThat(
+            listFunc.apply(List.of("test.WRITE", "muse.TEST-STUDY.WRITE", "song.TEST-STUDY.WRITE")))
+        .containsExactlyElementsOf(List.of("test.WRITE", "muse.TEST-STUDY.WRITE"));
     assertThat(listFunc.apply(List.of("test.WRITE", "muse.TEST-STUDY.WRITE", "otherApp.WRITE")))
-            .containsExactlyElementsOf(List.of("test.WRITE", "muse.TEST-STUDY.WRITE"));
+        .containsExactlyElementsOf(List.of("test.WRITE", "muse.TEST-STUDY.WRITE"));
   }
 }
