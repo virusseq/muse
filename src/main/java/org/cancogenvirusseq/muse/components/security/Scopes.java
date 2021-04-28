@@ -18,13 +18,19 @@
 
 package org.cancogenvirusseq.muse.components.security;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import lombok.NonNull;
 import org.cancogenvirusseq.muse.config.websecurity.AuthProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -54,5 +60,16 @@ public class Scopes {
   public Function<Authentication, Boolean> readWriteScopeChecker() {
     return authentication ->
         authentication.getAuthorities().stream().map(Objects::toString).anyMatch(isValidScope);
+  }
+
+  public static <T, R> Function<T, R> wrapWithUserScopes(
+      BiFunction<T, List<String>, R> func, Authentication authentication) {
+    return t ->
+        func.apply(
+            t,
+            authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(Objects::toString)
+                .collect(Collectors.toList()));
   }
 }

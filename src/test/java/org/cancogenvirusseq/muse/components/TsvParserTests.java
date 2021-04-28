@@ -35,6 +35,8 @@ import org.junit.jupiter.api.Test;
 
 public class TsvParserTests {
 
+  private static final List<String> userScopesOk = List.of("SYSTEM.WRITE", "muse.TEST-STUDY.WRITE");
+
   private static final ImmutableList<TsvFieldSchema> TSV_SCHEMA =
       ImmutableList.of(
           new TsvFieldSchema("study_id", TsvFieldSchema.ValueType.string, true),
@@ -61,7 +63,7 @@ public class TsvParserTests {
                 "TEST-STUDY"));
 
     val parser = new TsvParser(TSV_SCHEMA);
-    val actual = parser.parseAndValidateTsvStrToFlatRecords(tsvStr).collect(toUnmodifiableList());
+    val actual = parser.parseAndValidateTsvStrToFlatRecords(tsvStr, userScopesOk).collect(toUnmodifiableList());
 
     assertThat(actual).hasSameElementsAs(expected);
   }
@@ -76,7 +78,7 @@ public class TsvParserTests {
     val thrown =
         assertThrows(
             InvalidHeadersException.class,
-            () -> parser.parseAndValidateTsvStrToFlatRecords(tsvStr));
+            () -> parser.parseAndValidateTsvStrToFlatRecords(tsvStr, userScopesOk));
 
     assertThat(thrown.getMissingHeaders()).contains("age");
     assertThat(thrown.getUnknownHeaders()).contains("agee");
@@ -91,7 +93,7 @@ public class TsvParserTests {
     val parser = new TsvParser(TSV_SCHEMA);
     val thrown =
         assertThrows(
-            InvalidFieldsException.class, () -> parser.parseAndValidateTsvStrToFlatRecords(tsvStr));
+            InvalidFieldsException.class, () -> parser.parseAndValidateTsvStrToFlatRecords(tsvStr, userScopesOk));
 
     val expectedInvalidField =
         new InvalidField("age", InvalidField.Reason.EXPECTING_NUMBER_TYPE, 1);

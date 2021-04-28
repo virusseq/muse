@@ -48,7 +48,7 @@ public class TsvParser {
   }
 
   @SneakyThrows
-  public Stream<Map<String, String>> parseAndValidateTsvStrToFlatRecords(String s) {
+  public Stream<Map<String, String>> parseAndValidateTsvStrToFlatRecords(String s, List<String> userScopes) {
     log.info("Parsing TSV into flat records");
     val lines = s.split("\n");
     val strTsvHeaders = List.of(lines[0].trim().split("\t"));
@@ -63,6 +63,7 @@ public class TsvParser {
         parse(lines)
             .map(this::checkRequireNotEmpty)
             .map(this::checkValueTypes)
+            .map(this::checkStudyScopes)
             .collect(toUnmodifiableList());
 
     if (hasAnyInvalidRecord(records)) {
@@ -135,6 +136,10 @@ public class TsvParser {
           }
         });
 
+    return record;
+  }
+
+  private Record checkStudyScopes(Record record) {
     return record;
   }
 

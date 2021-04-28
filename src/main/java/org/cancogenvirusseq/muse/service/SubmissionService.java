@@ -20,6 +20,7 @@ package org.cancogenvirusseq.muse.service;
 
 import static java.util.stream.Collectors.groupingByConcurrent;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
+import static org.cancogenvirusseq.muse.components.security.Scopes.wrapWithUserScopes;
 import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
 
 import java.nio.charset.StandardCharsets;
@@ -217,8 +218,10 @@ public class SubmissionService {
     switch (submissionUpload.getType()) {
       case "tsv":
         // parse and validate records
-        tsvParser
-            .parseAndValidateTsvStrToFlatRecords(submissionUpload.getContent())
+        wrapWithUserScopes(
+                tsvParser::parseAndValidateTsvStrToFlatRecords,
+                submissionBundle.getUserAuthentication())
+            .apply(submissionUpload.getContent())
             .forEach(record -> submissionBundle.getRecords().add(record));
         break;
       case "fasta":
