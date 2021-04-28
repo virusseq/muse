@@ -20,7 +20,6 @@ package org.cancogenvirusseq.muse.service;
 
 import static java.util.stream.Collectors.groupingByConcurrent;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
-import static org.cancogenvirusseq.muse.components.security.Scopes.wrapWithUserScopes;
 import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
 
 import java.nio.charset.StandardCharsets;
@@ -35,6 +34,7 @@ import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.components.PayloadFileMapper;
 import org.cancogenvirusseq.muse.components.TsvParser;
+import org.cancogenvirusseq.muse.components.security.Scopes;
 import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFilesException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
@@ -59,6 +59,7 @@ import reactor.util.function.Tuples;
 @Slf4j
 public class SubmissionService {
 
+  private final Scopes scopes;
   private final SubmissionRepository submissionRepository;
   private final Sinks.Many<SubmissionEvent> songScoreSubmitUploadSink;
   private final TsvParser tsvParser;
@@ -218,7 +219,8 @@ public class SubmissionService {
     switch (submissionUpload.getType()) {
       case "tsv":
         // parse and validate records
-        wrapWithUserScopes(
+        scopes
+            .wrapWithUserScopes(
                 tsvParser::parseAndValidateTsvStrToFlatRecords,
                 submissionBundle.getUserAuthentication())
             .apply(submissionUpload.getContent())

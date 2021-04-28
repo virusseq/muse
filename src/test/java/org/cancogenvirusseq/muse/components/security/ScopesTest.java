@@ -23,6 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import lombok.val;
 import org.cancogenvirusseq.muse.config.websecurity.AuthProperties;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.core.Authentication;
+
+import java.util.List;
 
 public class ScopesTest {
   private final Scopes scopes;

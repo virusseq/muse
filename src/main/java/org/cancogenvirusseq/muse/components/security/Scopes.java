@@ -24,13 +24,13 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import lombok.NonNull;
 import org.cancogenvirusseq.muse.config.websecurity.AuthProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,6 +38,8 @@ public class Scopes {
 
   private final AuthProperties.ScopesConfig scopesConfig;
   public Predicate<String> isValidScope;
+  public Predicate<String> isSystemScope;
+  public Predicate<String> isStudyScope;
 
   public Scopes(@NonNull AuthProperties authProperties) {
     this.scopesConfig = authProperties.getScopes();
@@ -48,11 +50,8 @@ public class Scopes {
     final Predicate<String> endsWithStudySuffix =
         (String scope) -> scope.endsWith(scopesConfig.getStudy().getSuffix());
 
-    final Predicate<String> isStudyScope = startsWithStudyPrefix.and(endsWithStudySuffix);
-
-    final Predicate<String> isSystemScope =
-        (String scope) -> scope.equals(scopesConfig.getSystem());
-
+    this.isStudyScope = startsWithStudyPrefix.and(endsWithStudySuffix);
+    this.isSystemScope = (String scope) -> scope.equals(scopesConfig.getSystem());
     this.isValidScope = isSystemScope.or(isStudyScope);
   }
 
@@ -62,14 +61,16 @@ public class Scopes {
         authentication.getAuthorities().stream().map(Objects::toString).anyMatch(isValidScope);
   }
 
-  public static <T, R> Function<T, R> wrapWithUserScopes(
-      BiFunction<T, List<String>, R> func, Authentication authentication) {
+  public <T, R> Function<T, R> wrapWithUserScopes(
+      BiFunction<T, Stream<String>, R> func, Authentication authentication) {
     return t ->
         func.apply(
             t,
             authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .map(Objects::toString)
-                .collect(Collectors.toList()));
+                // filter for only valid scopes, in case the JWT has scopes from other apps
+                // ex. song.STUDY-ID.WRITE
+                .filter(isValidScope));
   }
 }
