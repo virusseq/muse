@@ -60,4 +60,12 @@ public class ScopesTest {
     assertThat(scopes.isValidScope.test("someApp.TEST-STUDY.WRITE")).isFalse();
     assertThat(scopes.isValidScope.test("muse.other-test-study.READ")).isFalse();
   }
+
+  @Test
+  public void scopesCaseSensitive() {
+    assertThat(scopes.isValidScope.test("TEST.WRITE")).isFalse();
+    assertThat(scopes.isValidScope.test("test.write")).isFalse();
+    assertThat(scopes.isValidScope.test("MUSE.TEST-STUDY.WRITE")).isFalse();
+    assertThat(scopes.isValidScope.test("muse.other-test-study.write")).isFalse();
+  }
 }
