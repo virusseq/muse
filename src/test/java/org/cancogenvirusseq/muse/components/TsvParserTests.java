@@ -37,6 +37,7 @@ public class TsvParserTests {
 
   private static final ImmutableList<TsvFieldSchema> TSV_SCHEMA =
       ImmutableList.of(
+          new TsvFieldSchema("study_id", TsvFieldSchema.ValueType.string, true),
           new TsvFieldSchema("submitterId", TsvFieldSchema.ValueType.string, true),
           new TsvFieldSchema("name", TsvFieldSchema.ValueType.string, false),
           new TsvFieldSchema("age", TsvFieldSchema.ValueType.number, true));
@@ -44,9 +45,20 @@ public class TsvParserTests {
   @Test
   @SneakyThrows
   void testTsvStrParsedToRecords() {
-    val tsvStr = "age\tname\tsubmitterId\n" + "123\tconsensus_sequence\tQc-L00244359\n";
+    val tsvStr =
+        "age\tname\tsubmitterId\tstudy_id\n"
+            + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
     val expected =
-        List.of(Map.of("submitterId", "Qc-L00244359", "name", "consensus_sequence", "age", "123"));
+        List.of(
+            Map.of(
+                "submitterId",
+                "Qc-L00244359",
+                "name",
+                "consensus_sequence",
+                "age",
+                "123",
+                "study_id",
+                "TEST-STUDY"));
 
     val parser = new TsvParser(TSV_SCHEMA);
     val actual = parser.parseAndValidateTsvStrToFlatRecords(tsvStr).collect(toUnmodifiableList());
@@ -56,7 +68,9 @@ public class TsvParserTests {
 
   @Test
   void testErrorOnInvalidHeaders() {
-    val tsvStr = "agee\tname\tsubmitterId\n" + "123\tconsensus_sequence\tQc-L00244359\n";
+    val tsvStr =
+        "agee\tname\tsubmitterId\tstudy_id\n"
+            + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
 
     val parser = new TsvParser(TSV_SCHEMA);
     val thrown =
@@ -70,7 +84,9 @@ public class TsvParserTests {
 
   @Test
   void testErrorOnInvalidNumberType() {
-    val tsvStr = "age\tname\tsubmitterId\n" + "onetwothree\tconsensus_sequence\tQc-L00244359\n";
+    val tsvStr =
+        "age\tname\tsubmitterId\tstudy_id\n"
+            + "onetwothree\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
 
     val parser = new TsvParser(TSV_SCHEMA);
     val thrown =
