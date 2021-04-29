@@ -2,8 +2,7 @@ package org.cancogenvirusseq.muse.components;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getIsolate;
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -112,6 +111,7 @@ public class PayloadFileMapper {
       acc.getRecordsMapped()
           .add(
               new SubmissionRequest(
+                  getStudyId(payload),
                   payload,
                   submissionFile,
                   Stream.concat(

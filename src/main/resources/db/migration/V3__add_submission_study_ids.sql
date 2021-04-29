@@ -16,22 +16,5 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
-/**
- * A SubmissionRequest represents a pair of record and submission files, plus the filenames from
- * which they were extracted
- */
-@Getter
-@AllArgsConstructor
-public class SubmissionRequest {
-  private final String studyId;
-  private final ObjectNode record;
-  private final SubmissionFile submissionFile;
-  private final Set<String> originalFileNames;
-}
+ALTER TABLE submission
+ADD COLUMN study_ids text[];

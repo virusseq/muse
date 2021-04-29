@@ -110,14 +110,15 @@ public class SubmissionService {
         .map(payloadFileMapper::submissionBundleToSubmissionRequests)
         // record submission to database
         .flatMap(
-            submissionRequest ->
+            submissionRequests ->
                 submissionRepository
                     .save(
                         Submission.builder()
                             .userId(getUserIdFromContext(securityContext))
                             .createdAt(OffsetDateTime.now())
-                            .originalFileNames(compileOriginalFilenames(submissionRequest))
-                            .totalRecords(submissionRequest.size())
+                            .originalFileNames(compileOriginalFilenames(submissionRequests))
+                            .studyIds(compileStudyIds(submissionRequests))
+                            .totalRecords(submissionRequests.size())
                             .build())
                     // from recorded submission, create submissionEvent
                     .map(
@@ -125,7 +126,7 @@ public class SubmissionService {
                             SubmissionEvent.builder()
                                 .submissionId(submission.getSubmissionId())
                                 .userId(getUserIdFromContext(securityContext))
-                                .submissionRequests(submissionRequest)
+                                .submissionRequests(submissionRequests)
                                 .build()))
         // emit submission event to sink for further processing
         .doOnNext(songScoreSubmitUploadSink::tryEmitNext)
@@ -209,6 +210,12 @@ public class SubmissionService {
         .map(SubmissionRequest::getOriginalFileNames)
         .flatMap(Collection::stream)
         .collect(Collectors.toSet());
+  }
+
+  private static Set<String> compileStudyIds(List<SubmissionRequest> submissionRequests) {
+    return submissionRequests.stream()
+                   .map(SubmissionRequest::getStudyId)
+                   .collect(Collectors.toSet());
   }
 
   private SubmissionBundle reduceToSubmissionBundle(

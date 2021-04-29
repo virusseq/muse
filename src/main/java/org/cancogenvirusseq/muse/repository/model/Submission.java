@@ -37,5 +37,6 @@ public class Submission {
   @NonNull private UUID userId;
   private OffsetDateTime createdAt;
   @NonNull private Set<String> originalFileNames;
+  private Set<String> studyIds; // TODO - make not null after all stuydy ids are set!
   @NonNull private Integer totalRecords;
 }
