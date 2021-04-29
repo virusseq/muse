@@ -22,9 +22,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.*;
 
-import java.util.List;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import javax.annotation.PostConstruct;
@@ -33,8 +34,10 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
+import org.cancogenvirusseq.muse.repository.model.UploadStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
@@ -42,6 +45,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static java.lang.String.format;
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
 
 @Slf4j
 @Service
@@ -74,22 +78,48 @@ public class UploadService {
     connection.close().subscribe();
   }
 
-  public Flux<PostgresqlResult> batchCreatUploads(List<Upload> uploads) {
+  public Flux<Upload> batchUploadsFromSubmissionEvent(SubmissionEvent submissionEvent) {
     // https://r2dbc.io/spec/0.8.0.RELEASE/spec/html/#statements.batching
-    return Flux.fromIterable(uploads)
+    return Flux.fromIterable(submissionEvent.getSubmissionRequests().values())
         .reduce(
-            connection.createStatement("INSERT INTO upload(study_id, submitter_sample_id, submission_id, user_id, status, original_file_pair) VALUES ($1, $2, $3, $4, $5, $6)"),
-            (acc, curr) -> {
-              acc.bind("$1", curr.getStudyId());
-              acc.bind("$2", curr.getSubmitterSampleId());
-              acc.bind("$3", curr.getSubmissionId());
-              acc.bind("$4", curr.getUserId());
-              acc.bind("$5", curr.getStatus());
-              acc.bind("$6", curr.getOriginalFilePair());
-              
-              return acc.add();
+            connection.createStatement(
+                "INSERT INTO upload(study_id, submitter_sample_id, submission_id, user_id, status, original_file_pair) VALUES ($1, $2, $3, $4, $5, $6)"),
+            (statement, submissionRequest) -> {
+              statement.bind("$1", getStudyId(submissionRequest.getRecord()));
+              statement.bind("$2", submissionRequest.getSubmitterSampleId());
+              statement.bind("$3", submissionEvent.getSubmissionId());
+              statement.bind("$4", submissionEvent.getUserId());
+              statement.bind("$5", UploadStatus.QUEUED);
+              statement.bind(
+                  "$6", submissionRequest.getOriginalFileNames().toArray(new String[] {}));
+              return statement.add();
             })
-        .flatMapMany(PostgresqlStatement::execute); // todo: cast this to Upload object?
+        .map(
+            statement ->
+                statement.returnGeneratedValues(
+                    "upload_id",
+                    "study_id",
+                    "submitter_sample_id",
+                    "submission_id",
+                    "user_id",
+                    "created_at",
+                    "status",
+                    "original_file_pair"))
+        .flatMapMany(PostgresqlStatement::execute)
+        .flatMap(result -> result.map((row, meta) -> row))
+        .map(
+            row ->
+                Upload.builder()
+                    .uploadId(UUID.fromString(String.valueOf(row.get("upload_id"))))
+                    .studyId(String.valueOf(row.get("study_id")))
+                    .submitterSampleId(String.valueOf(row.get("submitter_sample_id")))
+                    .submissionId(UUID.fromString(String.valueOf(row.get("submission_id"))))
+                    .userId(UUID.fromString(String.valueOf(row.get("user_id"))))
+                    .createdAt(OffsetDateTime.parse(String.valueOf(row.get("created_at"))))
+                    .status(UploadStatus.valueOf(String.valueOf(row.get("status"))))
+                    .originalFilePair(
+                        Set.of((String[]) Objects.requireNonNull(row.get("original_file_pair"))))
+                    .build());
   }
 
   public Flux<Upload> getUploadsPaged(

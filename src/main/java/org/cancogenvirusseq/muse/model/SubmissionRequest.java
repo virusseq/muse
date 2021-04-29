@@ -30,6 +30,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class SubmissionRequest {
+  private final String submitterSampleId;
   private final ObjectNode record;
   private final SubmissionFile submissionFile;
   private final Set<String> originalFileNames;

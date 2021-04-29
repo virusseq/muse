@@ -39,6 +39,7 @@ public class SongScoreService {
   // all Publishers in submitAndUploadToSongScore return Mono, so only one element
   private static final Integer SONG_SCORE_SUBMIT_UPLOAD_PREFETCH = 1;
 
+  final UploadService uploadService;
   final SongScoreClient songScoreClient;
   final UploadRepository repo;
   final PostgresProperties props;
@@ -60,8 +61,6 @@ public class SongScoreService {
   private Disposable createSubmitUploadDisposable() {
     return sink.asFlux()
         .flatMap(this::toStreamOfPayloadUploadAndSubFile)
-        // TODO - consider moving upload queueing to before submission event emit
-        .flatMap(this::queueUpload, props.getMaxPoolSize())
         // Concurrency of this flatMap is controlled to not overwhelm SONG/score
         .flatMap(this::submitAndUploadToSongScore, maxInFlight, SONG_SCORE_SUBMIT_UPLOAD_PREFETCH)
         .subscribe();
@@ -69,26 +68,12 @@ public class SongScoreService {
 
   public Flux<Tuple3<String, Upload, SubmissionFile>> toStreamOfPayloadUploadAndSubFile(
       SubmissionEvent submissionEvent) {
-    val submissionRequests = submissionEvent.getSubmissionRequests();
-
-    return Flux.fromStream(
-        submissionRequests.stream()
-            .map(
-                r -> {
-                  val upload =
-                      Upload.builder()
-                          .studyId(getStudyId(r.getRecord()))
-                          .submitterSampleId(getFirstSubmitterSampleId(r.getRecord()))
-                          .submissionId(submissionEvent.getSubmissionId())
-                          .userId(submissionEvent.getUserId())
-                          .status(UploadStatus.QUEUED)
-                          .originalFilePair(r.getOriginalFileNames())
-                          .build();
-
-                  log.debug(r.getRecord().toPrettyString());
-
-                  return Tuples.of(r.getRecord().toString(), upload, r.getSubmissionFile());
-                }));
+    return uploadService
+            .batchUploadsFromSubmissionEvent(submissionEvent)
+            .map(upload -> {
+              val matchingRequest = submissionEvent.getSubmissionRequests().get(upload.getSubmitterSampleId());
+              return Tuples.of(matchingRequest.getRecord().toString(), upload, matchingRequest.getSubmissionFile());
+            });
   }
 
   public Mono<Tuple3<String, Upload, SubmissionFile>> queueUpload(

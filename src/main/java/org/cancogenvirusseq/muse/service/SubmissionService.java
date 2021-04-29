@@ -116,7 +116,7 @@ public class SubmissionService {
                         Submission.builder()
                             .userId(getUserIdFromContext(securityContext))
                             .createdAt(OffsetDateTime.now())
-                            .originalFileNames(compileOriginalFilenames(submissionRequest))
+                            .originalFileNames(compileOriginalFilenames(submissionRequest.values()))
                             .totalRecords(submissionRequest.size())
                             .build())
                     // from recorded submission, create submissionEvent
@@ -204,7 +204,7 @@ public class SubmissionService {
         .map(StringBuilder::toString);
   }
 
-  private static Set<String> compileOriginalFilenames(List<SubmissionRequest> submissionRequests) {
+  private static Set<String> compileOriginalFilenames(Collection<SubmissionRequest> submissionRequests) {
     return submissionRequests.stream()
         .map(SubmissionRequest::getOriginalFileNames)
         .flatMap(Collection::stream)

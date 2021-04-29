@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,7 +50,7 @@ public class PayloadFileMapper {
   }
 
   @SneakyThrows
-  public List<SubmissionRequest> submissionBundleToSubmissionRequests(
+  public Map<String, SubmissionRequest> submissionBundleToSubmissionRequests(
       SubmissionBundle submissionBundle) {
     log.info("Mapping payloads to files");
 
@@ -103,15 +104,17 @@ public class PayloadFileMapper {
         return acc;
       }
 
-      val sampleFileName =
-          format("%s%s", getFirstSubmitterSampleId(payload), submissionFile.getFileExtension());
+      val submitterSampleId = getFirstSubmitterSampleId(payload);
+      val sampleFileName = format("%s%s", submitterSampleId, submissionFile.getFileExtension());
 
       payload.set("files", createFilesObject(submissionFile, sampleFileName));
 
       acc.getUsedIsolates().add(isolate);
       acc.getRecordsMapped()
-          .add(
+          .put(
+              submitterSampleId,
               new SubmissionRequest(
+                  submitterSampleId,
                   payload,
                   submissionFile,
                   Stream.concat(
@@ -126,7 +129,7 @@ public class PayloadFileMapper {
 
   private static BinaryOperator<MapperReduceResult> combiner() {
     return (first, second) -> {
-      first.getRecordsMapped().addAll(second.getRecordsMapped());
+      first.getRecordsMapped().putAll(second.getRecordsMapped());
       first.getUsedIsolates().addAll(second.getUsedIsolates());
       first.getIsolateInRecordMissingInFile().addAll(second.getIsolateInRecordMissingInFile());
       return first;
@@ -180,6 +183,6 @@ public class PayloadFileMapper {
   static class MapperReduceResult {
     List<String> usedIsolates = new ArrayList<>();
     List<String> isolateInRecordMissingInFile = new ArrayList<>();
-    List<SubmissionRequest> recordsMapped = new ArrayList<>();
+    Map<String, SubmissionRequest> recordsMapped = new HashMap<>();
   }
 }

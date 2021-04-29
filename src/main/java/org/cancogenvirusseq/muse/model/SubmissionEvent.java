@@ -19,6 +19,7 @@
 package org.cancogenvirusseq.muse.model;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,5 +33,5 @@ import lombok.NonNull;
 public class SubmissionEvent {
   @NonNull private UUID submissionId;
   @NonNull private UUID userId;
-  @NonNull private List<SubmissionRequest> submissionRequests;
+  @NonNull private Map<String, SubmissionRequest> submissionRequests;
 }
