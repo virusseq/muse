@@ -20,9 +20,9 @@ package org.cancogenvirusseq.muse.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
-import io.r2dbc.postgresql.api.Notification;
-import io.r2dbc.postgresql.api.PostgresqlConnection;
-import io.r2dbc.postgresql.api.PostgresqlResult;
+import io.r2dbc.postgresql.api.*;
+
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,6 +40,8 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import static java.lang.String.format;
 
 @Slf4j
 @Service
@@ -70,6 +72,24 @@ public class UploadService {
   @PreDestroy
   private void preDestroy() {
     connection.close().subscribe();
+  }
+
+  public Flux<PostgresqlResult> batchCreatUploads(List<Upload> uploads) {
+    // https://r2dbc.io/spec/0.8.0.RELEASE/spec/html/#statements.batching
+    return Flux.fromIterable(uploads)
+        .reduce(
+            connection.createStatement("INSERT INTO upload(study_id, submitter_sample_id, submission_id, user_id, status, original_file_pair) VALUES ($1, $2, $3, $4, $5, $6)"),
+            (acc, curr) -> {
+              acc.bind("$1", curr.getStudyId());
+              acc.bind("$2", curr.getSubmitterSampleId());
+              acc.bind("$3", curr.getSubmissionId());
+              acc.bind("$4", curr.getUserId());
+              acc.bind("$5", curr.getStatus());
+              acc.bind("$6", curr.getOriginalFilePair());
+              
+              return acc.add();
+            })
+        .flatMapMany(PostgresqlStatement::execute); // todo: cast this to Upload object?
   }
 
   public Flux<Upload> getUploadsPaged(
