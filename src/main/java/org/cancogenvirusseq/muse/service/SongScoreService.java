@@ -1,8 +1,5 @@
 package org.cancogenvirusseq.muse.service;
 
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
-
 import java.util.UUID;
 import javax.annotation.PostConstruct;
 import lombok.Getter;
@@ -69,10 +66,15 @@ public class SongScoreService {
   public Flux<Tuple3<String, Upload, SubmissionFile>> toStreamOfPayloadUploadAndSubFile(
       SubmissionEvent submissionEvent) {
     return uploadService
-            .batchUploadsFromSubmissionEvent(submissionEvent)
-            .map(upload -> {
-              val matchingRequest = submissionEvent.getSubmissionRequests().get(upload.getSubmitterSampleId());
-              return Tuples.of(matchingRequest.getRecord().toString(), upload, matchingRequest.getSubmissionFile());
+        .batchUploadsFromSubmissionEvent(submissionEvent)
+        .map(
+            upload -> {
+              val matchingRequest =
+                  submissionEvent.getSubmissionRequests().get(upload.getSubmitterSampleId());
+              return Tuples.of(
+                  matchingRequest.getRecord().toString(),
+                  upload,
+                  matchingRequest.getSubmissionFile());
             });
   }
 

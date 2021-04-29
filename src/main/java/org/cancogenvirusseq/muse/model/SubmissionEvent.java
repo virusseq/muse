@@ -18,7 +18,6 @@
 
 package org.cancogenvirusseq.muse.model;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;

@@ -204,7 +204,8 @@ public class SubmissionService {
         .map(StringBuilder::toString);
   }
 
-  private static Set<String> compileOriginalFilenames(Collection<SubmissionRequest> submissionRequests) {
+  private static Set<String> compileOriginalFilenames(
+      Collection<SubmissionRequest> submissionRequests) {
     return submissionRequests.stream()
         .map(SubmissionRequest::getOriginalFileNames)
         .flatMap(Collection::stream)

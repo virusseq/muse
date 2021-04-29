@@ -74,14 +74,16 @@ public class PayloadFileMapperTests {
     val fileMapper = new PayloadFileMapper(STUB_PAYLOAD_TEMPLATE);
     val actual = fileMapper.submissionBundleToSubmissionRequests(submissionBundle);
 
-    assertThat(actual.get(0).getRecord()).isEqualTo(expectedSam1Payload);
-    assertThat(actual.get(1).getRecord()).isEqualTo(expectedSam2Payload);
+    assertThat(actual.get("sam1").getRecord()).isEqualTo(expectedSam1Payload);
+    assertThat(actual.get("sam2").getRecord()).isEqualTo(expectedSam2Payload);
 
-    assertThat(actual.get(0).getSubmissionFile()).isEqualTo(STUB_FILE_1);
-    assertThat(actual.get(1).getSubmissionFile()).isEqualTo(STUB_FILE_2);
+    assertThat(actual.get("sam1").getSubmissionFile()).isEqualTo(STUB_FILE_1);
+    assertThat(actual.get("sam2").getSubmissionFile()).isEqualTo(STUB_FILE_2);
 
-    assertThat(actual.get(0).getOriginalFileNames()).isEqualTo(Set.of("asdf.tsv", "the.fasta"));
-    assertThat(actual.get(1).getOriginalFileNames()).isEqualTo(Set.of("asdf.tsv", "the.fasta"));
+    assertThat(actual.get("sam1").getOriginalFileNames())
+        .isEqualTo(Set.of("asdf.tsv", "the.fasta"));
+    assertThat(actual.get("sam2").getOriginalFileNames())
+        .isEqualTo(Set.of("asdf.tsv", "the.fasta"));
   }
 
   @Test

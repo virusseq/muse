@@ -18,10 +18,14 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
-import io.r2dbc.postgresql.api.*;
-
+import io.r2dbc.postgresql.api.Notification;
+import io.r2dbc.postgresql.api.PostgresqlConnection;
+import io.r2dbc.postgresql.api.PostgresqlResult;
+import io.r2dbc.postgresql.api.PostgresqlStatement;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
@@ -43,9 +47,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import static java.lang.String.format;
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
 
 @Slf4j
 @Service
