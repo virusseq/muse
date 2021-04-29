@@ -9,7 +9,7 @@ import lombok.val;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.config.db.PostgresProperties;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
-import org.cancogenvirusseq.muse.model.SubmissionFile;
+import org.cancogenvirusseq.muse.model.SubmissionRequest;
 import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
@@ -22,7 +22,7 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
-import reactor.util.function.Tuple3;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 @Slf4j
@@ -57,37 +57,28 @@ public class SongScoreService {
 
   private Disposable createSubmitUploadDisposable() {
     return sink.asFlux()
-        .flatMap(this::toStreamOfPayloadUploadAndSubFile)
+        .flatMap(this::insertUploadsAndMapToRequestUploadPair)
         // Concurrency of this flatMap is controlled to not overwhelm SONG/score
         .flatMap(this::submitAndUploadToSongScore, maxInFlight, SONG_SCORE_SUBMIT_UPLOAD_PREFETCH)
         .subscribe();
   }
 
-  public Flux<Tuple3<String, Upload, SubmissionFile>> toStreamOfPayloadUploadAndSubFile(
+  public Flux<Tuple2<SubmissionRequest, Upload>> insertUploadsAndMapToRequestUploadPair(
       SubmissionEvent submissionEvent) {
     return uploadService
         .batchUploadsFromSubmissionEvent(submissionEvent)
         .map(
-            upload -> {
-              val matchingRequest =
-                  submissionEvent.getSubmissionRequests().get(upload.getSubmitterSampleId());
-              return Tuples.of(
-                  matchingRequest.getRecord().toString(),
-                  upload,
-                  matchingRequest.getSubmissionFile());
-            });
+            upload ->
+                Tuples.of(
+                    submissionEvent.getSubmissionRequests().get(upload.getSubmitterSampleId()),
+                    upload));
   }
 
-  public Mono<Tuple3<String, Upload, SubmissionFile>> queueUpload(
-      Tuple3<String, Upload, SubmissionFile> tuple3) {
-    return repo.save(tuple3.getT2())
-        .map(updatedUpload -> Tuples.of(tuple3.getT1(), updatedUpload, tuple3.getT3()));
-  }
-
-  public Mono<Upload> submitAndUploadToSongScore(Tuple3<String, Upload, SubmissionFile> tuples3) {
-    val payload = tuples3.getT1();
-    val upload = tuples3.getT2();
-    val submissionFile = tuples3.getT3();
+  public Mono<Upload> submitAndUploadToSongScore(
+      Tuple2<SubmissionRequest, Upload> requestUploadPair) {
+    val payload = requestUploadPair.getT1().getRecord().toString();
+    val submissionFile = requestUploadPair.getT1().getSubmissionFile();
+    val upload = requestUploadPair.getT2();
 
     return songScoreClient
         .submitPayload(upload.getStudyId(), payload)
