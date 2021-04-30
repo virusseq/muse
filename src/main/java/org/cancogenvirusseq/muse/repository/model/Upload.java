@@ -53,4 +53,8 @@ public class Upload {
   private UUID analysisId;
 
   private String error;
+
+  public String getCompositeId() {
+    return studyId + "-" + submitterSampleId;
+  }
 }

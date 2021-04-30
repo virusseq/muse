@@ -125,7 +125,7 @@ public class SubmissionService {
                             SubmissionEvent.builder()
                                 .submissionId(submission.getSubmissionId())
                                 .userId(getUserIdFromContext(securityContext))
-                                .submissionRequests(submissionRequest)
+                                .uploadRequestMap(submissionRequest)
                                 .build()))
         // emit submission event to sink for further processing
         .doOnNext(songScoreSubmitUploadSink::tryEmitNext)

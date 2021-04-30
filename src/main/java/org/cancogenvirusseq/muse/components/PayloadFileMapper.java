@@ -8,7 +8,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
@@ -46,7 +49,7 @@ public class PayloadFileMapper {
   }
 
   @SneakyThrows
-  public Map<UUID, UploadRequest> submissionBundleToSubmissionRequests(
+  public Map<String, UploadRequest> submissionBundleToSubmissionRequests(
       SubmissionBundle submissionBundle) {
     log.info("Mapping payloads to files");
 
@@ -106,19 +109,21 @@ public class PayloadFileMapper {
       payload.set("files", createFilesObject(submissionFile, sampleFileName));
 
       val uploadRequest =
-          new UploadRequest(
-              getStudyId(payload),
-              submitterSampleId,
-              payload,
-              submissionFile,
-              Stream.concat(
-                      submissionBundle.getOriginalFileNames().stream()
-                          .filter(filename -> filename.endsWith(".tsv")),
-                      Stream.of(submissionFile.getSubmittedFileName()))
-                  .collect(Collectors.toSet()));
+          UploadRequest.builder()
+              .submitterSampleId(submitterSampleId)
+              .studyId(getStudyId(payload))
+              .record(payload)
+              .submissionFile(submissionFile)
+              .originalFileNames(
+                  Stream.concat(
+                          submissionBundle.getOriginalFileNames().stream()
+                              .filter(filename -> filename.endsWith(".tsv")),
+                          Stream.of(submissionFile.getSubmittedFileName()))
+                      .collect(Collectors.toSet()))
+              .build();
 
       acc.getUsedIsolates().add(isolate);
-      acc.getRecordsMapped().put(uploadRequest.getUploadId(), uploadRequest);
+      acc.getRecordsMapped().put(uploadRequest.getCompositeId(), uploadRequest);
 
       return acc;
     };
@@ -180,6 +185,6 @@ public class PayloadFileMapper {
   static class MapperReduceResult {
     List<String> usedIsolates = new ArrayList<>();
     List<String> isolateInRecordMissingInFile = new ArrayList<>();
-    Map<UUID, UploadRequest> recordsMapped = new HashMap<>();
+    Map<String, UploadRequest> recordsMapped = new HashMap<>();
   }
 }

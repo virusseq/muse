@@ -20,17 +20,19 @@ package org.cancogenvirusseq.muse.model;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Set;
-import java.util.UUID;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
+@Builder
 public class UploadRequest {
-  private final UUID uploadId = UUID.randomUUID();
-  private final String studyId;
   private final String submitterSampleId;
+  private final String studyId;
   private final ObjectNode record;
   private final SubmissionFile submissionFile;
   private final Set<String> originalFileNames;
+
+  public String getCompositeId() {
+    return studyId + "-" + submitterSampleId;
+  }
 }

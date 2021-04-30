@@ -38,7 +38,7 @@ public class SongScoreService {
 
   final UploadService uploadService;
   final SongScoreClient songScoreClient;
-  final UploadRepository repo;
+  final UploadRepository uploadRepository;
   final PostgresProperties props;
 
   private final Sinks.Many<SubmissionEvent> sink = Sinks.many().unicast().onBackpressureBuffer();
@@ -70,7 +70,7 @@ public class SongScoreService {
         .map(
             upload ->
                 Tuples.of(
-                    submissionEvent.getSubmissionRequests().get(upload.getUploadId()), upload));
+                    submissionEvent.getUploadRequestMap().get(upload.getCompositeId()), upload));
   }
 
   public Mono<Upload> submitAndUploadToSongScore(Tuple2<UploadRequest, Upload> requestUploadPair) {
@@ -84,7 +84,7 @@ public class SongScoreService {
             submitResponse -> {
               upload.setAnalysisId(UUID.fromString(submitResponse.getAnalysisId()));
               upload.setStatus(UploadStatus.PROCESSING);
-              return repo.save(upload);
+              return uploadRepository.save(upload);
             })
         .flatMap(u -> songScoreClient.getAnalysisFileFromSong(u.getStudyId(), u.getAnalysisId()))
         .flatMap(
@@ -100,7 +100,7 @@ public class SongScoreService {
         .flatMap(
             r -> {
               upload.setStatus(UploadStatus.COMPLETE);
-              return repo.save(upload);
+              return uploadRepository.save(upload);
             })
         .log("SongScoreService::submitAndUploadToSongScore")
         .onErrorResume(
@@ -115,7 +115,7 @@ public class SongScoreService {
               } else {
                 upload.setError("Internal server error!");
               }
-              return repo.save(upload);
+              return uploadRepository.save(upload);
             });
   }
 }

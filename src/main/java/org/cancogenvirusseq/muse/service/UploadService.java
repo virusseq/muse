@@ -23,12 +23,9 @@ import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlResult;
-import io.r2dbc.postgresql.api.PostgresqlStatement;
 import io.r2dbc.spi.ConnectionFactory;
-import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import javax.annotation.PostConstruct;
@@ -82,63 +79,28 @@ public class UploadService {
   }
 
   /**
-   * Real batching for uploads (not currently supported by Spring)
-   * https://github.com/spring-projects/spring-data-r2dbc/issues/259
+   * Takes a Submission Event and extracts Uploads sent to the Upload Repo saveAll() method for
+   * "batch" uploading. Real batching for uploads is not currently supported
+   * (https://github.com/spring-projects/spring-data-r2dbc/issues/259)
    *
    * @param submissionEvent - the submission containing the uploads to be inserted
-   * @return result as Upload list
+   * @return resulting list of Uploads
    */
   public Flux<Upload> batchUploadsFromSubmissionEvent(SubmissionEvent submissionEvent) {
-    return Mono.from(connectionFactory.create())
-        .flatMapMany(
-            connection ->
-                Flux.fromIterable(submissionEvent.getSubmissionRequests().values())
-                    .reduce(
-                        uploadStreamConnection.createStatement(
-                            "INSERT INTO upload(upload_id, study_id, submitter_sample_id, submission_id, user_id, status, original_file_pair) VALUES ($1, $2, $3, $4, $5, $6, $7)"),
-                        (statement, submissionRequest) -> {
-                          statement.bind("$1", submissionRequest.getUploadId());
-                          statement.bind("$2", submissionRequest.getStudyId());
-                          statement.bind("$3", submissionRequest.getSubmitterSampleId());
-                          statement.bind("$4", submissionEvent.getSubmissionId());
-                          statement.bind("$5", submissionEvent.getUserId());
-                          statement.bind("$6", UploadStatus.QUEUED);
-                          statement.bind(
-                              "$7",
-                              submissionRequest.getOriginalFileNames().toArray(new String[] {}));
-                          return statement.add();
-                        })
+    return uploadRepository
+        .saveAll(
+            Flux.fromStream(
+                submissionEvent.getUploadRequestMap().values().stream()
                     .map(
-                        statement ->
-                            statement.returnGeneratedValues(
-                                "upload_id",
-                                "study_id",
-                                "submitter_sample_id",
-                                "submission_id",
-                                "user_id",
-                                "created_at",
-                                "status",
-                                "original_file_pair"))
-                    .flatMapMany(PostgresqlStatement::execute)
-                    .doFinally(
-                        signalType -> {
-                          connection.close();
-                          log.debug("Batch upload connection closed!");
-                        }))
-        .flatMap(result -> result.map((row, meta) -> row))
-        .map(
-            row ->
-                Upload.builder()
-                    .uploadId(UUID.fromString(String.valueOf(row.get("upload_id"))))
-                    .studyId(String.valueOf(row.get("study_id")))
-                    .submitterSampleId(String.valueOf(row.get("submitter_sample_id")))
-                    .submissionId(UUID.fromString(String.valueOf(row.get("submission_id"))))
-                    .userId(UUID.fromString(String.valueOf(row.get("user_id"))))
-                    .createdAt(OffsetDateTime.parse(String.valueOf(row.get("created_at"))))
-                    .status(UploadStatus.valueOf(String.valueOf(row.get("status"))))
-                    .originalFilePair(
-                        Set.of((String[]) Objects.requireNonNull(row.get("original_file_pair"))))
-                    .build())
+                        uploadRequest ->
+                            Upload.builder()
+                                .studyId(uploadRequest.getStudyId())
+                                .submitterSampleId(uploadRequest.getSubmitterSampleId())
+                                .submissionId(submissionEvent.getSubmissionId())
+                                .userId(submissionEvent.getUserId())
+                                .status(UploadStatus.QUEUED)
+                                .originalFilePair(uploadRequest.getOriginalFileNames())
+                                .build())))
         .log("UploadService::batchUploadsFromSubmissionEvent");
   }
 
