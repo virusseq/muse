@@ -24,10 +24,6 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * A SubmissionRequest represents a pair of record and submission files, plus the filenames from
- * which they were extracted
- */
 @Getter
 @RequiredArgsConstructor
 public class UploadRequest {
