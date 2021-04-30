@@ -18,8 +18,6 @@
 
 package org.cancogenvirusseq.muse.service;
 
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.Notification;
@@ -83,6 +81,13 @@ public class UploadService {
     uploadStreamConnection.close().subscribe();
   }
 
+  /**
+   * Real batching for uploads (not currently supported by Spring)
+   * https://github.com/spring-projects/spring-data-r2dbc/issues/259
+   *
+   * @param submissionEvent - the submission containing the uploads to be inserted
+   * @return result as Upload list
+   */
   public Flux<Upload> batchUploadsFromSubmissionEvent(SubmissionEvent submissionEvent) {
     return Mono.from(connectionFactory.create())
         .flatMapMany(
@@ -90,15 +95,16 @@ public class UploadService {
                 Flux.fromIterable(submissionEvent.getSubmissionRequests().values())
                     .reduce(
                         uploadStreamConnection.createStatement(
-                            "INSERT INTO upload(study_id, submitter_sample_id, submission_id, user_id, status, original_file_pair) VALUES ($1, $2, $3, $4, $5, $6)"),
+                            "INSERT INTO upload(upload_id, study_id, submitter_sample_id, submission_id, user_id, status, original_file_pair) VALUES ($1, $2, $3, $4, $5, $6, $7)"),
                         (statement, submissionRequest) -> {
-                          statement.bind("$1", getStudyId(submissionRequest.getRecord()));
-                          statement.bind("$2", submissionRequest.getSubmitterSampleId());
-                          statement.bind("$3", submissionEvent.getSubmissionId());
-                          statement.bind("$4", submissionEvent.getUserId());
-                          statement.bind("$5", UploadStatus.QUEUED);
+                          statement.bind("$1", submissionRequest.getUploadId());
+                          statement.bind("$2", submissionRequest.getStudyId());
+                          statement.bind("$3", submissionRequest.getSubmitterSampleId());
+                          statement.bind("$4", submissionEvent.getSubmissionId());
+                          statement.bind("$5", submissionEvent.getUserId());
+                          statement.bind("$6", UploadStatus.QUEUED);
                           statement.bind(
-                              "$6",
+                              "$7",
                               submissionRequest.getOriginalFileNames().toArray(new String[] {}));
                           return statement.add();
                         })
@@ -114,7 +120,12 @@ public class UploadService {
                                 "status",
                                 "original_file_pair"))
                     .flatMapMany(PostgresqlStatement::execute)
-                    .doFinally(signalType -> connection.close()))
+                    .doFinally(
+                        signalType -> {
+                          // todo: change to debug
+                          connection.close();
+                          log.info("Batch upload connection closed!");
+                        }))
         .flatMap(result -> result.map((row, meta) -> row))
         .map(
             row ->
@@ -128,7 +139,8 @@ public class UploadService {
                     .status(UploadStatus.valueOf(String.valueOf(row.get("status"))))
                     .originalFilePair(
                         Set.of((String[]) Objects.requireNonNull(row.get("original_file_pair"))))
-                    .build());
+                    .build())
+        .log("UploadService::batchUploadsFromSubmissionEvent");
   }
 
   public Flux<Upload> getUploadsPaged(

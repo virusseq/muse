@@ -20,17 +20,20 @@ package org.cancogenvirusseq.muse.model;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Set;
-import lombok.AllArgsConstructor;
+import java.util.UUID;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 /**
  * A SubmissionRequest represents a pair of record and submission files, plus the filenames from
  * which they were extracted
  */
 @Getter
-@AllArgsConstructor
-public class SubmissionRequest {
-  private final String submitterSampleId; // todo: confirm that this is unique withing a submission
+@RequiredArgsConstructor
+public class UploadRequest {
+  private final UUID uploadId = UUID.randomUUID();
+  private final String studyId;
+  private final String submitterSampleId;
   private final ObjectNode record;
   private final SubmissionFile submissionFile;
   private final Set<String> originalFileNames;

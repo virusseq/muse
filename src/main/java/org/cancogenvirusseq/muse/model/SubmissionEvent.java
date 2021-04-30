@@ -32,5 +32,5 @@ import lombok.NonNull;
 public class SubmissionEvent {
   @NonNull private UUID submissionId;
   @NonNull private UUID userId;
-  @NonNull private Map<String, SubmissionRequest> submissionRequests;
+  @NonNull private Map<UUID, UploadRequest> submissionRequests;
 }

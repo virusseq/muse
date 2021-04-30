@@ -38,8 +38,8 @@ import org.cancogenvirusseq.muse.components.security.Scopes;
 import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFilesException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
-import org.cancogenvirusseq.muse.model.SubmissionRequest;
 import org.cancogenvirusseq.muse.model.SubmissionUpload;
+import org.cancogenvirusseq.muse.model.UploadRequest;
 import org.cancogenvirusseq.muse.repository.SubmissionRepository;
 import org.cancogenvirusseq.muse.repository.model.Submission;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -204,10 +204,9 @@ public class SubmissionService {
         .map(StringBuilder::toString);
   }
 
-  private static Set<String> compileOriginalFilenames(
-      Collection<SubmissionRequest> submissionRequests) {
-    return submissionRequests.stream()
-        .map(SubmissionRequest::getOriginalFileNames)
+  private static Set<String> compileOriginalFilenames(Collection<UploadRequest> uploadRequests) {
+    return uploadRequests.stream()
+        .map(UploadRequest::getOriginalFileNames)
         .flatMap(Collection::stream)
         .collect(Collectors.toSet());
   }

@@ -9,7 +9,7 @@ import lombok.val;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.config.db.PostgresProperties;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
-import org.cancogenvirusseq.muse.model.SubmissionRequest;
+import org.cancogenvirusseq.muse.model.UploadRequest;
 import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
@@ -63,19 +63,17 @@ public class SongScoreService {
         .subscribe();
   }
 
-  public Flux<Tuple2<SubmissionRequest, Upload>> insertUploadsAndMapToRequestUploadPair(
+  public Flux<Tuple2<UploadRequest, Upload>> insertUploadsAndMapToRequestUploadPair(
       SubmissionEvent submissionEvent) {
     return uploadService
         .batchUploadsFromSubmissionEvent(submissionEvent)
         .map(
             upload ->
                 Tuples.of(
-                    submissionEvent.getSubmissionRequests().get(upload.getSubmitterSampleId()),
-                    upload));
+                    submissionEvent.getSubmissionRequests().get(upload.getUploadId()), upload));
   }
 
-  public Mono<Upload> submitAndUploadToSongScore(
-      Tuple2<SubmissionRequest, Upload> requestUploadPair) {
+  public Mono<Upload> submitAndUploadToSongScore(Tuple2<UploadRequest, Upload> requestUploadPair) {
     val payload = requestUploadPair.getT1().getRecord().toString();
     val submissionFile = requestUploadPair.getT1().getSubmissionFile();
     val upload = requestUploadPair.getT2();
