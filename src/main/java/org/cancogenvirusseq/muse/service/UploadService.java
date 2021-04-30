@@ -122,9 +122,8 @@ public class UploadService {
                     .flatMapMany(PostgresqlStatement::execute)
                     .doFinally(
                         signalType -> {
-                          // todo: change to debug
                           connection.close();
-                          log.info("Batch upload connection closed!");
+                          log.debug("Batch upload connection closed!");
                         }))
         .flatMap(result -> result.map((row, meta) -> row))
         .map(
