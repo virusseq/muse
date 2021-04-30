@@ -23,7 +23,6 @@ import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlResult;
-import io.r2dbc.spi.ConnectionFactory;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,17 +47,14 @@ import reactor.core.publisher.Mono;
 @Service
 public class UploadService {
   private final UploadRepository uploadRepository;
-  private final ConnectionFactory connectionFactory;
   private final PostgresqlConnection uploadStreamConnection;
   private final ObjectMapper objectMapper;
 
   public UploadService(
       @NonNull UploadRepository uploadRepository,
-      @NonNull ConnectionFactory connectionFactory,
       @NonNull PostgresqlConnectionFactory postgresqlConnectionFactory,
       @NonNull ObjectMapper objectMapper) {
     this.uploadRepository = uploadRepository;
-    this.connectionFactory = connectionFactory;
     this.objectMapper = objectMapper;
     // no need for .toFuture().get() here as constructors are allowed to block
     this.uploadStreamConnection = Mono.from(postgresqlConnectionFactory.create()).block();
