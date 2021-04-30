@@ -26,6 +26,7 @@ import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlResult;
 import io.r2dbc.postgresql.api.PostgresqlStatement;
+import io.r2dbc.spi.ConnectionFactory;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
@@ -52,22 +53,25 @@ import reactor.core.publisher.Mono;
 @Service
 public class UploadService {
   private final UploadRepository uploadRepository;
-  private final PostgresqlConnection connection;
+  private final ConnectionFactory connectionFactory;
+  private final PostgresqlConnection uploadStreamConnection;
   private final ObjectMapper objectMapper;
 
   public UploadService(
       @NonNull UploadRepository uploadRepository,
-      @NonNull PostgresqlConnectionFactory connectionFactory,
+      @NonNull ConnectionFactory connectionFactory,
+      @NonNull PostgresqlConnectionFactory postgresqlConnectionFactory,
       @NonNull ObjectMapper objectMapper) {
     this.uploadRepository = uploadRepository;
+    this.connectionFactory = connectionFactory;
     this.objectMapper = objectMapper;
     // no need for .toFuture().get() here as constructors are allowed to block
-    this.connection = Mono.from(connectionFactory.create()).block();
+    this.uploadStreamConnection = Mono.from(postgresqlConnectionFactory.create()).block();
   }
 
   @PostConstruct
   private void postConstruct() {
-    connection
+    uploadStreamConnection
         .createStatement("LISTEN upload_notification")
         .execute()
         .flatMap(PostgresqlResult::getRowsUpdated)
@@ -76,37 +80,41 @@ public class UploadService {
 
   @PreDestroy
   private void preDestroy() {
-    connection.close().subscribe();
+    uploadStreamConnection.close().subscribe();
   }
 
   public Flux<Upload> batchUploadsFromSubmissionEvent(SubmissionEvent submissionEvent) {
-    // https://r2dbc.io/spec/0.8.0.RELEASE/spec/html/#statements.batching
-    return Flux.fromIterable(submissionEvent.getSubmissionRequests().values())
-        .reduce(
-            connection.createStatement(
-                "INSERT INTO upload(study_id, submitter_sample_id, submission_id, user_id, status, original_file_pair) VALUES ($1, $2, $3, $4, $5, $6)"),
-            (statement, submissionRequest) -> {
-              statement.bind("$1", getStudyId(submissionRequest.getRecord()));
-              statement.bind("$2", submissionRequest.getSubmitterSampleId());
-              statement.bind("$3", submissionEvent.getSubmissionId());
-              statement.bind("$4", submissionEvent.getUserId());
-              statement.bind("$5", UploadStatus.QUEUED);
-              statement.bind(
-                  "$6", submissionRequest.getOriginalFileNames().toArray(new String[] {}));
-              return statement.add();
-            })
-        .map(
-            statement ->
-                statement.returnGeneratedValues(
-                    "upload_id",
-                    "study_id",
-                    "submitter_sample_id",
-                    "submission_id",
-                    "user_id",
-                    "created_at",
-                    "status",
-                    "original_file_pair"))
-        .flatMapMany(PostgresqlStatement::execute)
+    return Mono.from(connectionFactory.create())
+        .flatMapMany(
+            connection ->
+                Flux.fromIterable(submissionEvent.getSubmissionRequests().values())
+                    .reduce(
+                        uploadStreamConnection.createStatement(
+                            "INSERT INTO upload(study_id, submitter_sample_id, submission_id, user_id, status, original_file_pair) VALUES ($1, $2, $3, $4, $5, $6)"),
+                        (statement, submissionRequest) -> {
+                          statement.bind("$1", getStudyId(submissionRequest.getRecord()));
+                          statement.bind("$2", submissionRequest.getSubmitterSampleId());
+                          statement.bind("$3", submissionEvent.getSubmissionId());
+                          statement.bind("$4", submissionEvent.getUserId());
+                          statement.bind("$5", UploadStatus.QUEUED);
+                          statement.bind(
+                              "$6",
+                              submissionRequest.getOriginalFileNames().toArray(new String[] {}));
+                          return statement.add();
+                        })
+                    .map(
+                        statement ->
+                            statement.returnGeneratedValues(
+                                "upload_id",
+                                "study_id",
+                                "submitter_sample_id",
+                                "submission_id",
+                                "user_id",
+                                "created_at",
+                                "status",
+                                "original_file_pair"))
+                    .flatMapMany(PostgresqlStatement::execute)
+                    .doFinally(signalType -> connection.close()))
         .flatMap(result -> result.map((row, meta) -> row))
         .map(
             row ->
@@ -132,7 +140,7 @@ public class UploadService {
   }
 
   public Flux<Upload> getUploadStream(UUID submissionId, SecurityContext securityContext) {
-    return connection
+    return uploadStreamConnection
         .getNotifications() // returns 🔥🔥🔥 HOT Flux 🔥🔥🔥
         .transform(this::transformToUploads)
         .transform(
