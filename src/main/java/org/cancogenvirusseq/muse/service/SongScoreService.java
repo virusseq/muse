@@ -11,7 +11,6 @@ import org.cancogenvirusseq.muse.config.db.PostgresProperties;
 import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.UploadRequest;
 import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
-import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
 import org.cancogenvirusseq.muse.repository.model.UploadStatus;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,7 +37,6 @@ public class SongScoreService {
 
   final UploadService uploadService;
   final SongScoreClient songScoreClient;
-  final UploadRepository uploadRepository;
   final PostgresProperties props;
 
   private final Sinks.Many<SubmissionEvent> sink = Sinks.many().unicast().onBackpressureBuffer();
@@ -66,7 +64,7 @@ public class SongScoreService {
   public Flux<Tuple2<UploadRequest, Upload>> insertUploadsAndMapToRequestUploadPair(
       SubmissionEvent submissionEvent) {
     return uploadService
-        .batchUploadsFromSubmissionEvent(submissionEvent)
+        .batchCreateUploadsFromSubmissionEvent(submissionEvent)
         .map(
             upload ->
                 Tuples.of(
@@ -84,7 +82,7 @@ public class SongScoreService {
             submitResponse -> {
               upload.setAnalysisId(UUID.fromString(submitResponse.getAnalysisId()));
               upload.setStatus(UploadStatus.PROCESSING);
-              return uploadRepository.save(upload);
+              return uploadService.updateUpload(upload);
             })
         .flatMap(u -> songScoreClient.getAnalysisFileFromSong(u.getStudyId(), u.getAnalysisId()))
         .flatMap(
@@ -100,7 +98,7 @@ public class SongScoreService {
         .flatMap(
             r -> {
               upload.setStatus(UploadStatus.COMPLETE);
-              return uploadRepository.save(upload);
+              return uploadService.updateUpload(upload);
             })
         .log("SongScoreService::submitAndUploadToSongScore")
         .onErrorResume(
@@ -115,7 +113,7 @@ public class SongScoreService {
               } else {
                 upload.setError("Internal server error!");
               }
-              return uploadRepository.save(upload);
+              return uploadService.updateUpload(upload);
             });
   }
 }

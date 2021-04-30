@@ -86,7 +86,7 @@ public class UploadService {
    * @param submissionEvent - the submission containing the uploads to be inserted
    * @return resulting list of Uploads
    */
-  public Flux<Upload> batchUploadsFromSubmissionEvent(SubmissionEvent submissionEvent) {
+  public Flux<Upload> batchCreateUploadsFromSubmissionEvent(SubmissionEvent submissionEvent) {
     return uploadRepository
         .saveAll(
             Flux.fromStream(
@@ -120,6 +120,10 @@ public class UploadService {
             filterForUserAndMaybeSubmissionId(
                 submissionId, securityContext.getAuthentication().getName()))
         .log("UploadService::getUploadStream");
+  }
+
+  public Mono<Upload> updateUpload(Upload upload) {
+    return uploadRepository.save(upload);
   }
 
   public static Function<Flux<Upload>, Flux<Upload>> filterForUserAndMaybeSubmissionId(
