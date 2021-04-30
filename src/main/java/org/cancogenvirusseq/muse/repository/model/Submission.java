@@ -19,6 +19,7 @@
 package org.cancogenvirusseq.muse.repository.model;
 
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -37,6 +38,6 @@ public class Submission {
   @NonNull private UUID userId;
   private OffsetDateTime createdAt;
   @NonNull private Set<String> originalFileNames;
-  private Set<String> studyIds; // TODO - make not null after all stuydy ids are set!
+  @NonNull private Set<String> studyIds;
   @NonNull private Integer totalRecords;
 }

@@ -31,12 +31,14 @@ public class SubmissionDTO {
   @NonNull OffsetDateTime createdAt;
   @NonNull Set<String> originalFileNames;
   @NonNull Integer totalRecords;
+  @NonNull Set<String> studyIds;
 
   public static SubmissionDTO fromDAO(Submission submission) {
     return new SubmissionDTO(
         submission.getSubmissionId(),
         submission.getCreatedAt(),
         submission.getOriginalFileNames(),
-        submission.getTotalRecords());
+        submission.getTotalRecords(),
+        submission.getStudyIds());
   }
 }
