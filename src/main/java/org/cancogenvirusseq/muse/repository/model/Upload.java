@@ -44,7 +44,7 @@ public class Upload {
 
   @NonNull private UUID userId;
 
-  private OffsetDateTime createdAt;
+  @NonNull private OffsetDateTime createdAt;
 
   @NonNull private UploadStatus status;
 

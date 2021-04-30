@@ -3,6 +3,7 @@ package org.cancogenvirusseq.muse.service;
 import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
 import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getStudyId;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
 import lombok.Getter;
@@ -81,6 +82,7 @@ public class SongScoreService {
                           .submitterSampleId(getFirstSubmitterSampleId(r.getRecord()))
                           .submissionId(submissionEvent.getSubmissionId())
                           .userId(submissionEvent.getUserId())
+                          .createdAt(OffsetDateTime.now())
                           .status(UploadStatus.QUEUED)
                           .originalFilePair(r.getOriginalFileNames())
                           .build();

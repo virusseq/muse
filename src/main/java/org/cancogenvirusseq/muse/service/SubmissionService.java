@@ -214,8 +214,8 @@ public class SubmissionService {
 
   private static Set<String> compileStudyIds(List<SubmissionRequest> submissionRequests) {
     return submissionRequests.stream()
-                   .map(SubmissionRequest::getStudyId)
-                   .collect(Collectors.toSet());
+        .map(SubmissionRequest::getStudyId)
+        .collect(Collectors.toSet());
   }
 
   private SubmissionBundle reduceToSubmissionBundle(
