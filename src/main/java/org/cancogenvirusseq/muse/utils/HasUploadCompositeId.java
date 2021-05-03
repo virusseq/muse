@@ -16,21 +16,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.utils;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+public interface HasUploadCompositeId {
+  String getStudyId();
 
-/**
- * A SubmissionRequest represents a pair of record and submission files, plus the filenames from
- * which they were extracted
- */
-@Getter
-@AllArgsConstructor
-public class SubmissionRequest {
-  private final ObjectNode record;
-  private final SubmissionFile submissionFile;
-  private final Set<String> originalFileNames;
+  String getSubmitterSampleId();
+
+  default String getCompositeId() {
+    return getStudyId() + "-" + getSubmitterSampleId();
+  }
 }

@@ -23,11 +23,13 @@ import java.util.List;
 import java.util.UUID;
 import javax.validation.Valid;
 import org.cancogenvirusseq.muse.api.model.*;
+import org.cancogenvirusseq.muse.components.security.HasReadWriteAccess;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
@@ -57,6 +59,7 @@ public interface ApiDefinition {
       value = "/submissions/{submissionId}",
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
+  @HasReadWriteAccess
   Mono<SubmissionDTO> getSubmissionById(@PathVariable("submissionId") UUID submissionId);
 
   @ApiOperation(
@@ -76,6 +79,7 @@ public interface ApiDefinition {
       value = "/submissions",
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
+  @HasReadWriteAccess
   Mono<EntityListResponse<SubmissionDTO>> getSubmissions(
       @ApiParam(
               example = "0",
@@ -118,6 +122,8 @@ public interface ApiDefinition {
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.POST)
+  @Transactional
+  @HasReadWriteAccess
   Mono<SubmissionCreateResponse> submit(
       // this isn't working correctly in the swagger-ui, know issue:
       // https://github.com/springfox/springfox/issues/3464
@@ -144,6 +150,7 @@ public interface ApiDefinition {
       value = "/uploads",
       produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
+  @HasReadWriteAccess
   Mono<EntityListResponse<UploadDTO>> getUploads(
       @ApiParam(
               example = "0",
@@ -191,6 +198,7 @@ public interface ApiDefinition {
       value = "/uploads-stream",
       produces = MediaType.TEXT_EVENT_STREAM_VALUE,
       method = RequestMethod.GET)
+  @HasReadWriteAccess
   Flux<UploadDTO> streamUploads(
       @RequestParam(value = "access_token") String accessToken,
       @ApiParam(

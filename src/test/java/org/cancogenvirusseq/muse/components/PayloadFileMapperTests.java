@@ -36,6 +36,7 @@ import org.cancogenvirusseq.muse.exceptions.submission.FoundInvalidFilesExceptio
 import org.cancogenvirusseq.muse.exceptions.submission.MissingDataException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
+import org.cancogenvirusseq.muse.model.UploadRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Authentication;
 
@@ -47,7 +48,8 @@ public class PayloadFileMapperTests {
   @SneakyThrows
   void testPayloadsMappedToFiles() {
     val expectedSam1PayloadStr =
-        "{ \"samples\": [ {\"submitterSampleId\": \"sam1\"}], "
+        "{ \"studyId\": \"TEST-PR\", "
+            + "\"samples\": [ {\"submitterSampleId\": \"sam1\"}], "
             + "\"age\":123, "
             + "\"sample_collection\": { "
             + "\"isolate\": \"ABCD/sam1/ddd/erd\""
@@ -55,7 +57,8 @@ public class PayloadFileMapperTests {
             + "\"files\":[{\"fileName\":\"sam1.fasta\",\"fileSize\":24,\"fileMd5sum\":\"cf20195497cc8c06075a6e201e82dd17\",\"fileAccess\":\"open\",\"fileType\":\"FASTA\",\"dataType\":\"FASTA\"}]"
             + "}";
     val expectedSam2PayloadStr =
-        "{ \"samples\": [ {\"submitterSampleId\": \"sam2\"}], "
+        "{ \"studyId\": \"TEST-PR\", "
+            + "\"samples\": [ {\"submitterSampleId\": \"sam2\"}], "
             + "\"age\":456, "
             + "\"sample_collection\": { "
             + "\"isolate\": \"EFG/sam2/ddd/erd\""
@@ -74,14 +77,15 @@ public class PayloadFileMapperTests {
     val fileMapper = new PayloadFileMapper(STUB_PAYLOAD_TEMPLATE);
     val actual = fileMapper.submissionBundleToSubmissionRequests(submissionBundle);
 
-    assertThat(actual.get(0).getRecord()).isEqualTo(expectedSam1Payload);
-    assertThat(actual.get(1).getRecord()).isEqualTo(expectedSam2Payload);
+    assertThat(actual.values().stream().map(UploadRequest::getRecord))
+        .containsExactlyInAnyOrder(expectedSam1Payload, expectedSam2Payload);
 
-    assertThat(actual.get(0).getSubmissionFile()).isEqualTo(STUB_FILE_1);
-    assertThat(actual.get(1).getSubmissionFile()).isEqualTo(STUB_FILE_2);
+    assertThat(actual.values().stream().map(UploadRequest::getSubmissionFile))
+        .containsExactlyInAnyOrder(STUB_FILE_1, STUB_FILE_2);
 
-    assertThat(actual.get(0).getOriginalFileNames()).isEqualTo(Set.of("asdf.tsv", "the.fasta"));
-    assertThat(actual.get(1).getOriginalFileNames()).isEqualTo(Set.of("asdf.tsv", "the.fasta"));
+    assertThat(actual.values().stream().map(UploadRequest::getOriginalFileNames))
+        .containsExactlyInAnyOrder(
+            Set.of("asdf.tsv", "the.fasta"), Set.of("asdf.tsv", "the.fasta"));
   }
 
   @Test

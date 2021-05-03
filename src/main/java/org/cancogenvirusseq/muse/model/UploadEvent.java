@@ -16,42 +16,18 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.repository.model;
+package org.cancogenvirusseq.muse.model;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import java.time.OffsetDateTime;
-import java.util.Set;
-import java.util.UUID;
-import lombok.*;
-import org.cancogenvirusseq.muse.utils.HasUploadCompositeId;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
+import org.cancogenvirusseq.muse.repository.model.Upload;
 
 @Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-@Table("upload")
-public class Upload implements HasUploadCompositeId {
-  @Id private UUID uploadId;
-
-  @NonNull private String studyId;
-
-  @NonNull private String submitterSampleId;
-
-  @NonNull private UUID submissionId;
-
-  @NonNull private UUID userId;
-
-  private OffsetDateTime createdAt;
-
-  @NonNull private UploadStatus status;
-
-  @NonNull private Set<String> originalFilePair;
-
-  private UUID analysisId;
-
-  private String error;
+public class UploadEvent {
+  @NonNull private final String studyId;
+  @NonNull private final Upload upload;
+  @NonNull private final SubmissionFile submissionFile;
+  @NonNull private final String payload;
 }

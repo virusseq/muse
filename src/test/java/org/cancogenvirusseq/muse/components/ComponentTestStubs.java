@@ -59,7 +59,7 @@ public class ComponentTestStubs {
       new ConcurrentHashMap<>(Map.of(ISOLATE_1, STUB_FILE_1, ISOLATE_2, STUB_FILE_2));
 
   public static final String STUB_PAYLOAD_TEMPLATE =
-      "{"
+      "{\"studyId\": ${study_id}, "
           + "\"samples\": [ {\"submitterSampleId\": ${submitter id} }],"
           + "\"age\": ${age},"
           + "\"sample_collection\": { "
@@ -70,6 +70,22 @@ public class ComponentTestStubs {
   public static final ArrayList<Map<String, String>> STUB_RECORDS =
       new ArrayList<>(
           List.of(
-              Map.of("submitter id", "sam1", "isolate", "ABCD/sam1/ddd/erd", "age", "123"),
-              Map.of("submitter id", "sam2", "isolate", "EFG/sam2/ddd/erd", "age", "456")));
+              Map.of(
+                  "study_id",
+                  "TEST-PR",
+                  "submitter id",
+                  "sam1",
+                  "isolate",
+                  "ABCD/sam1/ddd/erd",
+                  "age",
+                  "123"),
+              Map.of(
+                  "study_id",
+                  "TEST-PR",
+                  "submitter id",
+                  "sam2",
+                  "isolate",
+                  "EFG/sam2/ddd/erd",
+                  "age",
+                  "456")));
 }
