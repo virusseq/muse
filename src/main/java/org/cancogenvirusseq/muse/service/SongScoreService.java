@@ -65,6 +65,7 @@ public class SongScoreService {
       SubmissionEvent submissionEvent) {
     return uploadService
         .batchCreateUploadsFromSubmissionEvent(submissionEvent)
+        .flatMapMany(Flux::fromIterable)
         .map(
             upload ->
                 Tuples.of(

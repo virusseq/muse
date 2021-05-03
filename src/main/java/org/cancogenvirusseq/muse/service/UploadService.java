@@ -23,6 +23,7 @@ import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlResult;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -82,21 +83,25 @@ public class UploadService {
    * @param submissionEvent - the submission containing the uploads to be inserted
    * @return resulting list of Uploads
    */
-  public Flux<Upload> batchCreateUploadsFromSubmissionEvent(SubmissionEvent submissionEvent) {
+  public Mono<List<Upload>> batchCreateUploadsFromSubmissionEvent(SubmissionEvent submissionEvent) {
     return uploadRepository
         .saveAll(
-            Flux.fromStream(
-                submissionEvent.getUploadRequestMap().values().stream()
-                    .map(
-                        uploadRequest ->
-                            Upload.builder()
-                                .studyId(uploadRequest.getStudyId())
-                                .submitterSampleId(uploadRequest.getSubmitterSampleId())
-                                .submissionId(submissionEvent.getSubmissionId())
-                                .userId(submissionEvent.getUserId())
-                                .status(UploadStatus.QUEUED)
-                                .originalFilePair(uploadRequest.getOriginalFileNames())
-                                .build())))
+            Flux.fromStream(submissionEvent.getUploadRequestMap().values().stream())
+                .map(
+                    uploadRequest ->
+                        Upload.builder()
+                            .studyId(uploadRequest.getStudyId())
+                            .submitterSampleId(uploadRequest.getSubmitterSampleId())
+                            .submissionId(submissionEvent.getSubmissionId())
+                            .userId(submissionEvent.getUserId())
+                            .status(UploadStatus.QUEUED)
+                            .originalFilePair(uploadRequest.getOriginalFileNames())
+                            .build()))
+        .collectList()
+        .doFinally(
+            signalType -> {
+              log.info("Batch create upload complete: {}", signalType);
+            })
         .log("UploadService::batchUploadsFromSubmissionEvent");
   }
 
