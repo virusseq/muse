@@ -32,7 +32,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.*;
-import org.cancogenvirusseq.muse.components.security.HasReadWriteAccess;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.service.DownloadsService;
 import org.cancogenvirusseq.muse.service.SubmissionService;
@@ -64,14 +63,12 @@ public class ApiController implements ApiDefinition {
   private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
   private static final String FILE_NAME_TEMPLATE = "virusseq-consensus-export-";
 
-  @HasReadWriteAccess
   public Mono<SubmissionDTO> getSubmissionById(@NonNull UUID submissionId) {
     return SecurityContextWrapper.forMono(submissionService::getSubmissionById)
         .apply(submissionId)
         .map(SubmissionDTO::fromDAO);
   }
 
-  @HasReadWriteAccess
   public Mono<EntityListResponse<SubmissionDTO>> getSubmissions(
       Integer page, Integer size, Sort.Direction sortDirection, SubmissionSortField sortField) {
     return SecurityContextWrapper.forFlux(submissionService::getSubmissions)
@@ -81,12 +78,10 @@ public class ApiController implements ApiDefinition {
         .transform(this::listResponseTransform);
   }
 
-  @HasReadWriteAccess
   public Mono<SubmissionCreateResponse> submit(@RequestPart("files") Flux<FilePart> fileParts) {
     return SecurityContextWrapper.forMono(submissionService::submit).apply(fileParts);
   }
 
-  @HasReadWriteAccess
   public Mono<EntityListResponse<UploadDTO>> getUploads(
       Integer page,
       Integer size,
@@ -101,7 +96,6 @@ public class ApiController implements ApiDefinition {
         .transform(this::listResponseTransform);
   }
 
-  @HasReadWriteAccess
   public Flux<UploadDTO> streamUploads(String accessToken, UUID submissionId) {
     return SecurityContextWrapper.forFlux(uploadService::getUploadStream)
         .apply(submissionId)
