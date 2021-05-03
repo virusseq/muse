@@ -16,20 +16,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.utils;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.Set;
-import lombok.Builder;
-import lombok.Getter;
-import org.cancogenvirusseq.muse.utils.HasUploadCompositeId;
+public interface HasUploadCompositeId {
+  String getStudyId();
 
-@Getter
-@Builder
-public class UploadRequest implements HasUploadCompositeId {
-  private final String submitterSampleId;
-  private final String studyId;
-  private final ObjectNode record;
-  private final SubmissionFile submissionFile;
-  private final Set<String> originalFileNames;
+  String getSubmitterSampleId();
+
+  default String getCompositeId() {
+    return getStudyId() + "-" + getSubmitterSampleId();
+  }
 }

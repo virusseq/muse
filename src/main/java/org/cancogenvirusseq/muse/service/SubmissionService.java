@@ -232,12 +232,14 @@ public class SubmissionService {
                     .originalFileNames(compileOriginalFilenames(submissionRequest.values()))
                     .totalRecords(submissionRequest.size())
                     .build())
-            // from recorded submission, create submissionEvent
+            // after we get a submissionId, batch create the uploads to be processed
             .flatMap(
                 submission ->
                     uploadService.batchCreateUploadsFromSubmissionEvent(
                         submissionRequest.values(), submission.getSubmissionId(), securityContext))
+            // extract list into flux
             .flatMapMany(Flux::fromIterable)
+            // create UploadEvent from each upload and the submissionRequest
             .map(
                 upload ->
                     UploadEvent.builder()
@@ -247,6 +249,7 @@ public class SubmissionService {
                             submissionRequest.get(upload.getCompositeId()).getSubmissionFile())
                         .payload(
                             submissionRequest.get(upload.getCompositeId()).getRecord().toString())
-                        .build());
+                        .build())
+            .log("SubmissionService::getPersistAndGenerateUploadEventsFunc");
   }
 }

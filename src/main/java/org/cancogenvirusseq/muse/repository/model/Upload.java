@@ -24,6 +24,7 @@ import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.UUID;
 import lombok.*;
+import org.cancogenvirusseq.muse.utils.HasUploadCompositeId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -33,7 +34,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @AllArgsConstructor
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @Table("upload")
-public class Upload {
+public class Upload implements HasUploadCompositeId {
   @Id private UUID uploadId;
 
   @NonNull private String studyId;
@@ -53,8 +54,4 @@ public class Upload {
   private UUID analysisId;
 
   private String error;
-
-  public String getCompositeId() {
-    return studyId + "-" + submitterSampleId;
-  }
 }

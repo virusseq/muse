@@ -108,7 +108,7 @@ public class UploadService {
         .collectList()
         .doFinally(
             signalType -> {
-              log.info("Batch create upload complete: {}", signalType);
+              log.debug("Batch create Upload completed with signal: {}", signalType);
             })
         .log("UploadService::batchUploadsFromSubmissionEvent");
   }
