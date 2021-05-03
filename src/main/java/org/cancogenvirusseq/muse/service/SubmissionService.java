@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -37,11 +38,12 @@ import org.cancogenvirusseq.muse.components.TsvParser;
 import org.cancogenvirusseq.muse.components.security.Scopes;
 import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFilesException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
-import org.cancogenvirusseq.muse.model.SubmissionEvent;
 import org.cancogenvirusseq.muse.model.SubmissionUpload;
+import org.cancogenvirusseq.muse.model.UploadEvent;
 import org.cancogenvirusseq.muse.model.UploadRequest;
 import org.cancogenvirusseq.muse.repository.SubmissionRepository;
 import org.cancogenvirusseq.muse.repository.model.Submission;
+import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.data.domain.Pageable;
@@ -61,7 +63,8 @@ public class SubmissionService {
 
   private final Scopes scopes;
   private final SubmissionRepository submissionRepository;
-  private final Sinks.Many<SubmissionEvent> songScoreSubmitUploadSink;
+  final UploadService uploadService;
+  private final Sinks.Many<UploadEvent> songScoreSubmitUploadSink;
   private final TsvParser tsvParser;
   private final PayloadFileMapper payloadFileMapper;
 
@@ -109,30 +112,14 @@ public class SubmissionService {
         // validate submission records has fasta file map!
         .map(payloadFileMapper::submissionBundleToSubmissionRequests)
         // record submission to database
-        .flatMap(
-            submissionRequest ->
-                submissionRepository
-                    .save(
-                        Submission.builder()
-                            .userId(getUserIdFromContext(securityContext))
-                            .createdAt(OffsetDateTime.now())
-                            .originalFileNames(compileOriginalFilenames(submissionRequest.values()))
-                            .totalRecords(submissionRequest.size())
-                            .build())
-                    // from recorded submission, create submissionEvent
-                    .map(
-                        submission ->
-                            SubmissionEvent.builder()
-                                .submissionId(submission.getSubmissionId())
-                                .userId(getUserIdFromContext(securityContext))
-                                .uploadRequestMap(submissionRequest)
-                                .build()))
+        .flatMapMany(getPersistAndGenerateUploadEventsFunc(securityContext))
         // emit submission event to sink for further processing
         .doOnNext(songScoreSubmitUploadSink::tryEmitNext)
-        // return submissionId to user
+        // take the last uploadEvent and extract the submissionId
+        .last()
         .map(
-            submissionEvent ->
-                new SubmissionCreateResponse(submissionEvent.getSubmissionId().toString()));
+            uploadEvent ->
+                new SubmissionCreateResponse(uploadEvent.getUpload().getSubmissionId().toString()));
   }
 
   /**
@@ -232,5 +219,34 @@ public class SubmissionService {
         break;
     }
     return submissionBundle;
+  }
+
+  private Function<Map<String, UploadRequest>, Publisher<? extends UploadEvent>>
+      getPersistAndGenerateUploadEventsFunc(SecurityContext securityContext) {
+    return submissionRequest ->
+        submissionRepository
+            .save(
+                Submission.builder()
+                    .userId(getUserIdFromContext(securityContext))
+                    .createdAt(OffsetDateTime.now())
+                    .originalFileNames(compileOriginalFilenames(submissionRequest.values()))
+                    .totalRecords(submissionRequest.size())
+                    .build())
+            // from recorded submission, create submissionEvent
+            .flatMap(
+                submission ->
+                    uploadService.batchCreateUploadsFromSubmissionEvent(
+                        submissionRequest.values(), submission.getSubmissionId(), securityContext))
+            .flatMapMany(Flux::fromIterable)
+            .map(
+                upload ->
+                    UploadEvent.builder()
+                        .studyId(upload.getStudyId())
+                        .upload(upload)
+                        .submissionFile(
+                            submissionRequest.get(upload.getCompositeId()).getSubmissionFile())
+                        .payload(
+                            submissionRequest.get(upload.getCompositeId()).getRecord().toString())
+                        .build());
   }
 }

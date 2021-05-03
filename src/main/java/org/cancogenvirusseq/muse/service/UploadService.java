@@ -18,15 +18,14 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlResult;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -34,7 +33,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.cancogenvirusseq.muse.model.SubmissionEvent;
+import org.cancogenvirusseq.muse.model.UploadRequest;
 import org.cancogenvirusseq.muse.repository.UploadRepository;
 import org.cancogenvirusseq.muse.repository.model.Upload;
 import org.cancogenvirusseq.muse.repository.model.UploadStatus;
@@ -76,24 +75,33 @@ public class UploadService {
   }
 
   /**
-   * Takes a Submission Event and extracts Uploads sent to the Upload Repo saveAll() method for
-   * "batch" uploading. Real batching for uploads is not currently supported
-   * (https://github.com/spring-projects/spring-data-r2dbc/issues/259)
+   * Batch create upload entities (status == QUEUED) given upload requests, submissionId, and a
+   * security context. Note that this isn't true batching as that is not currently supported
+   * (https://github.com/spring-projects/spring-data-r2dbc/issues/259), the saveAll method just uses
+   * concatMap underneath, but this does accomplish our goals without resorting to raw SQL string
+   * construction which is just not worth the risk.
    *
-   * @param submissionEvent - the submission containing the uploads to be inserted
-   * @return resulting list of Uploads
+   * @param uploadRequests - list of uploads
+   * @param submissionId - submissionId to associate uploads with
+   * @param securityContext - security context from which userId is extracted and associated with
+   *     each upload
+   * @return resulting list of queued Uploads
    */
-  public Mono<List<Upload>> batchCreateUploadsFromSubmissionEvent(SubmissionEvent submissionEvent) {
+  public Mono<List<Upload>> batchCreateUploadsFromSubmissionEvent(
+      Collection<UploadRequest> uploadRequests,
+      UUID submissionId,
+      SecurityContext securityContext) {
+    val userId = getUserIdFromContext(securityContext);
     return uploadRepository
         .saveAll(
-            Flux.fromStream(submissionEvent.getUploadRequestMap().values().stream())
+            Flux.fromIterable(uploadRequests)
                 .map(
                     uploadRequest ->
                         Upload.builder()
                             .studyId(uploadRequest.getStudyId())
                             .submitterSampleId(uploadRequest.getSubmitterSampleId())
-                            .submissionId(submissionEvent.getSubmissionId())
-                            .userId(submissionEvent.getUserId())
+                            .submissionId(submissionId)
+                            .userId(userId)
                             .status(UploadStatus.QUEUED)
                             .originalFilePair(uploadRequest.getOriginalFileNames())
                             .build()))
@@ -107,7 +115,7 @@ public class UploadService {
 
   public Flux<Upload> getUploadsPaged(
       Pageable page, UUID submissionId, SecurityContext securityContext) {
-    val userId = UUID.fromString(securityContext.getAuthentication().getName());
+    val userId = getUserIdFromContext(securityContext);
     return Optional.ofNullable(submissionId)
         .map(id -> uploadRepository.findAllByUserIdAndSubmissionId(userId, id, page))
         .orElse(uploadRepository.findAllByUserId(userId, page));
