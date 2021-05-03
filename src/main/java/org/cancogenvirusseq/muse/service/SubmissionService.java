@@ -27,6 +27,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -250,6 +251,6 @@ public class SubmissionService {
                         .payload(
                             submissionRequest.get(upload.getCompositeId()).getRecord().toString())
                         .build())
-            .log("SubmissionService::getPersistAndGenerateUploadEventsFunc");
+            .log("SubmissionService::getPersistAndGenerateUploadEventsFunc", Level.FINE);
   }
 }
