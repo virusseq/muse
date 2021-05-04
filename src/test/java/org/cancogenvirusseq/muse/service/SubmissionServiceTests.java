@@ -38,21 +38,28 @@ public class SubmissionServiceTests {
 
   final FilePart tsv = mock(FilePart.class);
   final FilePart fasta = mock(FilePart.class);
+  final FilePart fastaGz = mock(FilePart.class);
+  final FilePart fa = mock(FilePart.class);
+  final FilePart faGz = mock(FilePart.class);
   final FilePart png = mock(FilePart.class);
 
   @BeforeEach
   void setUp() {
     when(tsv.filename()).thenReturn("test.tsv");
     when(fasta.filename()).thenReturn("test.fasta");
+    when(fastaGz.filename()).thenReturn("test.fasta.gz");
+    when(fa.filename()).thenReturn("test.fa");
+    when(faGz.filename()).thenReturn("test.fa.gz");
     when(png.filename()).thenReturn("test.png");
   }
 
   @Test
   void validateSubmissionSuccessTest() {
-    val submission = Flux.just(tsv, fasta, fasta);
+    val submission = Flux.just(tsv, fasta, fa, fastaGz, faGz);
 
     val expected =
-        new ConcurrentHashMap<>(Map.of("tsv", List.of(tsv), "fasta", List.of(fasta, fasta)));
+        new ConcurrentHashMap<>(
+            Map.of("meta", List.of(tsv), "molecular", List.of(fasta, fa, fastaGz, faGz)));
 
     StepVerifier.create(SubmissionService.validateSubmission(submission))
         .expectNextMatches(actual -> actual.equals(expected))
@@ -70,7 +77,7 @@ public class SubmissionServiceTests {
 
   @Test
   void validateSubmissionPartialWrongFileExtensionTest() {
-    val submission = Flux.just(png, tsv, fasta, fasta);
+    val submission = Flux.just(png, tsv, fasta, fa, fastaGz, faGz);
 
     StepVerifier.create(SubmissionService.validateSubmission(submission))
         .expectError(SubmissionFilesException.class)
@@ -79,7 +86,7 @@ public class SubmissionServiceTests {
 
   @Test
   void validateSubmissionMissingTsvTest() {
-    val submission = Flux.just(fasta, fasta);
+    val submission = Flux.just(fasta, fa, fastaGz, faGz);
 
     StepVerifier.create(SubmissionService.validateSubmission(submission))
         .expectError(SubmissionFilesException.class)
@@ -106,7 +113,7 @@ public class SubmissionServiceTests {
 
   @Test
   void validateSubmissionTooManyTsvTest() {
-    val submission = Flux.just(tsv, tsv, fasta, fasta);
+    val submission = Flux.just(tsv, tsv, fasta, fa, fastaGz, faGz);
 
     StepVerifier.create(SubmissionService.validateSubmission(submission))
         .expectError(SubmissionFilesException.class)
@@ -117,9 +124,11 @@ public class SubmissionServiceTests {
   void expandToFileTypeFilePartTupleTest() {
     StepVerifier.create(
             SubmissionService.expandToFileTypeFilePartTuple(
-                Maps.immutableEntry("fasta", List.of(fasta, fasta))))
+                Maps.immutableEntry("molecular", List.of(fasta, fa, fastaGz, faGz))))
         .expectNext(Tuples.of("fasta", fasta))
-        .expectNext(Tuples.of("fasta", fasta))
+        .expectNext(Tuples.of("fa", fa))
+        .expectNext(Tuples.of("fasta.gz", fastaGz))
+        .expectNext(Tuples.of("fa.gz", faGz))
         .verifyComplete();
   }
 }

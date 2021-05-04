@@ -28,7 +28,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +65,10 @@ import reactor.util.function.Tuples;
 @RequiredArgsConstructor
 @Slf4j
 public class SubmissionService {
+
+  private static final String METADATA_FILE_EXT = "tsv";
+  private static final Set<String> MOLECULAR_FILE_EXT_SET = Set.of("fasta", "fa", "gz");
+  private static final String OK_FILE_EXT_REGEX = "^.*\\.(tsv|fasta|fa|fasta\\.gz|fa\\.gz)$";
 
   private final Scopes scopes;
   private final SubmissionRepository submissionRepository;
@@ -138,15 +146,19 @@ public class SubmissionService {
             groupingByConcurrent(
                 part ->
                     Optional.of(part.filename())
-                        .filter(f -> f.contains("."))
-                        .map(f -> f.substring(part.filename().lastIndexOf(".") + 1))
+                        .filter(f -> f.matches(OK_FILE_EXT_REGEX))
+                        .map(
+                            f ->
+                                MOLECULAR_FILE_EXT_SET.stream().anyMatch(f::endsWith)
+                                    ? "molecular"
+                                    : "meta")
                         .orElse("invalid")))
         .flatMap(
             fileTypeMap -> {
-              // validate that we have exactly one .tsv and one or more fasta files
-              if (fileTypeMap.getOrDefault("tsv", Collections.emptyList()).size() == 1
-                  && fileTypeMap.getOrDefault("fasta", Collections.emptyList()).size() >= 1
-                  && fileTypeMap.keySet().equals(Set.of("tsv", "fasta"))) {
+              // validate that we have exactly one metadata file and one or more molecular files
+              if (fileTypeMap.getOrDefault("meta", Collections.emptyList()).size() == 1
+                  && fileTypeMap.getOrDefault("molecular", Collections.emptyList()).size() >= 1
+                  && fileTypeMap.keySet().equals(Set.of("meta", "molecular"))) {
                 return Mono.just(fileTypeMap);
               } else {
                 return Mono.error(
@@ -162,7 +174,12 @@ public class SubmissionService {
   static Flux<Tuple2<String, FilePart>> expandToFileTypeFilePartTuple(
       Map.Entry<String, List<FilePart>> mapEntry) {
     return Flux.fromIterable(mapEntry.getValue())
-        .map(filePart -> Tuples.of(mapEntry.getKey(), filePart));
+        .map(
+            filePart ->
+                Optional.of(Pattern.compile(OK_FILE_EXT_REGEX).matcher(filePart.filename()))
+                    .filter(Matcher::matches)
+                    .map(matcher -> Tuples.of(matcher.group(1), filePart))
+                    .orElseThrow());
   }
 
   private static Flux<SubmissionUpload> readFileContentToString(
@@ -200,9 +217,7 @@ public class SubmissionService {
   }
 
   private static Set<String> compileStudyIds(Collection<UploadRequest> uploadRequests) {
-    return uploadRequests.stream()
-        .map(UploadRequest::getStudyId)
-        .collect(Collectors.toSet());
+    return uploadRequests.stream().map(UploadRequest::getStudyId).collect(Collectors.toSet());
   }
 
   private SubmissionBundle reduceToSubmissionBundle(
@@ -211,7 +226,7 @@ public class SubmissionService {
     submissionBundle.getOriginalFileNames().add(submissionUpload.getFilename());
 
     switch (submissionUpload.getType()) {
-      case "tsv":
+      case METADATA_FILE_EXT:
         // parse and validate records
         scopes
             .wrapWithUserScopes(
