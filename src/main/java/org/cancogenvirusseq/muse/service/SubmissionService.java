@@ -237,6 +237,7 @@ public class SubmissionService {
                     .userId(getUserIdFromContext(securityContext))
                     .createdAt(OffsetDateTime.now())
                     .originalFileNames(compileOriginalFilenames(submissionRequest.values()))
+                    .studyIds(compileStudyIds(submissionRequest.values()))
                     .totalRecords(submissionRequest.size())
                     .build())
             // after we get a submissionId, batch create the uploads to be processed
