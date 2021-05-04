@@ -21,7 +21,11 @@ package org.cancogenvirusseq.muse.service;
 import static java.util.stream.Collectors.groupingByConcurrent;
 import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFileStrContent;
 import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
+import static org.springframework.core.io.buffer.DataBufferUtils.readInputStream;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -32,9 +36,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
@@ -51,6 +57,7 @@ import org.cancogenvirusseq.muse.repository.model.Submission;
 import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.core.context.SecurityContext;
@@ -186,7 +193,25 @@ public class SubmissionService {
       Flux<Tuple2<String, FilePart>> fileTypeFilePartTupleFlux) {
     return fileTypeFilePartTupleFlux.flatMap(
         fileTypeFilePart ->
-            fileContentToString(fileTypeFilePart.getT2().content())
+            fileContentToString(
+                    Optional.of(fileTypeFilePart)
+                        .filter(f -> f.getT1().endsWith("gz"))
+                        .map(
+                            zippedTuple ->
+                                zippedTuple
+                                    .getT2()
+                                    .content()
+                                    .map(DataBuffer::asInputStream)
+                                    // todo: this is causing an overflow on large files (familiar problem)
+                                    .reduce(SequenceInputStream::new)
+                                    // todo: since we already have the whole stream maybe we just write to string?
+                                    .flatMapMany(
+                                        inputStream ->
+                                            readInputStream(
+                                                () -> new GZIPInputStream(inputStream),
+                                                new DefaultDataBufferFactory(),
+                                                1024)))
+                        .orElse(fileTypeFilePart.getT2().content()))
                 .map(
                     fileStr ->
                         new SubmissionUpload(
@@ -225,21 +250,19 @@ public class SubmissionService {
     // append original filename
     submissionBundle.getOriginalFileNames().add(submissionUpload.getFilename());
 
-    switch (submissionUpload.getType()) {
-      case METADATA_FILE_EXT:
-        // parse and validate records
-        scopes
-            .wrapWithUserScopes(
-                tsvParser::parseAndValidateTsvStrToFlatRecords,
-                submissionBundle.getUserAuthentication())
-            .apply(submissionUpload.getContent())
-            .forEach(record -> submissionBundle.getRecords().add(record));
-        break;
-      case "fasta":
-        // process the submitted file into upload ready files
-        submissionBundle.getFiles().putAll(processFileStrContent(submissionUpload));
-        break;
+    if (submissionUpload.getType().equals(METADATA_FILE_EXT)) {
+      // parse and validate records from metadata file
+      scopes
+          .wrapWithUserScopes(
+              tsvParser::parseAndValidateTsvStrToFlatRecords,
+              submissionBundle.getUserAuthentication())
+          .apply(submissionUpload.getContent())
+          .forEach(record -> submissionBundle.getRecords().add(record));
+    } else {
+      // process the submitted file into upload ready files
+      submissionBundle.getFiles().putAll(processFileStrContent(submissionUpload));
     }
+
     return submissionBundle;
   }
 
