@@ -206,6 +206,9 @@ public class SubmissionService {
                                             readInputStream(
                                                 () -> new GZIPInputStream(inputStream),
                                                 new DefaultDataBufferFactory(),
+                                                // 1024 because from observation of other
+                                                // databuffers, this seems to be the size
+                                                // they use
                                                 1024))
                                     .onErrorMap(
                                         throwable ->
