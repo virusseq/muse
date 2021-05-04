@@ -72,7 +72,8 @@ import reactor.util.function.Tuples;
 public class SubmissionService {
 
   private static final String METADATA_FILE_EXT = "tsv";
-  private static final Set<String> MOLECULAR_FILE_EXT_SET = Set.of("fasta", "fa", "gz");
+  private static final Set<String> MOLECULAR_FILE_EXT_SET =
+      Set.of("fasta", "fa", "fasta.gz", "fa.gz");
   private static final String OK_FILE_EXT_REGEX = "^.*\\.(tsv|fasta|fa|fasta\\.gz|fa\\.gz)$";
 
   private final Scopes scopes;
