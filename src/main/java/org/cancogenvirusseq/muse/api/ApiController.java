@@ -134,8 +134,10 @@ public class ApiController implements ApiDefinition {
 
   @SneakyThrows
   private GZIPOutputStream addToGzipStream(GZIPOutputStream gzip, DataBuffer inputDataBuffer) {
-    val bytes = ByteStreams.toByteArray(inputDataBuffer.asInputStream());
+    val inputDataBufferStream = inputDataBuffer.asInputStream();
+    val bytes = ByteStreams.toByteArray(inputDataBufferStream);
     gzip.write(bytes);
+    inputDataBufferStream.close();
     return gzip;
   }
 
