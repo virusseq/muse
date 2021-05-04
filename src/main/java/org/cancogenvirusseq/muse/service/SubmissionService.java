@@ -47,6 +47,7 @@ import org.cancogenvirusseq.muse.api.model.SubmissionCreateResponse;
 import org.cancogenvirusseq.muse.components.PayloadFileMapper;
 import org.cancogenvirusseq.muse.components.TsvParser;
 import org.cancogenvirusseq.muse.components.security.Scopes;
+import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFileGzipException;
 import org.cancogenvirusseq.muse.exceptions.submission.SubmissionFilesException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionUpload;
@@ -202,15 +203,17 @@ public class SubmissionService {
                                     .getT2()
                                     .content()
                                     .map(DataBuffer::asInputStream)
-                                    // todo: this is causing an overflow on large files (familiar problem)
-                                    .reduce(SequenceInputStream::new)
-                                    // todo: since we already have the whole stream maybe we just write to string?
+                                    .reduce(SubmissionService::reduceInputStreams)
                                     .flatMapMany(
                                         inputStream ->
                                             readInputStream(
                                                 () -> new GZIPInputStream(inputStream),
                                                 new DefaultDataBufferFactory(),
-                                                1024)))
+                                                1024))
+                                    .onErrorMap(
+                                        throwable ->
+                                            new SubmissionFileGzipException(
+                                                zippedTuple.getT2().filename())))
                         .orElse(fileTypeFilePart.getT2().content()))
                 .map(
                     fileStr ->
@@ -218,6 +221,14 @@ public class SubmissionService {
                             fileTypeFilePart.getT2().filename(),
                             fileTypeFilePart.getT1(),
                             fileStr)));
+  }
+
+  @SneakyThrows
+  private static InputStream reduceInputStreams(
+      InputStream sequenceInputStream, InputStream inputStream) {
+    val nextStream = new SequenceInputStream(sequenceInputStream, inputStream);
+    inputStream.close();
+    return nextStream;
   }
 
   private static Mono<String> fileContentToString(Flux<DataBuffer> content) {
