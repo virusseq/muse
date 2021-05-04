@@ -1,11 +1,11 @@
 package org.cancogenvirusseq.muse.service;
 
 import java.util.UUID;
+import java.util.function.Function;
 import javax.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.config.db.PostgresProperties;
 import org.cancogenvirusseq.muse.model.UploadEvent;
@@ -57,17 +57,16 @@ public class SongScoreService {
   }
 
   public Mono<Upload> submitAndUploadToSongScore(UploadEvent uploadEvent) {
-    // upload will be mutated and saved as it goes through the pipe
-    val upload = uploadEvent.getUpload();
-
     return songScoreClient
         .submitPayload(uploadEvent.getStudyId(), uploadEvent.getPayload())
         .flatMap(
-            submitResponse -> {
-              upload.setAnalysisId(UUID.fromString(submitResponse.getAnalysisId()));
-              upload.setStatus(UploadStatus.PROCESSING);
-              return uploadService.updateUpload(upload);
-            })
+            submitResponse ->
+                withUploadContext(
+                    upload -> {
+                      upload.setAnalysisId(UUID.fromString(submitResponse.getAnalysisId()));
+                      upload.setStatus(UploadStatus.PROCESSING);
+                      return uploadService.updateUpload(upload);
+                    }))
         .flatMap(
             updatedUpload ->
                 songScoreClient.getAnalysisFileFromSong(
@@ -83,26 +82,39 @@ public class SongScoreService {
                     uploadEvent.getSubmissionFile().getContent(),
                     uploadEvent.getSubmissionFile().getFileMd5sum()))
         .flatMap(
-            res -> songScoreClient.publishAnalysis(upload.getStudyId(), upload.getAnalysisId()))
+            res ->
+                withUploadContext(
+                    upload ->
+                        songScoreClient.publishAnalysis(
+                            upload.getStudyId(), upload.getAnalysisId())))
         .flatMap(
-            r -> {
-              upload.setStatus(UploadStatus.COMPLETE);
-              return uploadService.updateUpload(upload);
-            })
+            res ->
+                withUploadContext(
+                    upload -> {
+                      upload.setStatus(UploadStatus.COMPLETE);
+                      return uploadService.updateUpload(upload);
+                    }))
         .log("SongScoreService::submitAndUploadToSongScore")
         .onErrorResume(
-            t -> {
-              log.error(t.getLocalizedMessage(), t);
-              upload.setStatus(UploadStatus.ERROR);
-              if (t instanceof SongScoreServerException) {
-                upload.setError(t.toString());
-              } else if (Exceptions.isRetryExhausted(t)
-                  && t.getCause() instanceof SongScoreServerException) {
-                upload.setError(t.getCause().toString());
-              } else {
-                upload.setError("Internal server error!");
-              }
-              return uploadService.updateUpload(upload);
-            });
+            throwable ->
+                withUploadContext(
+                    upload -> {
+                      log.error(throwable.getLocalizedMessage(), throwable);
+                      upload.setStatus(UploadStatus.ERROR);
+                      if (throwable instanceof SongScoreServerException) {
+                        upload.setError(throwable.toString());
+                      } else if (Exceptions.isRetryExhausted(throwable)
+                          && throwable.getCause() instanceof SongScoreServerException) {
+                        upload.setError(throwable.getCause().toString());
+                      } else {
+                        upload.setError("Internal server error!");
+                      }
+                      return uploadService.updateUpload(upload);
+                    }))
+        .contextWrite(ctx -> ctx.put("upload", uploadEvent.getUpload()));
+  }
+
+  private <R> Mono<R> withUploadContext(Function<Upload, Mono<R>> func) {
+    return Mono.deferContextual(ctx -> func.apply(ctx.get("upload")));
   }
 }
