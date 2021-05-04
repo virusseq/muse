@@ -187,34 +187,19 @@ public class SubmissionService {
                     .orElseThrow());
   }
 
+  /**
+   * For each file submitted, extract the file contents into a string
+   *
+   * @param fileTypeFilePartTupleFlux - this tuple contains the pair of fileType as string and
+   *     FilePart which represents one entire file from the multipart file upload
+   * @return a flux of SubmissionUpload
+   */
   private static Flux<SubmissionUpload> readFileContentToString(
       Flux<Tuple2<String, FilePart>> fileTypeFilePartTupleFlux) {
     return fileTypeFilePartTupleFlux.flatMap(
         fileTypeFilePart ->
-            fileContentToString(
-                    Optional.of(fileTypeFilePart)
-                        .filter(f -> f.getT1().endsWith("gz"))
-                        .map(
-                            zippedTuple ->
-                                zippedTuple
-                                    .getT2()
-                                    .content()
-                                    .map(DataBuffer::asInputStream)
-                                    .reduce(SubmissionService::reduceInputStreams)
-                                    .flatMapMany(
-                                        inputStream ->
-                                            readInputStream(
-                                                () -> new GZIPInputStream(inputStream),
-                                                new DefaultDataBufferFactory(),
-                                                // 1024 because from observation of other
-                                                // databuffers, this seems to be the size
-                                                // they use
-                                                1024))
-                                    .onErrorMap(
-                                        throwable ->
-                                            new SubmissionFileGzipException(
-                                                zippedTuple.getT2().filename())))
-                        .orElse(fileTypeFilePart.getT2().content()))
+            fileContentMaybeZippedToString
+                .apply(fileTypeFilePart)
                 .map(
                     fileStr ->
                         new SubmissionUpload(
@@ -223,26 +208,56 @@ public class SubmissionService {
                             fileStr)));
   }
 
+  private static final Function<Flux<DataBuffer>, Mono<String>> fileContentToString =
+      (Flux<DataBuffer> content) ->
+          content
+              .map(
+                  dataBuffer -> {
+                    val bytes = new byte[dataBuffer.readableByteCount()];
+                    dataBuffer.read(bytes);
+                    DataBufferUtils.release(dataBuffer);
+
+                    return new String(bytes, StandardCharsets.UTF_8);
+                  })
+              .reduce(new StringBuilder(), StringBuilder::append)
+              .map(StringBuilder::toString);
+
+  private static final Function<Tuple2<String, FilePart>, Flux<DataBuffer>>
+      getContentFromMaybeZipped =
+          (Tuple2<String, FilePart> fileTypeFilePart) ->
+              Optional.of(fileTypeFilePart)
+                  .filter(f -> f.getT1().endsWith("gz"))
+                  .map(
+                      zippedTuple ->
+                          zippedTuple
+                              .getT2()
+                              .content()
+                              .map(DataBuffer::asInputStream)
+                              .reduce(SubmissionService::reduceInputStreams)
+                              .flatMapMany(
+                                  inputStream ->
+                                      readInputStream(
+                                          () -> new GZIPInputStream(inputStream),
+                                          new DefaultDataBufferFactory(),
+                                          // 1024 because from observation of other
+                                          // databuffers, this seems to be the size
+                                          // they use
+                                          1024))
+                              .onErrorMap(
+                                  throwable ->
+                                      new SubmissionFileGzipException(
+                                          zippedTuple.getT2().filename())))
+                  .orElse(fileTypeFilePart.getT2().content());
+
+  private static final Function<Tuple2<String, FilePart>, Mono<String>>
+      fileContentMaybeZippedToString = getContentFromMaybeZipped.andThen(fileContentToString);
+
   @SneakyThrows
   private static InputStream reduceInputStreams(
       InputStream sequenceInputStream, InputStream inputStream) {
     val nextStream = new SequenceInputStream(sequenceInputStream, inputStream);
     inputStream.close();
     return nextStream;
-  }
-
-  private static Mono<String> fileContentToString(Flux<DataBuffer> content) {
-    return content
-        .map(
-            dataBuffer -> {
-              val bytes = new byte[dataBuffer.readableByteCount()];
-              dataBuffer.read(bytes);
-              DataBufferUtils.release(dataBuffer);
-
-              return new String(bytes, StandardCharsets.UTF_8);
-            })
-        .reduce(new StringBuilder(), StringBuilder::append)
-        .map(StringBuilder::toString);
   }
 
   private static Set<String> compileOriginalFilenames(Collection<UploadRequest> uploadRequests) {
