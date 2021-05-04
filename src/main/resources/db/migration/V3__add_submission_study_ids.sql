@@ -18,3 +18,6 @@
 
 ALTER TABLE submission
     ADD COLUMN study_ids text[] NOT NULL DEFAULT array[]::text[];
+
+ALTER TABLE submission
+    ALTER COLUMN study_ids DROP DEFAULT;
