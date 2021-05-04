@@ -16,29 +16,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.api.model;
+ALTER TABLE submission
+    ADD COLUMN study_ids text[] NOT NULL DEFAULT array[]::text[];
 
-import java.time.OffsetDateTime;
-import java.util.Set;
-import java.util.UUID;
-import lombok.NonNull;
-import lombok.Value;
-import org.cancogenvirusseq.muse.repository.model.Submission;
-
-@Value
-public class SubmissionDTO {
-  @NonNull UUID submissionId;
-  @NonNull OffsetDateTime createdAt;
-  @NonNull Set<String> originalFileNames;
-  @NonNull Integer totalRecords;
-  @NonNull Set<String> studyIds;
-
-  public static SubmissionDTO fromDAO(Submission submission) {
-    return new SubmissionDTO(
-        submission.getSubmissionId(),
-        submission.getCreatedAt(),
-        submission.getOriginalFileNames(),
-        submission.getTotalRecords(),
-        submission.getStudyIds());
-  }
-}
+ALTER TABLE submission
+    ALTER COLUMN study_ids DROP DEFAULT;

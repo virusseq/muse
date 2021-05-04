@@ -199,6 +199,12 @@ public class SubmissionService {
         .collect(Collectors.toSet());
   }
 
+  private static Set<String> compileStudyIds(Collection<UploadRequest> uploadRequests) {
+    return uploadRequests.stream()
+        .map(UploadRequest::getStudyId)
+        .collect(Collectors.toSet());
+  }
+
   private SubmissionBundle reduceToSubmissionBundle(
       SubmissionBundle submissionBundle, SubmissionUpload submissionUpload) {
     // append original filename
@@ -231,6 +237,7 @@ public class SubmissionService {
                     .userId(getUserIdFromContext(securityContext))
                     .createdAt(OffsetDateTime.now())
                     .originalFileNames(compileOriginalFilenames(submissionRequest.values()))
+                    .studyIds(compileStudyIds(submissionRequest.values()))
                     .totalRecords(submissionRequest.size())
                     .build())
             // after we get a submissionId, batch create the uploads to be processed
