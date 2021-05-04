@@ -1,13 +1,11 @@
 package org.cancogenvirusseq.muse.exceptions.submission;
 
+import static java.lang.String.format;
+
+import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
-
-import java.util.List;
-import java.util.Map;
-
-import static java.lang.String.format;
 
 @Value
 @EqualsAndHashCode(callSuper = true)

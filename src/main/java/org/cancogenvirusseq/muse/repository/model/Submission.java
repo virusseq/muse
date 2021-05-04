@@ -19,7 +19,6 @@
 package org.cancogenvirusseq.muse.repository.model;
 
 import java.time.OffsetDateTime;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;

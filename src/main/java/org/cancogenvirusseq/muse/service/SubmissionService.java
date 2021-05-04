@@ -23,7 +23,6 @@ import static org.cancogenvirusseq.muse.components.FastaFileProcessor.processFil
 import static org.cancogenvirusseq.muse.utils.SecurityContextWrapper.getUserIdFromContext;
 import static org.springframework.core.io.buffer.DataBufferUtils.readInputStream;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
@@ -35,9 +34,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
-
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
