@@ -20,16 +20,14 @@ package org.cancogenvirusseq.muse.model;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Set;
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import org.cancogenvirusseq.muse.utils.HasUploadCompositeId;
 
-/**
- * A SubmissionRequest represents a pair of record and submission files, plus the filenames from
- * which they were extracted
- */
 @Getter
-@AllArgsConstructor
-public class SubmissionRequest {
+@Builder
+public class UploadRequest implements HasUploadCompositeId {
+  private final String submitterSampleId;
   private final String studyId;
   private final ObjectNode record;
   private final SubmissionFile submissionFile;

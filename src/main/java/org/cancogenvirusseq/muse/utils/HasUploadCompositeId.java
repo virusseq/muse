@@ -16,21 +16,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.cancogenvirusseq.muse.model;
+package org.cancogenvirusseq.muse.utils;
 
-import java.util.List;
-import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
+public interface HasUploadCompositeId {
+  String getStudyId();
 
-/** Event type used to emit from the SubmissionService to the SongScoreService */
-@Data
-@Builder
-@AllArgsConstructor
-public class SubmissionEvent {
-  @NonNull private UUID submissionId;
-  @NonNull private UUID userId;
-  @NonNull private List<SubmissionRequest> submissionRequests;
+  String getSubmitterSampleId();
+
+  default String getCompositeId() {
+    return getStudyId() + "-" + getSubmitterSampleId();
+  }
 }
