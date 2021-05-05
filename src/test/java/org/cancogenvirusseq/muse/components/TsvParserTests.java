@@ -111,13 +111,13 @@ public class TsvParserTests {
   }
 
   @Test
-  void testNoStudyPrefixScopeWorksCorrectly() {
-    val noPrefixAuthProperties = new AuthProperties();
+  void testNullStudyPrefixScopeWorksCorrectly() {
+    val nullPrefixAuthProperties = new AuthProperties();
 
-    noPrefixAuthProperties.getScopes().setSystem("test.WRITE");
-    noPrefixAuthProperties.getScopes().getStudy().setSuffix(".WRITE");
+    nullPrefixAuthProperties.getScopes().setSystem("test.WRITE");
+    nullPrefixAuthProperties.getScopes().getStudy().setSuffix(".WRITE");
 
-    val noScopePrefixParser = new TsvParser(TSV_SCHEMA, new Scopes(noPrefixAuthProperties));
+    val nullScopePrefixParser = new TsvParser(TSV_SCHEMA, new Scopes(nullPrefixAuthProperties));
 
     val tsvStr =
         "age\tname\tsubmitterId\tstudy_id\n"
@@ -135,7 +135,40 @@ public class TsvParserTests {
                 "TEST-STUDY"));
 
     val actual =
-        noScopePrefixParser
+        nullScopePrefixParser
+            .parseAndValidateTsvStrToFlatRecords(tsvStr, List.of("muse.TEST-STUDY.WRITE"))
+            .collect(toUnmodifiableList());
+
+    assertThat(actual).hasSameElementsAs(expected);
+  }
+
+  @Test
+  void testEmptyStudyPrefixScopeWorksCorrectly() {
+    val emptyPrefixAuthProperties = new AuthProperties();
+
+    emptyPrefixAuthProperties.getScopes().setSystem("test.WRITE");
+    emptyPrefixAuthProperties.getScopes().getStudy().setPrefix("");
+    emptyPrefixAuthProperties.getScopes().getStudy().setSuffix(".WRITE");
+
+    val emptyScopePrefixParser = new TsvParser(TSV_SCHEMA, new Scopes(emptyPrefixAuthProperties));
+
+    val tsvStr =
+        "age\tname\tsubmitterId\tstudy_id\n"
+            + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
+    val expected =
+        List.of(
+            Map.of(
+                "submitterId",
+                "Qc-L00244359",
+                "name",
+                "consensus_sequence",
+                "age",
+                "123",
+                "study_id",
+                "TEST-STUDY"));
+
+    val actual =
+        emptyScopePrefixParser
             .parseAndValidateTsvStrToFlatRecords(tsvStr, List.of("muse.TEST-STUDY.WRITE"))
             .collect(toUnmodifiableList());
 

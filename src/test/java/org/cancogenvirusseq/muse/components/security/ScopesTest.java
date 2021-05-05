@@ -109,9 +109,21 @@ public class ScopesTest {
   }
 
   @Test
-  public void noPrefixAccepted() {
+  public void nullPrefixAccepted() {
     val authProperties = new AuthProperties();
     authProperties.getScopes().setSystem("test.WRITE");
+    authProperties.getScopes().getStudy().setSuffix(".WRITE");
+
+    val scopes = new Scopes(authProperties);
+    assertThat(scopes.isValidScope.test("test.WRITE")).isTrue();
+    assertThat(scopes.isValidScope.test("TEST-STUDY.WRITE")).isTrue();
+  }
+
+  @Test
+  public void emptyPrefixAccepted() {
+    val authProperties = new AuthProperties();
+    authProperties.getScopes().setSystem("test.WRITE");
+    authProperties.getScopes().getStudy().setPrefix("");
     authProperties.getScopes().getStudy().setSuffix(".WRITE");
 
     val scopes = new Scopes(authProperties);
