@@ -218,7 +218,8 @@ public class TsvParser {
     List<InvalidField> fieldErrors;
 
     public void addFieldError(String fieldName, InvalidField.Reason reason, Integer index) {
-      fieldErrors.add(new InvalidField(fieldName, reason, index));
+      fieldErrors.add(
+          new InvalidField(fieldName, stringStringMap.getOrDefault(fieldName, ""), reason, index));
     }
 
     public Boolean hasFieldErrors() {
