@@ -20,6 +20,7 @@ package org.cancogenvirusseq.muse.components.security;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -43,7 +44,10 @@ public class Scopes {
     this.scopesConfig = authProperties.getScopes();
 
     final Predicate<String> startsWithStudyPrefix =
-        (String scope) -> scope.startsWith(scopesConfig.getStudy().getPrefix());
+        (String scope) ->
+            Optional.ofNullable(scopesConfig.getStudy().getPrefix())
+                .map(scope::startsWith)
+                .orElse(true);
 
     final Predicate<String> endsWithStudySuffix =
         (String scope) -> scope.endsWith(scopesConfig.getStudy().getSuffix());

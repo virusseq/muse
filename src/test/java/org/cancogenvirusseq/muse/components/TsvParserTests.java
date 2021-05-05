@@ -111,6 +111,38 @@ public class TsvParserTests {
   }
 
   @Test
+  void testNoStudyPrefixScopeWorksCorrectly() {
+    val noPrefixAuthProperties = new AuthProperties();
+
+    noPrefixAuthProperties.getScopes().setSystem("test.WRITE");
+    noPrefixAuthProperties.getScopes().getStudy().setSuffix(".WRITE");
+
+    val noScopePrefixParser = new TsvParser(TSV_SCHEMA, new Scopes(noPrefixAuthProperties));
+
+    val tsvStr =
+        "age\tname\tsubmitterId\tstudy_id\n"
+            + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
+    val expected =
+        List.of(
+            Map.of(
+                "submitterId",
+                "Qc-L00244359",
+                "name",
+                "consensus_sequence",
+                "age",
+                "123",
+                "study_id",
+                "TEST-STUDY"));
+
+    val actual =
+        noScopePrefixParser
+            .parseAndValidateTsvStrToFlatRecords(tsvStr, List.of("muse.TEST-STUDY.WRITE"))
+            .collect(toUnmodifiableList());
+
+    assertThat(actual).hasSameElementsAs(expected);
+  }
+
+  @Test
   void testErrorOnInvalidHeaders() {
     val tsvStr =
         "agee\tname\tsubmitterId\tstudy_id\n"
