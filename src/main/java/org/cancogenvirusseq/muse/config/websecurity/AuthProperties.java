@@ -46,7 +46,6 @@ public class AuthProperties {
     @Setter
     public static class StudyScopeConfig {
 
-      @NotNull
       @Pattern(regexp = "^\\w+\\W$")
       private String prefix;
 

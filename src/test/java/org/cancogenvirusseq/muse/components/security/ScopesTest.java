@@ -107,4 +107,15 @@ public class ScopesTest {
     assertThat(listFunc.apply(List.of("test.WRITE", "muse.TEST-STUDY.WRITE", "otherApp.WRITE")))
         .containsExactlyElementsOf(List.of("test.WRITE", "muse.TEST-STUDY.WRITE"));
   }
+
+  @Test
+  public void noPrefixAccepted() {
+    val authProperties = new AuthProperties();
+    authProperties.getScopes().setSystem("test.WRITE");
+    authProperties.getScopes().getStudy().setSuffix(".WRITE");
+
+    val scopes = new Scopes(authProperties);
+    assertThat(scopes.isValidScope.test("test.WRITE")).isTrue();
+    assertThat(scopes.isValidScope.test("TEST-STUDY.WRITE")).isTrue();
+  }
 }

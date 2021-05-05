@@ -20,6 +20,7 @@ package org.cancogenvirusseq.muse.components.security;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -43,13 +44,16 @@ public class Scopes {
     this.scopesConfig = authProperties.getScopes();
 
     final Predicate<String> startsWithStudyPrefix =
-        (String scope) -> scope.startsWith(scopesConfig.getStudy().getPrefix());
+        scope ->
+            Optional.ofNullable(scopesConfig.getStudy().getPrefix())
+                .map(scope::startsWith)
+                .orElse(true);
 
     final Predicate<String> endsWithStudySuffix =
-        (String scope) -> scope.endsWith(scopesConfig.getStudy().getSuffix());
+        scope -> scope.endsWith(scopesConfig.getStudy().getSuffix());
 
     this.isStudyScope = startsWithStudyPrefix.and(endsWithStudySuffix);
-    this.isSystemScope = (String scope) -> scope.equals(scopesConfig.getSystem());
+    this.isSystemScope = scope -> scope.equals(scopesConfig.getSystem());
     this.isValidScope = isSystemScope.or(isStudyScope);
   }
 
