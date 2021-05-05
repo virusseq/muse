@@ -202,7 +202,7 @@ public class TsvParserTests {
             () -> parser.parseAndValidateTsvStrToFlatRecords(tsvStr, systemScopes));
 
     val expectedInvalidField =
-        new InvalidField("age", InvalidField.Reason.EXPECTING_NUMBER_TYPE, 1);
+        new InvalidField("age", "onetwothree", InvalidField.Reason.EXPECTING_NUMBER_TYPE, 1);
 
     assertThat(thrown.getInvalidFields()).contains(expectedInvalidField);
   }
@@ -221,7 +221,8 @@ public class TsvParserTests {
                     tsvStr, List.of("muse.NOT-THIS-STUDY.WRITE")));
 
     val expectedInvalidField =
-        new InvalidField("study_id", InvalidField.Reason.UNAUTHORIZED_FOR_STUDY_UPLOAD, 1);
+        new InvalidField(
+            "study_id", "TEST-STUDY", InvalidField.Reason.UNAUTHORIZED_FOR_STUDY_UPLOAD, 1);
 
     assertThat(thrown.getInvalidFields()).contains(expectedInvalidField);
   }

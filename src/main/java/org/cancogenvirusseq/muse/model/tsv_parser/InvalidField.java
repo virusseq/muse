@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class InvalidField {
   @NonNull String fieldName;
+  @NonNull String value;
   @NonNull Reason reason;
   @NonNull Integer index;
 
