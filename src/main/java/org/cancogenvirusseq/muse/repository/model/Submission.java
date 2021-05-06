@@ -37,5 +37,6 @@ public class Submission {
   @NonNull private UUID userId;
   private OffsetDateTime createdAt;
   @NonNull private Set<String> originalFileNames;
+  @NonNull private Set<String> studyIds;
   @NonNull private Integer totalRecords;
 }

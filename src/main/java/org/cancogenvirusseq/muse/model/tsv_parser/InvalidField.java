@@ -10,11 +10,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class InvalidField {
   @NonNull String fieldName;
+  @NonNull String value;
   @NonNull Reason reason;
   @NonNull Integer index;
 
   public enum Reason {
     EXPECTING_NUMBER_TYPE,
-    NOT_ALLOWED_TO_BE_EMPTY
+    NOT_ALLOWED_TO_BE_EMPTY,
+    UNAUTHORIZED_FOR_STUDY_UPLOAD
   }
 }

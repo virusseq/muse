@@ -18,19 +18,18 @@
 
 package org.cancogenvirusseq.muse.model;
 
-import java.util.List;
-import java.util.UUID;
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Set;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
+import lombok.Getter;
+import org.cancogenvirusseq.muse.utils.HasUploadCompositeId;
 
-/** Event type used to emit from the SubmissionService to the SongScoreService */
-@Data
+@Getter
 @Builder
-@AllArgsConstructor
-public class SubmissionEvent {
-  @NonNull private UUID submissionId;
-  @NonNull private UUID userId;
-  @NonNull private List<SubmissionRequest> submissionRequests;
+public class UploadRequest implements HasUploadCompositeId {
+  private final String submitterSampleId;
+  private final String studyId;
+  private final ObjectNode record;
+  private final SubmissionFile submissionFile;
+  private final Set<String> originalFileNames;
 }

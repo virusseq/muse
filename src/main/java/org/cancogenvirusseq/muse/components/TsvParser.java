@@ -1,14 +1,15 @@
 package org.cancogenvirusseq.muse.components;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.EXPECTING_NUMBER_TYPE;
-import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.NOT_ALLOWED_TO_BE_EMPTY;
+import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.*;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.cancogenvirusseq.muse.components.security.Scopes;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
 import org.cancogenvirusseq.muse.exceptions.submission.InvalidFieldsException;
 import org.cancogenvirusseq.muse.exceptions.submission.InvalidHeadersException;
@@ -29,18 +31,22 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class TsvParser {
+  private final String STUDY_FIELD_NAME = "study_id";
+  private final Scopes scopes;
   private final ImmutableList<TsvFieldSchema> tsvFieldSchemas;
   private final ImmutableList<String> expectedTsvHeaders;
 
   @Autowired
-  public TsvParser(MuseAppConfig config) {
+  public TsvParser(MuseAppConfig config, Scopes scopes) {
+    this.scopes = scopes;
     this.tsvFieldSchemas = config.getTsvFieldSchemas();
     this.expectedTsvHeaders =
         ImmutableList.copyOf(
             tsvFieldSchemas.stream().map(TsvFieldSchema::getName).collect(toUnmodifiableList()));
   }
 
-  public TsvParser(List<TsvFieldSchema> tsvFieldSchemas) {
+  public TsvParser(List<TsvFieldSchema> tsvFieldSchemas, Scopes scopes) {
+    this.scopes = scopes;
     this.tsvFieldSchemas = ImmutableList.copyOf(tsvFieldSchemas);
     this.expectedTsvHeaders =
         ImmutableList.copyOf(
@@ -48,7 +54,8 @@ public class TsvParser {
   }
 
   @SneakyThrows
-  public Stream<Map<String, String>> parseAndValidateTsvStrToFlatRecords(String s) {
+  public Stream<Map<String, String>> parseAndValidateTsvStrToFlatRecords(
+      String s, List<String> userScopes) {
     log.info("Parsing TSV into flat records");
     val lines = s.split("\n");
     val strTsvHeaders = List.of(lines[0].trim().split("\t"));
@@ -58,11 +65,15 @@ public class TsvParser {
       throw new InvalidHeadersException(headerChkResult.missing, headerChkResult.unknown);
     }
 
+    // create UnaryOperator which binds userScopes to the checking function
+    val checkStudyScopesOperator = getCheckStudyScopesFunc(this::checkStudyScopes, userScopes);
+
     // parse records and run validation pipeline
     val records =
         parse(lines)
             .map(this::checkRequireNotEmpty)
             .map(this::checkValueTypes)
+            .map(checkStudyScopesOperator)
             .collect(toUnmodifiableList());
 
     if (hasAnyInvalidRecord(records)) {
@@ -138,6 +149,26 @@ public class TsvParser {
     return record;
   }
 
+  private Record checkStudyScopes(Record record, List<String> userScopes) {
+    val isAuthorized =
+        userScopes.stream()
+            .anyMatch(
+                scopes.isSystemScope.or(
+                    userScope ->
+                        userScope.contains(record.getStringStringMap().get(STUDY_FIELD_NAME))));
+
+    if (!isAuthorized) {
+      record.addFieldError(STUDY_FIELD_NAME, UNAUTHORIZED_FOR_STUDY_UPLOAD, record.getIndex());
+    }
+
+    return record;
+  }
+
+  private UnaryOperator<Record> getCheckStudyScopesFunc(
+      BiFunction<Record, List<String>, Record> func, List<String> userScopes) {
+    return r -> func.apply(r, userScopes);
+  }
+
   private Boolean hasAnyInvalidRecord(List<Record> records) {
     return records.stream().anyMatch(Record::hasFieldErrors);
   }
@@ -187,7 +218,8 @@ public class TsvParser {
     List<InvalidField> fieldErrors;
 
     public void addFieldError(String fieldName, InvalidField.Reason reason, Integer index) {
-      fieldErrors.add(new InvalidField(fieldName, reason, index));
+      fieldErrors.add(
+          new InvalidField(fieldName, stringStringMap.getOrDefault(fieldName, ""), reason, index));
     }
 
     public Boolean hasFieldErrors() {

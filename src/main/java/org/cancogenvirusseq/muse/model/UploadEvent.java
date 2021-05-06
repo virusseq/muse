@@ -18,28 +18,16 @@
 
 package org.cancogenvirusseq.muse.model;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NonNull;
-import org.springframework.security.core.Authentication;
+import org.cancogenvirusseq.muse.repository.model.Upload;
 
-/**
- * A submission bundle contains the validated records to upload to song, the validated files for
- * score, and the original file names. The bundles is then broken up into a series of
- * SubmissionRequest(s) by the SubmissionService
- */
-@Getter
-public class SubmissionBundle {
-  private final Authentication userAuthentication;
-  private final Set<String> originalFileNames = new HashSet<>();
-  private final ArrayList<Map<String, String>> records = new ArrayList<>();
-  private final ConcurrentHashMap<String, SubmissionFile> files = new ConcurrentHashMap<>();
-
-  public SubmissionBundle(@NonNull Authentication userAuthentication) {
-    this.userAuthentication = userAuthentication;
-  }
+@Data
+@Builder
+public class UploadEvent {
+  @NonNull private final String studyId;
+  @NonNull private final Upload upload;
+  @NonNull private final SubmissionFile submissionFile;
+  @NonNull private final String payload;
 }

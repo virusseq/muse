@@ -18,12 +18,12 @@
 
 package org.cancogenvirusseq.muse.config.websecurity;
 
-import com.google.common.collect.ImmutableList;
-import java.util.List;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import lombok.Data;
-import lombok.Value;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.context.annotation.Configuration;
 
 @Data
@@ -34,18 +34,24 @@ public class AuthProperties {
 
   String jwtPublicKeyStr;
 
-  Scopes scopes;
+  ScopesConfig scopes = new ScopesConfig();
 
-  @Value
-  @Data
-  @ConstructorBinding
-  public static class Scopes {
-    ImmutableList<String> read;
-    ImmutableList<String> write;
+  @Getter
+  @Setter
+  public static class ScopesConfig {
+    private String system;
+    private final StudyScopeConfig study = new StudyScopeConfig();
 
-    public Scopes(List<String> read, List<String> write) {
-      this.read = ImmutableList.copyOf(read);
-      this.write = ImmutableList.copyOf(write);
+    @Getter
+    @Setter
+    public static class StudyScopeConfig {
+
+      @Pattern(regexp = "^\\w+\\W$")
+      private String prefix;
+
+      @NotNull
+      @Pattern(regexp = "^\\W\\w+$")
+      private String suffix;
     }
   }
 }

@@ -2,14 +2,14 @@ package org.cancogenvirusseq.muse.components;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getFirstSubmitterSampleId;
-import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.getIsolate;
+import static org.cancogenvirusseq.muse.utils.AnalysisPayloadUtils.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +30,7 @@ import org.cancogenvirusseq.muse.exceptions.submission.FoundInvalidFilesExceptio
 import org.cancogenvirusseq.muse.exceptions.submission.MissingDataException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
-import org.cancogenvirusseq.muse.model.SubmissionRequest;
+import org.cancogenvirusseq.muse.model.UploadRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -49,7 +49,7 @@ public class PayloadFileMapper {
   }
 
   @SneakyThrows
-  public List<SubmissionRequest> submissionBundleToSubmissionRequests(
+  public Map<String, UploadRequest> submissionBundleToSubmissionRequests(
       SubmissionBundle submissionBundle) {
     log.info("Mapping payloads to files");
 
@@ -103,22 +103,27 @@ public class PayloadFileMapper {
         return acc;
       }
 
-      val sampleFileName =
-          format("%s%s", getFirstSubmitterSampleId(payload), submissionFile.getFileExtension());
+      val submitterSampleId = getFirstSubmitterSampleId(payload);
+      val sampleFileName = format("%s%s", submitterSampleId, submissionFile.getFileExtension());
 
       payload.set("files", createFilesObject(submissionFile, sampleFileName));
 
-      acc.getUsedIsolates().add(isolate);
-      acc.getRecordsMapped()
-          .add(
-              new SubmissionRequest(
-                  payload,
-                  submissionFile,
+      val uploadRequest =
+          UploadRequest.builder()
+              .submitterSampleId(submitterSampleId)
+              .studyId(getStudyId(payload))
+              .record(payload)
+              .submissionFile(submissionFile)
+              .originalFileNames(
                   Stream.concat(
                           submissionBundle.getOriginalFileNames().stream()
                               .filter(filename -> filename.endsWith(".tsv")),
                           Stream.of(submissionFile.getSubmittedFileName()))
-                      .collect(Collectors.toSet())));
+                      .collect(Collectors.toSet()))
+              .build();
+
+      acc.getUsedIsolates().add(isolate);
+      acc.getRecordsMapped().put(uploadRequest.getCompositeId(), uploadRequest);
 
       return acc;
     };
@@ -126,7 +131,7 @@ public class PayloadFileMapper {
 
   private static BinaryOperator<MapperReduceResult> combiner() {
     return (first, second) -> {
-      first.getRecordsMapped().addAll(second.getRecordsMapped());
+      first.getRecordsMapped().putAll(second.getRecordsMapped());
       first.getUsedIsolates().addAll(second.getUsedIsolates());
       first.getIsolateInRecordMissingInFile().addAll(second.getIsolateInRecordMissingInFile());
       return first;
@@ -180,6 +185,6 @@ public class PayloadFileMapper {
   static class MapperReduceResult {
     List<String> usedIsolates = new ArrayList<>();
     List<String> isolateInRecordMissingInFile = new ArrayList<>();
-    List<SubmissionRequest> recordsMapped = new ArrayList<>();
+    Map<String, UploadRequest> recordsMapped = new HashMap<>();
   }
 }

@@ -44,6 +44,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -133,8 +134,10 @@ public class ApiController implements ApiDefinition {
 
   @SneakyThrows
   private GZIPOutputStream addToGzipStream(GZIPOutputStream gzip, DataBuffer inputDataBuffer) {
-    val bytes = ByteStreams.toByteArray(inputDataBuffer.asInputStream());
+    val inputDataBufferStream = inputDataBuffer.asInputStream();
+    val bytes = ByteStreams.toByteArray(inputDataBufferStream);
     gzip.write(bytes);
+    inputDataBufferStream.close();
     return gzip;
   }
 
@@ -149,6 +152,8 @@ public class ApiController implements ApiDefinition {
     log.error("ApiController exception handler", ex);
     if (ex instanceof MuseBaseException) {
       return ErrorResponse.errorResponseEntity((MuseBaseException) ex);
+    } else if (ex instanceof AccessDeniedException) {
+      return ErrorResponse.errorResponseEntity(HttpStatus.FORBIDDEN, ex.getLocalizedMessage());
     } else {
       return ErrorResponse.errorResponseEntity(
           HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage());
