@@ -71,6 +71,9 @@ import reactor.util.function.Tuples;
 @Slf4j
 public class SubmissionService {
 
+  private static final DefaultDataBufferFactory DATA_BUFFER_FACTORY =
+      new DefaultDataBufferFactory();
+
   private static final String METADATA_FILE_EXT = "tsv";
   private static final Set<String> MOLECULAR_FILE_EXT_SET =
       Set.of("fasta", "fa", "fasta.gz", "fa.gz");
@@ -239,7 +242,7 @@ public class SubmissionService {
                                   inputStream ->
                                       readInputStream(
                                           () -> new GZIPInputStream(inputStream),
-                                          new DefaultDataBufferFactory(),
+                                          DATA_BUFFER_FACTORY,
                                           // 1024 because from observation of other
                                           // databuffers, this seems to be the size
                                           // they use
