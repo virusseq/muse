@@ -41,6 +41,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class DownloadsService {
 
+  private static final DefaultDataBufferFactory DATA_BUFFER_FACTORY =
+      new DefaultDataBufferFactory();
+
   final SongScoreClient songScoreClient;
 
   public Flux<DataBuffer> download(List<UUID> objectIds) {
@@ -69,7 +72,7 @@ public class DownloadsService {
   }
 
   private static Flux<DataBuffer> newLineBuffer() {
-    val buffer = new DefaultDataBufferFactory().allocateBuffer(4);
+    val buffer = DATA_BUFFER_FACTORY.allocateBuffer(4);
     val newLIne = "\n";
     buffer.write(newLIne.getBytes());
     return Flux.just(buffer);
