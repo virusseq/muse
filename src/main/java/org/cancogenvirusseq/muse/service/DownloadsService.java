@@ -21,15 +21,16 @@ package org.cancogenvirusseq.muse.service;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import bio.overture.aria.Client;
+import bio.overture.aria.exceptions.ClientException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.exceptions.download.DownloadInfoFetchException;
 import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
 import org.cancogenvirusseq.muse.model.DownloadInfoFetchResult;
-import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.stereotype.Service;
@@ -44,7 +45,7 @@ public class DownloadsService {
   private static final DefaultDataBufferFactory DATA_BUFFER_FACTORY =
       new DefaultDataBufferFactory();
 
-  final SongScoreClient songScoreClient;
+  final Client songScoreClient;
 
   public Flux<DataBuffer> download(List<UUID> objectIds) {
     return Flux.fromIterable(objectIds)
@@ -87,8 +88,7 @@ public class DownloadsService {
                     legacyFileEntity.getStudyId(), legacyFileEntity.getAnalysisId()))
         .map(analysis -> new DownloadInfoFetchResult(objectIds, analysis))
         .onErrorResume(
-            SongScoreServerException.class,
-            t -> Mono.just(new DownloadInfoFetchResult(objectIds, t)));
+            ClientException.class, t -> Mono.just(new DownloadInfoFetchResult(objectIds, t)));
   }
 
   // Result isNotOk if analysis is missing, is not published or has no file objects

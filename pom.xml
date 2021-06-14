@@ -15,6 +15,7 @@
     <description>Service to submit, validate, and download virus-seq data</description>
     <properties>
         <java.version>11</java.version>
+        <aria.version>0.0.1-SNAPSHOT</aria.version>
         <springfox.version>3.0.0</springfox.version>
     </properties>
     <dependencies>
@@ -82,6 +83,12 @@
             <artifactId>spring-security-oauth2-client</artifactId>
         </dependency>
 
+        <!-- libs and utils -->
+        <dependency>
+            <groupId>bio.overture</groupId>
+            <artifactId>aria</artifactId>
+            <version>${aria.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
