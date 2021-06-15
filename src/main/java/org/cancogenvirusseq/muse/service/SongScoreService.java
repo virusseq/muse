@@ -1,11 +1,10 @@
 package org.cancogenvirusseq.muse.service;
 
+import bio.overture.aria.client.AriaClient;
+import bio.overture.aria.exceptions.ClientException;
 import java.util.UUID;
 import java.util.function.Function;
 import javax.annotation.PostConstruct;
-
-import bio.overture.aria.Client;
-import bio.overture.aria.exceptions.ClientException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +32,7 @@ public class SongScoreService {
   private static final Integer SONG_SCORE_SUBMIT_UPLOAD_PREFETCH = 1;
 
   final UploadService uploadService;
-  final Client songScoreClient;
+  final AriaClient ariaClient;
   final PostgresProperties props;
 
   private final Sinks.Many<UploadEvent> sink = Sinks.many().unicast().onBackpressureBuffer();
@@ -58,7 +57,7 @@ public class SongScoreService {
   }
 
   public Mono<Upload> submitAndUploadToSongScore(UploadEvent uploadEvent) {
-    return songScoreClient
+    return ariaClient
         .submitPayload(uploadEvent.getStudyId(), uploadEvent.getPayload())
         .flatMap(
             submitResponse ->
@@ -70,15 +69,15 @@ public class SongScoreService {
                     }))
         .flatMap(
             updatedUpload ->
-                songScoreClient.getAnalysisFileFromSong(
+                ariaClient.getAnalysisFileFromSong(
                     updatedUpload.getStudyId(), updatedUpload.getAnalysisId()))
         .flatMap(
             analysisFileResponse ->
-                songScoreClient.initScoreUpload(
+                ariaClient.initScoreUpload(
                     analysisFileResponse, uploadEvent.getSubmissionFile().getFileMd5sum()))
         .flatMap(
             scoreFileSpec ->
-                songScoreClient.uploadAndFinalize(
+                ariaClient.uploadAndFinalize(
                     scoreFileSpec,
                     uploadEvent.getSubmissionFile().getContent(),
                     uploadEvent.getSubmissionFile().getFileMd5sum()))
@@ -86,8 +85,7 @@ public class SongScoreService {
             res ->
                 withUploadContext(
                     upload ->
-                        songScoreClient.publishAnalysis(
-                            upload.getStudyId(), upload.getAnalysisId())))
+                        ariaClient.publishAnalysis(upload.getStudyId(), upload.getAnalysisId())))
         .flatMap(
             res ->
                 withUploadContext(

@@ -28,15 +28,14 @@ postgres:
   maxPoolIdleTimeMs: 1000
   maxPoolSize: 20
 
-aria:
-  client:
-    songRootUrl: "http://localhost:8089/"
-    scoreRootUrl: "http://localhost:8087/"
-    clientId: adminId
-    clientSecret: adminSecret
-    tokenUrl: http://localhost:8081/oauth/token
-    retryMaxAttempts: 3
-    retryDelaySec: 10
+ariaclient:
+  songRootUrl: "http://localhost:8089/"
+  scoreRootUrl: "http://localhost:8087/"
+  clientId: adminId
+  clientSecret: adminSecret
+  tokenUrl: http://localhost:8081/oauth/token
+  retryMaxAttempts: 3
+  retryDelaySec: 10
 
 auth:
   jwtPublicKeyUrl: "http://localhost:8081/oauth/token/public_key"

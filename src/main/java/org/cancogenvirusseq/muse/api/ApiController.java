@@ -56,7 +56,8 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ApiController implements ApiDefinition {
 
-  private static final DefaultDataBufferFactory DATA_BUFFER_FACTORY = new DefaultDataBufferFactory();
+  private static final DefaultDataBufferFactory DATA_BUFFER_FACTORY =
+      new DefaultDataBufferFactory();
 
   private final SubmissionService submissionService;
   private final UploadService uploadService;

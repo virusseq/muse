@@ -1,11 +1,10 @@
 package org.cancogenvirusseq.muse.model;
 
-import java.util.Optional;
-import java.util.UUID;
-
 import bio.overture.aria.exceptions.ClientException;
 import bio.overture.aria.model.Analysis;
 import bio.overture.aria.model.AnalysisFile;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 

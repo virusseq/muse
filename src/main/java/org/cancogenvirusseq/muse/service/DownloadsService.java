@@ -18,12 +18,11 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import bio.overture.aria.client.AriaClient;
+import bio.overture.aria.exceptions.ClientException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import bio.overture.aria.Client;
-import bio.overture.aria.exceptions.ClientException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -45,7 +44,7 @@ public class DownloadsService {
   private static final DefaultDataBufferFactory DATA_BUFFER_FACTORY =
       new DefaultDataBufferFactory();
 
-  final Client songScoreClient;
+  final AriaClient ariaClient;
 
   public Flux<DataBuffer> download(List<UUID> objectIds) {
     return Flux.fromIterable(objectIds)
@@ -67,7 +66,7 @@ public class DownloadsService {
         .concatMap(
             analysisFileResponse -> {
               val objectId = analysisFileResponse.getObjectId();
-              return Flux.concat(songScoreClient.downloadObject(objectId), newLineBuffer());
+              return Flux.concat(ariaClient.downloadObject(objectId), newLineBuffer());
             })
         .onErrorMap(t -> !(t instanceof MuseBaseException), t -> new UnknownException());
   }
@@ -80,11 +79,11 @@ public class DownloadsService {
   }
 
   private Mono<DownloadInfoFetchResult> fetchDownloadInfoFromSong(UUID objectIds) {
-    return songScoreClient
+    return ariaClient
         .getFileEntityFromSong(objectIds)
         .flatMap(
             legacyFileEntity ->
-                songScoreClient.getAnalysis(
+                ariaClient.getAnalysis(
                     legacyFileEntity.getStudyId(), legacyFileEntity.getAnalysisId()))
         .map(analysis -> new DownloadInfoFetchResult(objectIds, analysis))
         .onErrorResume(
