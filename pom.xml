@@ -15,6 +15,7 @@
     <description>Service to submit, validate, and download virus-seq data</description>
     <properties>
         <java.version>11</java.version>
+        <aria.version>0.1.0</aria.version>
         <springfox.version>3.0.0</springfox.version>
     </properties>
     <dependencies>
@@ -82,6 +83,12 @@
             <artifactId>spring-security-oauth2-client</artifactId>
         </dependency>
 
+        <!-- libs and utils -->
+        <dependency>
+            <groupId>bio.overture</groupId>
+            <artifactId>aria</artifactId>
+            <version>${aria.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -154,5 +161,18 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>dcc-release</id>
+            <name>artifacts.oicr.on.ca-releases</name>
+            <url>https://artifacts.oicr.on.ca/artifactory/dcc-release</url>
+        </repository>
+        <repository>
+            <id>dcc-snapshot</id>
+            <name>artifacts.oicr.on.ca-snapshots</name>
+            <url>https://artifacts.oicr.on.ca/artifactory/dcc-snapshot</url>
+        </repository>
+    </repositories>
 
 </project>
