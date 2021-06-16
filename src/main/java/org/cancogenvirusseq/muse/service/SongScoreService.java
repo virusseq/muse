@@ -1,7 +1,7 @@
 package org.cancogenvirusseq.muse.service;
 
 import bio.overture.aria.client.AriaClient;
-import bio.overture.aria.exceptions.ClientException;
+import bio.overture.aria.exceptions.AriaClientException;
 import java.util.UUID;
 import java.util.function.Function;
 import javax.annotation.PostConstruct;
@@ -100,10 +100,10 @@ public class SongScoreService {
                     upload -> {
                       log.error(throwable.getLocalizedMessage(), throwable);
                       upload.setStatus(UploadStatus.ERROR);
-                      if (throwable instanceof ClientException) {
+                      if (throwable instanceof AriaClientException) {
                         upload.setError(throwable.toString());
                       } else if (Exceptions.isRetryExhausted(throwable)
-                          && throwable.getCause() instanceof ClientException) {
+                          && throwable.getCause() instanceof AriaClientException) {
                         upload.setError(throwable.getCause().toString());
                       } else {
                         upload.setError("Internal server error!");

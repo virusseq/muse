@@ -19,7 +19,7 @@
 package org.cancogenvirusseq.muse.service;
 
 import bio.overture.aria.client.AriaClient;
-import bio.overture.aria.exceptions.ClientException;
+import bio.overture.aria.exceptions.AriaClientException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -87,7 +87,7 @@ public class DownloadsService {
                     legacyFileEntity.getStudyId(), legacyFileEntity.getAnalysisId()))
         .map(analysis -> new DownloadInfoFetchResult(objectIds, analysis))
         .onErrorResume(
-            ClientException.class, t -> Mono.just(new DownloadInfoFetchResult(objectIds, t)));
+            AriaClientException.class, t -> Mono.just(new DownloadInfoFetchResult(objectIds, t)));
   }
 
   // Result isNotOk if analysis is missing, is not published or has no file objects

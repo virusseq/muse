@@ -1,6 +1,6 @@
 package org.cancogenvirusseq.muse.model;
 
-import bio.overture.aria.exceptions.ClientException;
+import bio.overture.aria.exceptions.AriaClientException;
 import bio.overture.aria.model.Analysis;
 import bio.overture.aria.model.AnalysisFile;
 import java.util.Optional;
@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 public class DownloadInfoFetchResult {
   @Getter final UUID objectId;
   final Analysis analysis;
-  final ClientException exception;
+  final AriaClientException exception;
 
   public DownloadInfoFetchResult(UUID objectId, Analysis analysis) {
     this.objectId = objectId;
@@ -19,7 +19,7 @@ public class DownloadInfoFetchResult {
     this.exception = null;
   }
 
-  public DownloadInfoFetchResult(UUID objectId, ClientException exception) {
+  public DownloadInfoFetchResult(UUID objectId, AriaClientException exception) {
     this.objectId = objectId;
     this.analysis = null;
     this.exception = exception;
@@ -28,7 +28,7 @@ public class DownloadInfoFetchResult {
   public String getResultMsg() {
     if (isExceptionStatus404Or400()) {
       return Optional.ofNullable(exception)
-          .map(ClientException::getMessage)
+          .map(AriaClientException::getMessage)
           .orElse(
               "Detailed error information unavailable, please consult server logs or contact support");
     }
@@ -44,7 +44,7 @@ public class DownloadInfoFetchResult {
     return "Analysis is OK";
   }
 
-  public Optional<ClientException> getException() {
+  public Optional<AriaClientException> getException() {
     return Optional.ofNullable(exception);
   }
 
@@ -62,7 +62,7 @@ public class DownloadInfoFetchResult {
 
   private Boolean isExceptionStatus404Or400() {
     return getException()
-        .map(ClientException::getStatus)
+        .map(AriaClientException::getStatus)
         .map(status -> status.equals(HttpStatus.BAD_REQUEST) || status.equals(HttpStatus.NOT_FOUND))
         .orElse(false);
   }
