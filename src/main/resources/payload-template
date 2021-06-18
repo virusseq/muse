@@ -24,15 +24,13 @@
         "sample_collected_by": ${sample collected by},
         "sequence_submitted_by": ${sequence submitted by},
         "sample_collection_date": ${sample collection date},
-        "sample_collection_date_precision": ${sample collection date precision},
+        "sample_collection_date_null_reason": ${sample collection date null reason},
         "geo_loc_country": ${geo_loc_name (country)},
         "geo_loc_province": ${geo_loc_name (state/province/territory)},
-        "geo_loc_city": ${geo_loc_name (city)},
         "organism": ${organism},
         "isolate": ${isolate},
         "purpose_of_sampling": ${purpose of sampling},
         "purpose_of_sampling_details": ${purpose of sampling details},
-        "nml_submitted_specimen_type": ${NML submitted specimen type},
         "anatomical_material": ${anatomical material},
         "anatomical_part": ${anatomical part},
         "body_product": ${body product},
@@ -45,6 +43,7 @@
         "host_scientific_name": ${host (scientific name)},
         "host_disease": ${host disease},
         "host_age": ${host age},
+        "host_age_null_reason": ${host age null reason},
         "host_age_unit": ${host age unit},
         "host_age_bin": ${host age bin},
         "host_gender": ${host gender}
@@ -52,10 +51,8 @@
       "experiment": {
         "purpose_of_sequencing": ${purpose of sequencing},
         "purpose_of_sequencing_details": ${purpose of sequencing details},
-        "sequencing_date": ${sequencing date},
-        "library_id": ${library ID},
         "sequencing_instrument": ${sequencing instrument},
-        "sequencing_protocol_name": ${sequencing protocol name}
+        "sequencing_protocol": ${sequencing protocol}
       },
       "sequence_analysis": {
         "raw_sequence_data_processing_method": ${raw sequence data processing method},
@@ -64,19 +61,13 @@
         "consensus_sequence_software_version": ${consensus sequence software version},
         "metrics": {
           "breadth_of_coverage": ${breadth of coverage value},
-          "depth_of_coverage": ${depth of coverage value},
-          "consensus_genome_length": ${consensus genome length},
-          "Ns_per_100kbp": ${Ns per 100 kbp}
+          "depth_of_coverage": ${depth of coverage value}
         },
         "reference_genome_accession": ${reference genome accession},
         "bioinformatics_protocol": ${bioinformatics protocol}
       },
-      "lineage_analysis": {
-        "lineage_name": ${lineage/clade name},
-        "lineage_analysis_software_name": ${lineage/clade analysis software name},
-        "lineage_analysis_software_version": ${lineage/clade analysis software version},
-        "variant_designation": ${variant designation},
-        "variant_evidence": ${variant evidence},
-        "variant_evidence_details": ${variant evidence details}
+      "pathogen_diagnostic_testing": {
+        "gene_name_1": ${gene name 1},
+        "diagnostic_pcr_protocol_1": ${diagnostic pcr Ct value 1}
       }
 }
