@@ -8,7 +8,8 @@
   { "name": "geo_loc_name (country)", "valueType": "string" },
   { "name": "geo_loc_name (state/province/territory)", "valueType": "string" },
   { "name": "organism", "valueType": "string" },
-  { "name": "isolate", "valueType": "string", "requireNotEmpty": true },
+  { "name": "isolate", "valueType": "string" },
+  { "name": "fasta header name", "valueType": "string", "requireNotEmpty": true },
   { "name": "purpose of sampling", "valueType": "string" },
   { "name": "purpose of sampling details", "valueType": "string" },
   { "name": "anatomical material", "valueType": "string" },
@@ -37,6 +38,6 @@
   { "name": "depth of coverage value", "valueType": "string" },
   { "name": "reference genome accession", "valueType": "string" },
   { "name": "bioinformatics protocol", "valueType": "string" },
-  { "name": "gene name 1", "valueType": "string" },
-  { "name": "diagnostic pcr Ct value 1", "valueType": "string" }
+  { "name": "gene name", "valueType": "string" },
+  { "name": "diagnostic pcr Ct value", "valueType": "number" }
 ]

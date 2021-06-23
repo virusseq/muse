@@ -29,6 +29,7 @@
         "geo_loc_province": ${geo_loc_name (state/province/territory)},
         "organism": ${organism},
         "isolate": ${isolate},
+        "fasta_header_name": ${fasta header name},
         "purpose_of_sampling": ${purpose of sampling},
         "purpose_of_sampling_details": ${purpose of sampling details},
         "anatomical_material": ${anatomical material},
@@ -67,7 +68,7 @@
         "bioinformatics_protocol": ${bioinformatics protocol}
       },
       "pathogen_diagnostic_testing": {
-        "gene_name_1": ${gene name 1},
-        "diagnostic_pcr_protocol_1": ${diagnostic pcr Ct value 1}
+        "gene_name": ${gene name},
+        "diagnostic_pcr_ct_value": ${diagnostic pcr Ct value}
       }
 }
