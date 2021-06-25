@@ -18,10 +18,10 @@
 
 package org.cancogenvirusseq.muse.components;
 
+import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.cancogenvirusseq.muse.components.ComponentTestStubs.*;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_FILE_EXTENSION;
-import static org.cancogenvirusseq.muse.components.FastaFileProcessor.FASTA_TYPE;
+import static org.cancogenvirusseq.muse.components.FastaFileProcessor.md5;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
@@ -35,7 +35,6 @@ import lombok.val;
 import org.cancogenvirusseq.muse.exceptions.submission.FoundInvalidFilesException;
 import org.cancogenvirusseq.muse.exceptions.submission.MissingDataException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
-import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.cancogenvirusseq.muse.model.UploadRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Authentication;
@@ -48,8 +47,8 @@ public class PayloadFileMapperTests {
   @SneakyThrows
   void testPayloadsMappedToFiles() {
     val mapper = new ObjectMapper();
-    val expectedSam1Payload = mapper.readValue(STUB_RECORD_1_PAYLOAD, ObjectNode.class);
-    val expectedSam2Payload = mapper.readValue(STUB_RECORD_2_PAYLOAD, ObjectNode.class);
+    val expectedSam1Payload = mapper.readValue(STUB_RECORD_0_PAYLOAD, ObjectNode.class);
+    val expectedSam2Payload = mapper.readValue(STUB_RECORD_1_PAYLOAD, ObjectNode.class);
 
     val submissionBundle = new SubmissionBundle(authentication);
     submissionBundle.getFiles().putAll(STUB_FILE_SAMPLE_MAP);
@@ -63,7 +62,7 @@ public class PayloadFileMapperTests {
         .containsExactlyInAnyOrder(expectedSam1Payload, expectedSam2Payload);
 
     assertThat(actual.values().stream().map(UploadRequest::getSubmissionFile))
-        .containsExactlyInAnyOrder(STUB_FILE_1, STUB_FILE_2);
+        .containsExactlyInAnyOrder(STUB_FILE_0, STUB_FILE_1);
 
     assertThat(actual.values().stream().map(UploadRequest::getOriginalFileNames))
         .containsExactlyInAnyOrder(
@@ -89,28 +88,28 @@ public class PayloadFileMapperTests {
             MissingDataException.class,
             () -> fileMapper.submissionBundleToSubmissionRequests(submissionBundle));
 
-    assertThat(thrown.getFastaHeaderInFileMissingInTsv()).containsExactly(STUB_RECORD_2_FASTA_HEADER);
+    assertThat(thrown.getFastaHeaderInFileMissingInTsv())
+        .containsExactly(STUB_RECORD_1_FASTA_HEADER);
     assertThat(thrown.getFastaHeaderInRecordMissingInFile()).containsExactly("notHere");
   }
 
   @Test
   @SneakyThrows
-  void testErrorOnFilesWithOnlyHeader() {
+  void testErrorOnFastaFileWithOnlyHeader() {
+    val fastaFileContent = format(">%s\n", STUB_RECORD_1_FASTA_HEADER);
+    val md5sum = md5(fastaFileContent);
+
     val emptyFiles =
         Map.of(
-            "EFG/sam2/ddd/erd",
-            SubmissionFile.builder()
-                .fileExtension(FASTA_FILE_EXTENSION)
-                .fileSize(18)
-                .fileMd5sum("d41d8cd98f00b204e9800998ecf8427e")
-                .content(">EFG/sam2/ddd/erd\n")
-                .fileType(FASTA_TYPE)
-                .dataType(FASTA_TYPE)
-                .submittedFileName("the.fasta")
+            STUB_RECORD_1_FASTA_HEADER,
+            STUB_FILE_1
+                .toBuilder()
+                .fileSize(fastaFileContent.length())
+                .fileMd5sum(md5sum.toString())
+                .content(format(">%s\n", STUB_RECORD_1_FASTA_HEADER))
                 .build());
 
-    val records =
-        List.of(Map.of("submitter id", "sam2", "isolate", "EFG/sam2/ddd/erd", "age", "123"));
+    val records = List.of(STUB_RECORDS.get(1));
 
     val submissionBundle = new SubmissionBundle(authentication);
     submissionBundle.getFiles().putAll(emptyFiles);
@@ -123,6 +122,6 @@ public class PayloadFileMapperTests {
             FoundInvalidFilesException.class,
             () -> fileMapper.submissionBundleToSubmissionRequests(submissionBundle));
 
-    assertThat(thrown.getIsolateWithEmptyData()).containsExactly("EFG/sam2/ddd/erd");
+    assertThat(thrown.getIsolateWithEmptyData()).containsExactly(STUB_RECORD_1_FASTA_HEADER);
   }
 }

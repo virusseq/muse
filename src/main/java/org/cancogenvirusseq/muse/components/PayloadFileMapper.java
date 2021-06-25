@@ -133,7 +133,9 @@ public class PayloadFileMapper {
     return (first, second) -> {
       first.getRecordsMapped().putAll(second.getRecordsMapped());
       first.getUsedFastaHeaders().addAll(second.getUsedFastaHeaders());
-      first.getFastaHeaderInRecordMissingInFile().addAll(second.getFastaHeaderInRecordMissingInFile());
+      first
+          .getFastaHeaderInRecordMissingInFile()
+          .addAll(second.getFastaHeaderInRecordMissingInFile());
       return first;
     };
   }
