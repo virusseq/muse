@@ -21,13 +21,13 @@ public class FastaFileProcessor {
    * Processing submission files into a map of isolateFilename => SubmissionFile
    *
    * @param submissionUpload - submissionUpload to be processed
-   * @return concurrent hashmap of isolate filename => SubmissionFile
+   * @return concurrent hashmap of fastaHeader => SubmissionFile
    */
   public static ConcurrentHashMap<String, SubmissionFile> processFileStrContent(
       SubmissionUpload submissionUpload) {
     log.info("Processing fasta file chunk");
 
-    val isolateToSubmissionFile = new ConcurrentHashMap<String, SubmissionFile>();
+    val fastaHeaderToSubmissionFile = new ConcurrentHashMap<String, SubmissionFile>();
 
     Arrays.stream(submissionUpload.getContent().split("(?=>)"))
         .filter(
@@ -36,7 +36,7 @@ public class FastaFileProcessor {
         .map(String::trim)
         .forEach(
             fc -> {
-              val fastaHeaderOpt = extractFastaIsolate(fc);
+              val fastaHeaderOpt = extractFastaHeader(fc);
               if (fastaHeaderOpt.isEmpty()) {
                 return;
               }
@@ -52,21 +52,21 @@ public class FastaFileProcessor {
                       .submittedFileName(submissionUpload.getFilename())
                       .build();
 
-              isolateToSubmissionFile.put(fastaHeaderOpt.get(), submissionFile);
+              fastaHeaderToSubmissionFile.put(fastaHeaderOpt.get(), submissionFile);
             });
 
     log.info("Processed fasta file chunk");
-    return isolateToSubmissionFile;
+    return fastaHeaderToSubmissionFile;
   }
 
-  public static Optional<String> extractFastaIsolate(String sampleContent) {
+  public static Optional<String> extractFastaHeader(String sampleContent) {
     // get index of first new line
     val fastaHeaderEndNewlineIndex = sampleContent.indexOf("\n");
     if (fastaHeaderEndNewlineIndex == -1) {
       return Optional.empty();
     }
 
-    // isolate is substring from after ">" char to new line (not including)
+    // fasta header is substring from after ">" char to new line (not including)
     return Optional.of(sampleContent.substring(1, fastaHeaderEndNewlineIndex).trim());
   }
 
