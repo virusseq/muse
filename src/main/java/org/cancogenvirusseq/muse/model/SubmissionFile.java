@@ -5,7 +5,7 @@ import lombok.Value;
 
 /** The object type that is ultimately uploaded to SCORE */
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class SubmissionFile {
   String fileExtension;
   Integer fileSize;
