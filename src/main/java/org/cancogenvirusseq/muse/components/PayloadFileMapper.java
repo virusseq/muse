@@ -65,15 +65,15 @@ public class PayloadFileMapper {
                 accumulator(submissionBundle, payloadJsonTemplate),
                 combiner());
 
-    val isolateInRecordMissingFile = result.getIsolateInRecordMissingInFile();
+    val fastaHeaderInRecordMissingFile = result.getFastaHeaderInRecordMissingInFile();
 
-    val isolateInFileMissingInTsv =
+    val fastaHeaderInFileMissingInTsv =
         submissionBundle.getFiles().keySet().stream()
-            .filter(s -> !result.getUsedIsolates().contains(s))
+            .filter(s -> !result.getUsedFastaHeaders().contains(s))
             .collect(toUnmodifiableList());
 
-    if (isolateInFileMissingInTsv.size() > 0 || isolateInRecordMissingFile.size() > 0) {
-      throw new MissingDataException(isolateInFileMissingInTsv, isolateInRecordMissingFile);
+    if (fastaHeaderInFileMissingInTsv.size() > 0 || fastaHeaderInRecordMissingFile.size() > 0) {
+      throw new MissingDataException(fastaHeaderInFileMissingInTsv, fastaHeaderInRecordMissingFile);
     }
 
     log.info("Mapped all payloads to files");
@@ -85,7 +85,7 @@ public class PayloadFileMapper {
     return files.entrySet().stream()
         .filter(
             entry ->
-                // add two for the ">" and "\n" that exist in header and not in isolate
+                // add two for the ">" and "\n" that exist in header and not in fastaHeader
                 entry.getKey().length() + 2 == entry.getValue().getFileSize())
         .map(Map.Entry::getKey)
         .collect(Collectors.toUnmodifiableList());
@@ -95,11 +95,11 @@ public class PayloadFileMapper {
       accumulator(SubmissionBundle submissionBundle, String payloadTemplate) {
     return (acc, r) -> {
       val payload = convertRecordToPayload(r, payloadTemplate);
-      val isolate = getIsolate(payload);
-      val submissionFile = submissionBundle.getFiles().get(isolate);
+      val fastaHeader = getFastaHeaderName(payload);
+      val submissionFile = submissionBundle.getFiles().get(fastaHeader);
 
       if (submissionFile == null) {
-        acc.getIsolateInRecordMissingInFile().add(isolate);
+        acc.getFastaHeaderInRecordMissingInFile().add(fastaHeader);
         return acc;
       }
 
@@ -122,7 +122,7 @@ public class PayloadFileMapper {
                       .collect(Collectors.toSet()))
               .build();
 
-      acc.getUsedIsolates().add(isolate);
+      acc.getUsedFastaHeaders().add(fastaHeader);
       acc.getRecordsMapped().put(uploadRequest.getCompositeId(), uploadRequest);
 
       return acc;
@@ -132,8 +132,8 @@ public class PayloadFileMapper {
   private static BinaryOperator<MapperReduceResult> combiner() {
     return (first, second) -> {
       first.getRecordsMapped().putAll(second.getRecordsMapped());
-      first.getUsedIsolates().addAll(second.getUsedIsolates());
-      first.getIsolateInRecordMissingInFile().addAll(second.getIsolateInRecordMissingInFile());
+      first.getUsedFastaHeaders().addAll(second.getUsedFastaHeaders());
+      first.getFastaHeaderInRecordMissingInFile().addAll(second.getFastaHeaderInRecordMissingInFile());
       return first;
     };
   }
@@ -183,8 +183,8 @@ public class PayloadFileMapper {
   @Data
   @NoArgsConstructor
   static class MapperReduceResult {
-    List<String> usedIsolates = new ArrayList<>();
-    List<String> isolateInRecordMissingInFile = new ArrayList<>();
+    List<String> usedFastaHeaders = new ArrayList<>();
+    List<String> fastaHeaderInRecordMissingInFile = new ArrayList<>();
     Map<String, UploadRequest> recordsMapped = new HashMap<>();
   }
 }

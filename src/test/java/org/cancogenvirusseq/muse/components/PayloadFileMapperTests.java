@@ -47,27 +47,9 @@ public class PayloadFileMapperTests {
   @Test
   @SneakyThrows
   void testPayloadsMappedToFiles() {
-    val expectedSam1PayloadStr =
-        "{ \"studyId\": \"TEST-PR\", "
-            + "\"samples\": [ {\"submitterSampleId\": \"sam1\"}], "
-            + "\"age\":123, "
-            + "\"sample_collection\": { "
-            + "\"isolate\": \"ABCD/sam1/ddd/erd\""
-            + "},"
-            + "\"files\":[{\"fileName\":\"sam1.fasta\",\"fileSize\":24,\"fileMd5sum\":\"cf20195497cc8c06075a6e201e82dd17\",\"fileAccess\":\"open\",\"fileType\":\"FASTA\",\"dataType\":\"FASTA\"}]"
-            + "}";
-    val expectedSam2PayloadStr =
-        "{ \"studyId\": \"TEST-PR\", "
-            + "\"samples\": [ {\"submitterSampleId\": \"sam2\"}], "
-            + "\"age\":456, "
-            + "\"sample_collection\": { "
-            + "\"isolate\": \"EFG/sam2/ddd/erd\""
-            + "},"
-            + "\"files\":[{\"fileName\":\"sam2.fasta\",\"fileSize\":23,\"fileMd5sum\":\"eecf3de7e1136d99fffdd781d76bc81a\",\"fileAccess\":\"open\",\"fileType\":\"FASTA\",\"dataType\":\"FASTA\"}]"
-            + "}";
     val mapper = new ObjectMapper();
-    val expectedSam1Payload = mapper.readValue(expectedSam1PayloadStr, ObjectNode.class);
-    val expectedSam2Payload = mapper.readValue(expectedSam2PayloadStr, ObjectNode.class);
+    val expectedSam1Payload = mapper.readValue(STUB_RECORD_1_PAYLOAD, ObjectNode.class);
+    val expectedSam2Payload = mapper.readValue(STUB_RECORD_2_PAYLOAD, ObjectNode.class);
 
     val submissionBundle = new SubmissionBundle(authentication);
     submissionBundle.getFiles().putAll(STUB_FILE_SAMPLE_MAP);
@@ -93,8 +75,8 @@ public class PayloadFileMapperTests {
   void testErrorOnFailedToMapRecordsAndFile() {
     val records =
         List.of(
-            Map.of("submitter id", "sam1", "isolate", "ABCD/sam1/ddd/erd", "age", "123"),
-            Map.of("submitter id", "sam2NotHere", "isolate", "notHere", "age", "456"));
+            STUB_RECORDS.get(0),
+            Map.of("submitter id", "sam2NotHere", "fasta header name", "notHere", "age", "456"));
 
     val submissionBundle = new SubmissionBundle(authentication);
     submissionBundle.getFiles().putAll(STUB_FILE_SAMPLE_MAP);
@@ -107,8 +89,8 @@ public class PayloadFileMapperTests {
             MissingDataException.class,
             () -> fileMapper.submissionBundleToSubmissionRequests(submissionBundle));
 
-    assertThat(thrown.getIsolateInFileMissingInTsv()).containsExactly(ISOLATE_2);
-    assertThat(thrown.getIsolateInRecordMissingInFile()).containsExactly("notHere");
+    assertThat(thrown.getFastaHeaderInFileMissingInTsv()).containsExactly(STUB_RECORD_2_FASTA_HEADER);
+    assertThat(thrown.getFastaHeaderInRecordMissingInFile()).containsExactly("notHere");
   }
 
   @Test

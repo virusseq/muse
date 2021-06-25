@@ -9,8 +9,8 @@ import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class MissingDataException extends Throwable implements MuseBaseException {
-  List<String> isolateInFileMissingInTsv;
-  List<String> isolateInRecordMissingInFile;
+  List<String> fastaHeaderInFileMissingInTsv;
+  List<String> fastaHeaderInRecordMissingInFile;
 
   @Override
   public String getMessage() {
@@ -19,7 +19,7 @@ public class MissingDataException extends Throwable implements MuseBaseException
 
   public Map<String, Object> getErrorInfo() {
     return Map.of(
-        "isolateInFileMissingInTsv", isolateInFileMissingInTsv,
-        "isolateInRecordMissingInFile", isolateInRecordMissingInFile);
+        "fastaHeaderInFileMissingInTsv", fastaHeaderInFileMissingInTsv,
+        "fastaHeaderInRecordMissingInFile", fastaHeaderInRecordMissingInFile);
   }
 }

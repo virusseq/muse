@@ -30,8 +30,8 @@ import org.cancogenvirusseq.muse.model.SubmissionFile;
 
 @UtilityClass
 public class ComponentTestStubs {
-  public static final String ISOLATE_1 = "ABCD/sam1/ddd/erd";
-  public static final String ISOLATE_2 = "EFG/sam2/ddd/erd";
+  public static final String STUB_RECORD_1_FASTA_HEADER = "ABCD/sam1/ddd/erd";
+  public static final String STUB_RECORD_2_FASTA_HEADER = "EFG/sam2/ddd/erd";
 
   public static final SubmissionFile STUB_FILE_1 =
       SubmissionFile.builder()
@@ -56,14 +56,14 @@ public class ComponentTestStubs {
           .build();
 
   public static final ConcurrentHashMap<String, SubmissionFile> STUB_FILE_SAMPLE_MAP =
-      new ConcurrentHashMap<>(Map.of(ISOLATE_1, STUB_FILE_1, ISOLATE_2, STUB_FILE_2));
+      new ConcurrentHashMap<>(Map.of(STUB_RECORD_1_FASTA_HEADER, STUB_FILE_1, STUB_RECORD_2_FASTA_HEADER, STUB_FILE_2));
 
   public static final String STUB_PAYLOAD_TEMPLATE =
       "{\"studyId\": ${study_id}, "
           + "\"samples\": [ {\"submitterSampleId\": ${submitter id} }],"
           + "\"age\": ${age},"
           + "\"sample_collection\": { "
-          + "\"isolate\": ${isolate}"
+          + "\"fasta_header_name\": ${fasta header name}"
           + "}"
           + "}";
 
@@ -75,7 +75,7 @@ public class ComponentTestStubs {
                   "TEST-PR",
                   "submitter id",
                   "sam1",
-                  "isolate",
+                  "fasta header name",
                   "ABCD/sam1/ddd/erd",
                   "age",
                   "123"),
@@ -84,8 +84,28 @@ public class ComponentTestStubs {
                   "TEST-PR",
                   "submitter id",
                   "sam2",
-                  "isolate",
+                  "fasta header name",
                   "EFG/sam2/ddd/erd",
                   "age",
                   "456")));
+
+  public static final String STUB_RECORD_1_PAYLOAD =
+          "{ \"studyId\": \"TEST-PR\", "
+                  + "\"samples\": [ {\"submitterSampleId\": \"sam1\"}], "
+                  + "\"age\":123, "
+                  + "\"sample_collection\": { "
+                  + "\"fasta_header_name\": \"ABCD/sam1/ddd/erd\""
+                  + "},"
+                  + "\"files\":[{\"fileName\":\"sam1.fasta\",\"fileSize\":24,\"fileMd5sum\":\"cf20195497cc8c06075a6e201e82dd17\",\"fileAccess\":\"open\",\"fileType\":\"FASTA\",\"dataType\":\"FASTA\"}]"
+                  + "}";
+
+  public static final String STUB_RECORD_2_PAYLOAD =
+          "{ \"studyId\": \"TEST-PR\", "
+                  + "\"samples\": [ {\"submitterSampleId\": \"sam2\"}], "
+                  + "\"age\":456, "
+                  + "\"sample_collection\": { "
+                  + "\"fasta_header_name\": \"EFG/sam2/ddd/erd\""
+                  + "},"
+                  + "\"files\":[{\"fileName\":\"sam2.fasta\",\"fileSize\":23,\"fileMd5sum\":\"eecf3de7e1136d99fffdd781d76bc81a\",\"fileAccess\":\"open\",\"fileType\":\"FASTA\",\"dataType\":\"FASTA\"}]"
+                  + "}";
 }

@@ -17,7 +17,7 @@ public class AnalysisPayloadUtils {
     return analysisJson.get("studyId").asText();
   }
 
-  public static String getIsolate(JsonNode analysisJson) {
-    return analysisJson.get("sample_collection").get("isolate").asText();
+  public static String getFastaHeaderName(JsonNode analysisJson) {
+    return analysisJson.get("sample_collection").get("fasta_header_name").asText();
   }
 }
