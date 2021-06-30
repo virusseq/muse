@@ -56,6 +56,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ApiController implements ApiDefinition {
 
+  private static final DefaultDataBufferFactory DATA_BUFFER_FACTORY =
+      new DefaultDataBufferFactory();
+
   private final SubmissionService submissionService;
   private final UploadService uploadService;
   private final DownloadsService downloadsService;
@@ -115,7 +118,7 @@ public class ApiController implements ApiDefinition {
 
   @SneakyThrows
   public ResponseEntity<Mono<DataBuffer>> downloadGzip(List<UUID> objectIds) {
-    val gzipDataBuffer = new DefaultDataBufferFactory().allocateBuffer();
+    val gzipDataBuffer = DATA_BUFFER_FACTORY.allocateBuffer();
     return ResponseEntity.ok()
         .header(
             CONTENT_DISPOSITION_HEADER,

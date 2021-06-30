@@ -28,7 +28,7 @@ postgres:
   maxPoolIdleTimeMs: 1000
   maxPoolSize: 20
 
-songScoreClient:
+ariaclient:
   songRootUrl: "http://localhost:8089/"
   scoreRootUrl: "http://localhost:8087/"
   clientId: adminId

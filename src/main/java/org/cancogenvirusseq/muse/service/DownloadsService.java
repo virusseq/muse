@@ -18,18 +18,18 @@
 
 package org.cancogenvirusseq.muse.service;
 
+import bio.overture.aria.client.AriaClient;
+import bio.overture.aria.exceptions.AriaClientException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.cancogenvirusseq.muse.components.SongScoreClient;
 import org.cancogenvirusseq.muse.exceptions.MuseBaseException;
 import org.cancogenvirusseq.muse.exceptions.download.DownloadInfoFetchException;
 import org.cancogenvirusseq.muse.exceptions.download.UnknownException;
 import org.cancogenvirusseq.muse.model.DownloadInfoFetchResult;
-import org.cancogenvirusseq.muse.model.song_score.SongScoreServerException;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.stereotype.Service;
@@ -41,7 +41,10 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class DownloadsService {
 
-  final SongScoreClient songScoreClient;
+  private static final DefaultDataBufferFactory DATA_BUFFER_FACTORY =
+      new DefaultDataBufferFactory();
+
+  final AriaClient ariaClient;
 
   public Flux<DataBuffer> download(List<UUID> objectIds) {
     return Flux.fromIterable(objectIds)
@@ -63,29 +66,28 @@ public class DownloadsService {
         .concatMap(
             analysisFileResponse -> {
               val objectId = analysisFileResponse.getObjectId();
-              return Flux.concat(songScoreClient.downloadObject(objectId), newLineBuffer());
+              return Flux.concat(ariaClient.downloadObject(objectId), newLineBuffer());
             })
         .onErrorMap(t -> !(t instanceof MuseBaseException), t -> new UnknownException());
   }
 
   private static Flux<DataBuffer> newLineBuffer() {
-    val buffer = new DefaultDataBufferFactory().allocateBuffer(4);
+    val buffer = DATA_BUFFER_FACTORY.allocateBuffer(4);
     val newLIne = "\n";
     buffer.write(newLIne.getBytes());
     return Flux.just(buffer);
   }
 
   private Mono<DownloadInfoFetchResult> fetchDownloadInfoFromSong(UUID objectIds) {
-    return songScoreClient
+    return ariaClient
         .getFileEntityFromSong(objectIds)
         .flatMap(
             legacyFileEntity ->
-                songScoreClient.getAnalysis(
+                ariaClient.getAnalysis(
                     legacyFileEntity.getStudyId(), legacyFileEntity.getAnalysisId()))
         .map(analysis -> new DownloadInfoFetchResult(objectIds, analysis))
         .onErrorResume(
-            SongScoreServerException.class,
-            t -> Mono.just(new DownloadInfoFetchResult(objectIds, t)));
+            AriaClientException.class, t -> Mono.just(new DownloadInfoFetchResult(objectIds, t)));
   }
 
   // Result isNotOk if analysis is missing, is not published or has no file objects

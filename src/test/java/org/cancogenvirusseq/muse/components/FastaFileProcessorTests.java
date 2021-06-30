@@ -33,12 +33,11 @@ public class FastaFileProcessorTests {
 
   @Test
   void testFileParsedCorrectly() {
-    val fastaFile = STUB_FILE_1.getContent() + STUB_FILE_2.getContent();
+    val fastaFile = STUB_FILE_0.getContent() + STUB_FILE_1.getContent();
     val subUpload = new SubmissionUpload("the.fasta", FASTA_TYPE, fastaFile);
 
     val fileMetaToSampleIdMap = processFileStrContent(subUpload);
-    val expected = STUB_FILE_SAMPLE_MAP;
-    assertEquals(expected, fileMetaToSampleIdMap);
+    assertEquals(STUB_FILE_SAMPLE_MAP, fileMetaToSampleIdMap);
   }
 
   @Test
