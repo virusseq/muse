@@ -39,5 +39,7 @@
   { "name": "reference genome accession", "valueType": "string" },
   { "name": "bioinformatics protocol", "valueType": "string" },
   { "name": "gene name", "valueType": "string" },
-  { "name": "diagnostic pcr Ct value", "valueType": "number" }
+  { "name": "diagnostic pcr Ct value", "valueType": "number" },
+  { "name":  "GISAID accession", "valueType":  "string" },
+  { "name":  "diagnostic pcr Ct value null reason", "valueType":  "string" }
 ]

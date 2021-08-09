@@ -69,6 +69,10 @@
       },
       "pathogen_diagnostic_testing": {
         "gene_name": ${gene name},
-        "diagnostic_pcr_ct_value": ${diagnostic pcr Ct value}
+        "diagnostic_pcr_ct_value": ${diagnostic pcr Ct value},
+        "diagnostic_pcr_ct_value_null_reason": ${diagnostic pcr Ct value null reason}
+      },
+      "database_identifiers": {
+        "gisaid_accession": ${GISAID accession}
       }
 }
