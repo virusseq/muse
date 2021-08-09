@@ -66,13 +66,13 @@ public class TsvParserTests {
             + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
     val expected =
         List.of(
-            Map.of(
+            Map.<String, Object>of(
                 "submitterId",
                 "Qc-L00244359",
                 "name",
                 "consensus_sequence",
                 "age",
-                "123",
+                123.0,
                 "study_id",
                 "TEST-STUDY"));
 
@@ -92,13 +92,13 @@ public class TsvParserTests {
             + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
     val expected =
         List.of(
-            Map.of(
+            Map.<String, Object>of(
                 "submitterId",
                 "Qc-L00244359",
                 "name",
                 "consensus_sequence",
                 "age",
-                "123",
+                123.0,
                 "study_id",
                 "TEST-STUDY"));
 
@@ -124,13 +124,13 @@ public class TsvParserTests {
             + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
     val expected =
         List.of(
-            Map.of(
+            Map.<String, Object>of(
                 "submitterId",
                 "Qc-L00244359",
                 "name",
                 "consensus_sequence",
                 "age",
-                "123",
+                123.0,
                 "study_id",
                 "TEST-STUDY"));
 
@@ -157,13 +157,13 @@ public class TsvParserTests {
             + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
     val expected =
         List.of(
-            Map.of(
+            Map.<String, Object>of(
                 "submitterId",
                 "Qc-L00244359",
                 "name",
                 "consensus_sequence",
                 "age",
-                "123",
+                123.0,
                 "study_id",
                 "TEST-STUDY"));
 

@@ -54,7 +54,7 @@ public class TsvParser {
   }
 
   @SneakyThrows
-  public Stream<Map<String, String>> parseAndValidateTsvStrToFlatRecords(
+  public Stream<Map<String, Object>> parseAndValidateTsvStrToFlatRecords(
       String s, List<String> userScopes) {
     log.info("Parsing TSV into flat records");
     val lines = s.split("\n");
@@ -72,7 +72,7 @@ public class TsvParser {
     val records =
         parse(lines)
             .map(this::checkRequireNotEmpty)
-            .map(this::checkValueTypes)
+            .map(this::checkAndConvertNumberTypes)
             .map(checkStudyScopesOperator)
             .collect(toUnmodifiableList());
 
@@ -111,7 +111,7 @@ public class TsvParser {
               val line = lines[j];
               val data = line.split("\t");
 
-              Map<String, String> record = new HashMap<>();
+              Map<String, Object> record = new HashMap<>();
               for (int i = 0; i < headers.length; ++i) {
                 val value = i >= data.length ? "" : data[i];
                 record.put(headers[i], cleanup(value));
@@ -125,7 +125,7 @@ public class TsvParser {
     tsvFieldSchemas.forEach(
         s -> {
           val fieldName = s.getName();
-          val value = record.getStringStringMap().get(fieldName);
+          val value = record.getStringStringMap().get(fieldName).toString();
           if (s.isRequireNotEmpty() && isEmpty(value)) {
             record.addFieldError(fieldName, NOT_ALLOWED_TO_BE_EMPTY, record.getIndex());
           }
@@ -134,14 +134,20 @@ public class TsvParser {
     return record;
   }
 
-  private Record checkValueTypes(Record record) {
+  private Record checkAndConvertNumberTypes(Record record) {
     tsvFieldSchemas.forEach(
         s -> {
           val fieldName = s.getName();
-          val value = record.getStringStringMap().get(fieldName);
-          if (s.getValueType().equals(TsvFieldSchema.ValueType.number)
-              && isNotEmpty(value) // ignore empty because it's checked before
-              && isNotNumber(value)) {
+          val value = record.getStringStringMap().get(fieldName).toString();
+
+          if (!s.getValueType().equals(TsvFieldSchema.ValueType.number) || isEmpty(value)) {
+            return;
+          }
+
+          try {
+            val numValue = Double.parseDouble(value);
+            record.getStringStringMap().put(fieldName, numValue);
+          } catch (Exception e) {
             record.addFieldError(fieldName, EXPECTING_NUMBER_TYPE, record.getIndex());
           }
         });
@@ -155,7 +161,7 @@ public class TsvParser {
             .anyMatch(
                 scopes.isSystemScope.or(
                     userScope ->
-                        userScope.contains(record.getStringStringMap().get(STUDY_FIELD_NAME))));
+                        userScope.contains(record.getStringStringMap().get(STUDY_FIELD_NAME).toString())));
 
     if (!isAuthorized) {
       record.addFieldError(STUDY_FIELD_NAME, UNAUTHORIZED_FOR_STUDY_UPLOAD, record.getIndex());
@@ -182,7 +188,7 @@ public class TsvParser {
 
   private Boolean recordNotEmpty(Record recordsDto) {
     return !recordsDto.getStringStringMap().values().stream()
-        .allMatch(v -> v.trim().equalsIgnoreCase(""));
+        .allMatch(v -> v.toString().trim().equalsIgnoreCase(""));
   }
 
   private static String cleanup(String rawValue) {
@@ -214,12 +220,12 @@ public class TsvParser {
   @Value
   static class Record {
     Integer index;
-    Map<String, String> stringStringMap;
+    Map<String, Object> stringStringMap;
     List<InvalidField> fieldErrors;
 
     public void addFieldError(String fieldName, InvalidField.Reason reason, Integer index) {
       fieldErrors.add(
-          new InvalidField(fieldName, stringStringMap.getOrDefault(fieldName, ""), reason, index));
+          new InvalidField(fieldName, stringStringMap.getOrDefault(fieldName, "").toString(), reason, index));
     }
 
     public Boolean hasFieldErrors() {

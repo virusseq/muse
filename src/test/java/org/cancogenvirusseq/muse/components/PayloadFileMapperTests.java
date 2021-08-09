@@ -75,7 +75,7 @@ public class PayloadFileMapperTests {
     val records =
         List.of(
             STUB_RECORDS.get(0),
-            Map.of("submitter id", "sam2NotHere", "fasta header name", "notHere", "age", "456"));
+            Map.<String, Object>of("submitter id", "sam2NotHere", "fasta header name", "notHere", "age", "456"));
 
     val submissionBundle = new SubmissionBundle(authentication);
     submissionBundle.getFiles().putAll(STUB_FILE_SAMPLE_MAP);
