@@ -1,7 +1,11 @@
 package org.cancogenvirusseq.muse.components;
 
+import static java.lang.Double.parseDouble;
+import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.cancogenvirusseq.muse.model.tsv_parser.InvalidField.Reason.*;
+import static org.cancogenvirusseq.muse.utils.StringUtils.isDouble;
+import static org.cancogenvirusseq.muse.utils.StringUtils.isInteger;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -17,7 +21,6 @@ import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.cancogenvirusseq.muse.components.security.Scopes;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
 import org.cancogenvirusseq.muse.exceptions.submission.InvalidFieldsException;
@@ -54,7 +57,7 @@ public class TsvParser {
   }
 
   @SneakyThrows
-  public Stream<Map<String, String>> parseAndValidateTsvStrToFlatRecords(
+  public Stream<Map<String, Object>> parseAndValidateTsvStrToFlatRecords(
       String s, List<String> userScopes) {
     log.info("Parsing TSV into flat records");
     val lines = s.split("\n");
@@ -72,7 +75,7 @@ public class TsvParser {
     val records =
         parse(lines)
             .map(this::checkRequireNotEmpty)
-            .map(this::checkValueTypes)
+            .map(this::checkAndConvertNumberTypes)
             .map(checkStudyScopesOperator)
             .collect(toUnmodifiableList());
 
@@ -81,7 +84,7 @@ public class TsvParser {
     }
 
     log.info("Parsed TSV successfully!");
-    return records.stream().map(Record::getStringStringMap);
+    return records.stream().map(Record::getStringObjectMap);
   }
 
   private HeaderCheckResult checkHeaders(List<String> expectedHeaders, List<String> actualHeaders) {
@@ -111,7 +114,7 @@ public class TsvParser {
               val line = lines[j];
               val data = line.split("\t");
 
-              Map<String, String> record = new HashMap<>();
+              Map<String, Object> record = new HashMap<>();
               for (int i = 0; i < headers.length; ++i) {
                 val value = i >= data.length ? "" : data[i];
                 record.put(headers[i], cleanup(value));
@@ -125,8 +128,8 @@ public class TsvParser {
     tsvFieldSchemas.forEach(
         s -> {
           val fieldName = s.getName();
-          val value = record.getStringStringMap().get(fieldName);
-          if (s.isRequireNotEmpty() && isEmpty(value)) {
+          val value = record.getStringObjectMap().get(fieldName).toString();
+          if (s.isRequireNotEmpty() && value.isEmpty()) {
             record.addFieldError(fieldName, NOT_ALLOWED_TO_BE_EMPTY, record.getIndex());
           }
         });
@@ -134,14 +137,23 @@ public class TsvParser {
     return record;
   }
 
-  private Record checkValueTypes(Record record) {
+  @SneakyThrows
+  private Record checkAndConvertNumberTypes(Record record) {
     tsvFieldSchemas.forEach(
         s -> {
           val fieldName = s.getName();
-          val value = record.getStringStringMap().get(fieldName);
-          if (s.getValueType().equals(TsvFieldSchema.ValueType.number)
-              && isNotEmpty(value) // ignore empty because it's checked before
-              && isNotNumber(value)) {
+          val value = record.getStringObjectMap().get(fieldName).toString();
+
+          // short circuit for non number types or if empty (we checked for required before)
+          if (!s.getValueType().equals(TsvFieldSchema.ValueType.number) || value.isEmpty()) {
+            return;
+          }
+
+          if (isInteger(value)) {
+            record.getStringObjectMap().put(fieldName, parseInt(value));
+          } else if (isDouble(value)) {
+            record.getStringObjectMap().put(fieldName, parseDouble(value));
+          } else {
             record.addFieldError(fieldName, EXPECTING_NUMBER_TYPE, record.getIndex());
           }
         });
@@ -155,7 +167,8 @@ public class TsvParser {
             .anyMatch(
                 scopes.isSystemScope.or(
                     userScope ->
-                        userScope.contains(record.getStringStringMap().get(STUDY_FIELD_NAME))));
+                        userScope.contains(
+                            record.getStringObjectMap().get(STUDY_FIELD_NAME).toString())));
 
     if (!isAuthorized) {
       record.addFieldError(STUDY_FIELD_NAME, UNAUTHORIZED_FOR_STUDY_UPLOAD, record.getIndex());
@@ -181,24 +194,12 @@ public class TsvParser {
   }
 
   private Boolean recordNotEmpty(Record recordsDto) {
-    return !recordsDto.getStringStringMap().values().stream()
-        .allMatch(v -> v.trim().equalsIgnoreCase(""));
+    return !recordsDto.getStringObjectMap().values().stream()
+        .allMatch(v -> v.toString().trim().equalsIgnoreCase(""));
   }
 
   private static String cleanup(String rawValue) {
     return rawValue.replace("\r", "").replace("\n", "");
-  }
-
-  private static Boolean isEmpty(String value) {
-    return value == null || value.trim().equalsIgnoreCase("");
-  }
-
-  private static Boolean isNotEmpty(String value) {
-    return !isEmpty(value);
-  }
-
-  private static Boolean isNotNumber(String value) {
-    return !NumberUtils.isCreatable(value);
   }
 
   @Value
@@ -214,12 +215,13 @@ public class TsvParser {
   @Value
   static class Record {
     Integer index;
-    Map<String, String> stringStringMap;
+    Map<String, Object> stringObjectMap;
     List<InvalidField> fieldErrors;
 
     public void addFieldError(String fieldName, InvalidField.Reason reason, Integer index) {
       fieldErrors.add(
-          new InvalidField(fieldName, stringStringMap.getOrDefault(fieldName, ""), reason, index));
+          new InvalidField(
+              fieldName, stringObjectMap.getOrDefault(fieldName, "").toString(), reason, index));
     }
 
     public Boolean hasFieldErrors() {

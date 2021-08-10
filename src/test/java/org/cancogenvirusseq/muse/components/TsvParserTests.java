@@ -63,16 +63,27 @@ public class TsvParserTests {
   void testTsvStrParsedToRecords() {
     val tsvStr =
         "age\tname\tsubmitterId\tstudy_id\n"
-            + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
+            + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n"
+            + "44.56\tconsensus_sequence\tQc-1234\tTEST-STUDY\n";
+
     val expected =
         List.of(
-            Map.of(
+            Map.<String, Object>of(
                 "submitterId",
                 "Qc-L00244359",
                 "name",
                 "consensus_sequence",
                 "age",
-                "123",
+                123,
+                "study_id",
+                "TEST-STUDY"),
+            Map.<String, Object>of(
+                "submitterId",
+                "Qc-1234",
+                "name",
+                "consensus_sequence",
+                "age",
+                44.56,
                 "study_id",
                 "TEST-STUDY"));
 
@@ -92,13 +103,13 @@ public class TsvParserTests {
             + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
     val expected =
         List.of(
-            Map.of(
+            Map.<String, Object>of(
                 "submitterId",
                 "Qc-L00244359",
                 "name",
                 "consensus_sequence",
                 "age",
-                "123",
+                123,
                 "study_id",
                 "TEST-STUDY"));
 
@@ -124,13 +135,13 @@ public class TsvParserTests {
             + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
     val expected =
         List.of(
-            Map.of(
+            Map.<String, Object>of(
                 "submitterId",
                 "Qc-L00244359",
                 "name",
                 "consensus_sequence",
                 "age",
-                "123",
+                123,
                 "study_id",
                 "TEST-STUDY"));
 
@@ -157,13 +168,13 @@ public class TsvParserTests {
             + "123\tconsensus_sequence\tQc-L00244359\tTEST-STUDY\n";
     val expected =
         List.of(
-            Map.of(
+            Map.<String, Object>of(
                 "submitterId",
                 "Qc-L00244359",
                 "name",
                 "consensus_sequence",
                 "age",
-                "123",
+                123,
                 "study_id",
                 "TEST-STUDY"));
 

@@ -36,7 +36,7 @@ import org.springframework.security.core.Authentication;
 public class SubmissionBundle {
   private final Authentication userAuthentication;
   private final Set<String> originalFileNames = new HashSet<>();
-  private final ArrayList<Map<String, String>> records = new ArrayList<>();
+  private final ArrayList<Map<String, Object>> records = new ArrayList<>();
   private final ConcurrentHashMap<String, SubmissionFile> files = new ConcurrentHashMap<>();
 
   public SubmissionBundle(@NonNull Authentication userAuthentication) {

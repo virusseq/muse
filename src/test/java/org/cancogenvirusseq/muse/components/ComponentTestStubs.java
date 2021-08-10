@@ -70,7 +70,7 @@ public class ComponentTestStubs {
           + "}"
           + "}";
 
-  public static final ArrayList<Map<String, String>> STUB_RECORDS =
+  public static final ArrayList<Map<String, Object>> STUB_RECORDS =
       new ArrayList<>(
           ImmutableList.of(
               ImmutableMap.of(
@@ -81,7 +81,7 @@ public class ComponentTestStubs {
                   "fasta header name",
                   "ABCD/sam1/ddd/erd",
                   "age",
-                  "123"),
+                  123),
               ImmutableMap.of(
                   "study_id",
                   "TEST-PR",
@@ -90,7 +90,7 @@ public class ComponentTestStubs {
                   "fasta header name",
                   "EFG/sam2/ddd/erd",
                   "age",
-                  "456")));
+                  456)));
 
   public static final String STUB_RECORD_0_PAYLOAD =
       "{ \"studyId\": \"TEST-PR\", "
