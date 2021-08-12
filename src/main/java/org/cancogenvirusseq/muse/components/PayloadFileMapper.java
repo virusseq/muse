@@ -22,7 +22,6 @@ import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookup;
 import org.cancogenvirusseq.muse.config.MuseAppConfig;
@@ -91,7 +90,7 @@ public class PayloadFileMapper {
         .collect(Collectors.toUnmodifiableList());
   }
 
-  private static BiFunction<MapperReduceResult, Map<String, String>, MapperReduceResult>
+  private static BiFunction<MapperReduceResult, Map<String, Object>, MapperReduceResult>
       accumulator(SubmissionBundle submissionBundle, String payloadTemplate) {
     return (acc, r) -> {
       val payload = convertRecordToPayload(r, payloadTemplate);
@@ -142,16 +141,16 @@ public class PayloadFileMapper {
 
   @SneakyThrows
   private static ObjectNode convertRecordToPayload(
-      Map<String, String> valuesMap, String payloadTemplate) {
+      Map<String, Object> valuesMap, String payloadTemplate) {
     StringLookup lookupFunc =
         key -> {
           val value = valuesMap.getOrDefault(key, "");
 
           // value is mapped to json value by these rules
-          if (NumberUtils.isCreatable(value)) {
+          if (value instanceof Number) {
             // numeric no need to append quotes
-            return value;
-          } else if (value.trim().equals("")) {
+            return value.toString();
+          } else if (value.toString().trim().equals("")) {
             // empty string map to null value
             return "null";
           } else {
@@ -163,8 +162,9 @@ public class PayloadFileMapper {
     val sub = new StringSubstitutor(lookupFunc);
     // throw error if valuesMap is missing template values in payloadTemplate
     sub.setEnableUndefinedVariableException(true);
-
-    return new ObjectMapper().readValue(sub.replace(payloadTemplate), ObjectNode.class);
+    val templatedStr = sub.replace(payloadTemplate);
+    log.debug("Templated String - {}", templatedStr);
+    return new ObjectMapper().readValue(templatedStr, ObjectNode.class);
   }
 
   private static JsonNode createFilesObject(SubmissionFile submissionFile, String fileName) {

@@ -21,7 +21,7 @@
   { "name": "collection method", "valueType": "string" },
   { "name": "host (scientific name)", "valueType": "string" },
   { "name": "host disease", "valueType": "string" },
-  { "name": "host age", "valueType": "string" },
+  { "name": "host age", "valueType": "number" },
   { "name": "host age null reason", "valueType": "string" },
   { "name": "host age unit", "valueType": "string" },
   { "name": "host age bin", "valueType": "string" },
@@ -33,11 +33,13 @@
   { "name": "raw sequence data processing method", "valueType": "string" },
   { "name": "dehosting method", "valueType": "string" },
   { "name": "consensus sequence software name", "valueType": "string" },
-  { "name": "consensus sequence software version", "valueType": "number" },
+  { "name": "consensus sequence software version", "valueType": "string" },
   { "name": "breadth of coverage value", "valueType": "string" },
   { "name": "depth of coverage value", "valueType": "string" },
   { "name": "reference genome accession", "valueType": "string" },
   { "name": "bioinformatics protocol", "valueType": "string" },
   { "name": "gene name", "valueType": "string" },
-  { "name": "diagnostic pcr Ct value", "valueType": "number" }
+  { "name": "diagnostic pcr Ct value", "valueType": "number" },
+  { "name":  "GISAID accession", "valueType":  "string" },
+  { "name":  "diagnostic pcr Ct value null reason", "valueType":  "string" }
 ]
