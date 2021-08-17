@@ -154,8 +154,8 @@ public class PayloadFileMapper {
             // empty string map to null value
             return "null";
           } else {
-            // for string append double quotes
-            return format("\"%s\"", value);
+            // for string append double quotes and escape any existing double quotes
+            return format("\"%s\"", value.toString().replace("\"", "\\\""));
           }
         };
 
