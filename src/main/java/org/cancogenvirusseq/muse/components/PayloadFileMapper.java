@@ -153,7 +153,11 @@ public class PayloadFileMapper {
           } else if (value.toString().trim().equals("")) {
             // empty string map to null value
             return "null";
-          } else {
+          } else if(value.toString().split(";").length>1) {
+            //for multiple tags in single cell
+            return stringToArrayOfStrings(value.toString());
+          }
+          else {
             // for string append double quotes and escape any existing double quotes
             return format("\"%s\"", value.toString().replace("\"", "\\\""));
           }
@@ -165,6 +169,16 @@ public class PayloadFileMapper {
     val templatedStr = sub.replace(payloadTemplate);
     log.debug("Templated String - {}", templatedStr);
     return new ObjectMapper().readValue(templatedStr, ObjectNode.class);
+  }
+
+  private static String stringToArrayOfStrings(String value){
+    StringBuilder sb = new StringBuilder();
+    for (String n : value.toString().split(";")) {
+      if (sb.length() > 0) sb.append(',');
+      sb.append(format("\"%s\"", n.toString().replace("\"", "\\\"")));
+    }
+    log.info("Converted string: {}",sb.toString());
+    return sb.toString();
   }
 
   private static JsonNode createFilesObject(SubmissionFile submissionFile, String fileName) {
