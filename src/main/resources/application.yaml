@@ -50,3 +50,6 @@ management:
   endpoint:
     health:
       show-details: NEVER
+
+tsv:
+  multiTagDelimiter: ";"
