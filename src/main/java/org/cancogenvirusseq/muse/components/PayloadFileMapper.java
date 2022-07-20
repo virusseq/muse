@@ -30,13 +30,18 @@ import org.cancogenvirusseq.muse.exceptions.submission.MissingDataException;
 import org.cancogenvirusseq.muse.model.SubmissionBundle;
 import org.cancogenvirusseq.muse.model.SubmissionFile;
 import org.cancogenvirusseq.muse.model.UploadRequest;
+import org.cancogenvirusseq.muse.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 public class PayloadFileMapper {
   private final String payloadJsonTemplate;
+
+  @Value("${tsv.multiTagDelimiter}")
+  private static final String multiTagDelimiter=";";
 
   @Autowired
   public PayloadFileMapper(MuseAppConfig config) {
@@ -153,9 +158,9 @@ public class PayloadFileMapper {
           } else if (value.toString().trim().equals("")) {
             // empty string map to null value
             return "null";
-          } else if(value.toString().split(";").length>1) {
+          } else if(value.toString().split(multiTagDelimiter).length>1) {
             //for multiple tags in single cell
-            return stringToArrayOfStrings(value.toString());
+            return StringUtils.stringToArrayOfStrings(value.toString(), multiTagDelimiter);
           }
           else {
             // for string append double quotes and escape any existing double quotes
@@ -171,15 +176,7 @@ public class PayloadFileMapper {
     return new ObjectMapper().readValue(templatedStr, ObjectNode.class);
   }
 
-  private static String stringToArrayOfStrings(String value){
-    StringBuilder sb = new StringBuilder();
-    for (String n : value.toString().split(";")) {
-      if (sb.length() > 0) sb.append(',');
-      sb.append(format("\"%s\"", n.toString().replace("\"", "\\\"")));
-    }
-    log.debug("Converted string: {}",sb.toString());
-    return sb.toString();
-  }
+
 
   private static JsonNode createFilesObject(SubmissionFile submissionFile, String fileName) {
     val filesArray = JsonNodeFactory.instance.arrayNode(1);
