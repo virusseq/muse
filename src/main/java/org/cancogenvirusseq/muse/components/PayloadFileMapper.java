@@ -177,7 +177,7 @@ public class PayloadFileMapper {
       if (sb.length() > 0) sb.append(',');
       sb.append(format("\"%s\"", n.toString().replace("\"", "\\\"")));
     }
-    log.info("Converted string: {}",sb.toString());
+    log.debug("Converted string: {}",sb.toString());
     return sb.toString();
   }
 
