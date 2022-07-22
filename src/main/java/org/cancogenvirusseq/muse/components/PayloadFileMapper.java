@@ -33,6 +33,7 @@ import org.cancogenvirusseq.muse.model.UploadRequest;
 import org.cancogenvirusseq.muse.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.method.P;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -40,8 +41,12 @@ import org.springframework.stereotype.Component;
 public class PayloadFileMapper {
   private final String payloadJsonTemplate;
 
+  private static String multiTagDelimiter;
+
   @Value("${tsv.multiTagDelimiter}")
-  private static final String multiTagDelimiter=";";
+  public void setMultiTagDelimiter(String delimiter) {
+    multiTagDelimiter = delimiter;
+  }
 
   @Autowired
   public PayloadFileMapper(MuseAppConfig config) {
