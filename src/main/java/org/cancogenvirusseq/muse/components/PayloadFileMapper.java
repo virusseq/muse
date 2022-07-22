@@ -42,6 +42,13 @@ public class PayloadFileMapper {
   private final String payloadJsonTemplate;
 
   private static String multiTagDelimiter;
+  private static List<String> columnKeys;
+
+
+  @Value("${tsv.columnKeys}")
+  public void setColumnKeys(List<String> keys) {
+    columnKeys = keys;
+  }
 
   @Value("${tsv.multiTagDelimiter}")
   public void setMultiTagDelimiter(String delimiter) {
@@ -163,7 +170,7 @@ public class PayloadFileMapper {
           } else if (value.toString().trim().equals("")) {
             // empty string map to null value
             return "null";
-          } else if(value.toString().split(multiTagDelimiter).length>1) {
+          } else if((columnKeys.contains(key)) && (value.toString().split(multiTagDelimiter).length>0)) {
             //for multiple tags in single cell
             return StringUtils.stringToArrayOfStrings(value.toString(), multiTagDelimiter);
           }
