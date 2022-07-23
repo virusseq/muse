@@ -8,10 +8,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
@@ -45,7 +43,7 @@ public class PayloadFileMapper {
   private static List<String> columnKeys;
 
 
-  @Value("${tsv.columnKeys}")
+  @Value("${tsv.columnKeys:''}")
   public void setColumnKeys(List<String> keys) {
     columnKeys = keys;
   }
@@ -170,7 +168,7 @@ public class PayloadFileMapper {
           } else if (value.toString().trim().equals("")) {
             // empty string map to null value
             return "null";
-          } else if((columnKeys.contains(key)) && (value.toString().split(multiTagDelimiter).length>0)) {
+          } else if((!Objects.isNull(columnKeys) && columnKeys.contains(key)) && (value.toString().split(multiTagDelimiter).length>0)) {
             //for multiple tags in single cell
             return StringUtils.stringToArrayOfStrings(value.toString(), multiTagDelimiter);
           }
