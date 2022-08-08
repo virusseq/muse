@@ -35,3 +35,4 @@ build/
 
 ### Test tmp folders ###
 tmp-./**
+.DS_Store
