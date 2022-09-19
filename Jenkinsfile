@@ -1,8 +1,8 @@
-def dockerRepo = "ghcr.io/cancogen-virus-seq/muse"
-def gitHubRepo = "cancogen-virus-seq/muse"
-def chartVersion = "0.1.0"
-def commit = "UNKNOWN"
-def version = "UNKNOWN"
+def dockerRepo = 'ghcr.io/cancogen-virus-seq/muse'
+def gitHubRepo = 'cancogen-virus-seq/muse'
+def chartVersion = '0.1.0'
+def commit = 'UNKNOWN'
+def version = 'UNKNOWN'
 
 pipeline {
     agent {
@@ -69,16 +69,18 @@ spec:
                 }
             }
         }
+
         stage('Test') {
             steps {
                 container('jdk') {
-                    sh "./mvnw test"
+                    sh './mvnw test'
                 }
             }
         }
+
         stage('Build & Publish Develop') {
             when {
-                branch "develop"
+                branch 'develop'
             }
             steps {
                 container('docker') {
@@ -95,22 +97,9 @@ spec:
             }
         }
 
-       stage('deploy to cancogen-virus-seq-dev') {
-           when {
-               branch "develop"
-           }
-           steps {
-               build(job: "virusseq/update-app-version", parameters: [
-                   [$class: 'StringParameterValue', name: 'CANCOGEN_ENV', value: 'dev' ],
-                   [$class: 'StringParameterValue', name: 'TARGET_RELEASE', value: 'muse'],
-                   [$class: 'StringParameterValue', name: 'NEW_APP_VERSION', value: "${version}-${commit}" ]
-               ])
-           }
-       }
-
         stage('Release & Tag') {
             when {
-                branch "main"
+                branch 'main'
             }
             steps {
                 container('docker') {
@@ -132,19 +121,26 @@ spec:
             }
         }
 
-//        stage('deploy to cancogen-virus-seq-qa') {
-//            when {
-//                branch "main"
-//            }
-//            steps {
-//                build(job: "/provision/helm", parameters: [
-//                    [$class: 'StringParameterValue', name: 'AP_RDPC_ENV', value: 'qa' ],
-//                    [$class: 'StringParameterValue', name: 'AP_CHART_NAME', value: 'muse'],
-//                    [$class: 'StringParameterValue', name: 'AP_RELEASE_NAME', value: 'muse'],
-//                    [$class: 'StringParameterValue', name: 'AP_HELM_CHART_VERSION', value: "${chartVersion}"],
-//                    [$class: 'StringParameterValue', name: 'AP_ARGS_LINE', value: "--set-string image.tag=${version}" ]
-//                ])
-//            }
-//        }
+        stage('deploy to cancogen-virus-seq-dev') {
+            when {
+                anyOf {
+                    branch 'develop'
+                }
+            }
+            steps {
+                script {
+                    // we don't want the build to be tagged as failed because it could not be deployed.
+                    try {
+                        build(job: 'virusseq/update-app-version', parameters: [
+                            [$class: 'StringParameterValue', name: 'CANCOGEN_ENV', value: 'dev' ],
+                            [$class: 'StringParameterValue', name: 'TARGET_RELEASE', value: 'muse'],
+                            [$class: 'StringParameterValue', name: 'NEW_APP_VERSION', value: "${version}-${commit}" ]
+                        ])
+                    } catch (err) {
+                        echo 'The app built successfully, but could not be deployed'
+                    }
+                }
+            }
+        }
     }
 }
