@@ -164,14 +164,14 @@
 
     <repositories>
         <repository>
-            <id>dcc-release</id>
-            <name>artifacts.oicr.on.ca-releases</name>
-            <url>https://artifacts.oicr.on.ca/artifactory/dcc-release</url>
-        </repository>
-        <repository>
-            <id>dcc-snapshot</id>
-            <name>artifacts.oicr.on.ca-snapshots</name>
-            <url>https://artifacts.oicr.on.ca/artifactory/dcc-snapshot</url>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/overture-stack/aria</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
         </repository>
     </repositories>
 
