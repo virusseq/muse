@@ -2,9 +2,10 @@
 #   Builder
 #############################
 FROM adoptopenjdk/openjdk11:jdk-11.0.6_10-alpine-slim as builder
+
 WORKDIR /usr/src/app
 ADD . .
-RUN ./mvnw clean package -DskipTests
+RUN ./mvnw -s settings.xml clean package -DskipTests
 
 #############################
 #   Server

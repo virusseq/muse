@@ -15,7 +15,7 @@
     <description>Service to submit, validate, and download virus-seq data</description>
     <properties>
         <java.version>11</java.version>
-        <aria.version>0.1.0</aria.version>
+        <aria.version>0.3.0-SNAPSHOT</aria.version>
         <springfox.version>3.0.0</springfox.version>
     </properties>
     <dependencies>
