@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
@@ -213,18 +214,32 @@ public class SubmissionService {
   }
 
   private static final Function<Flux<DataBuffer>, Mono<String>> fileContentToString =
-      (Flux<DataBuffer> content) ->
-          content
-              .map(
-                  dataBuffer -> {
-                    val bytes = new byte[dataBuffer.readableByteCount()];
-                    dataBuffer.read(bytes);
-                    DataBufferUtils.release(dataBuffer);
+      (Flux<DataBuffer> content) -> {
+        AtomicBoolean firstChunk = new AtomicBoolean(true);
 
-                    return new String(bytes, StandardCharsets.UTF_8);
-                  })
-              .reduce(new StringBuilder(), StringBuilder::append)
-              .map(StringBuilder::toString);
+        return content
+            .map(
+                dataBuffer -> {
+                  val bytes = new byte[dataBuffer.readableByteCount()];
+                  dataBuffer.read(bytes);
+                  DataBufferUtils.release(dataBuffer);
+
+                  if (firstChunk.getAndSet(false)) {
+                    // Check for UTF-8 BOM
+                    if (bytes.length >= 3 &&
+                        (bytes[0] & 0xFF) == 0xEF &&
+                        (bytes[1] & 0xFF) == 0xBB &&
+                        (bytes[2] & 0xFF) == 0xBF) {
+                      // Strip first 3 bytes
+                      return new String(bytes, 3, bytes.length - 3, StandardCharsets.UTF_8);
+                    }
+                  }
+
+                  return new String(bytes, StandardCharsets.UTF_8);
+                })
+            .reduce(new StringBuilder(), StringBuilder::append)
+            .map(StringBuilder::toString);
+      };
 
   private static final Function<Tuple2<String, FilePart>, Flux<DataBuffer>>
       getContentFromMaybeZipped =
